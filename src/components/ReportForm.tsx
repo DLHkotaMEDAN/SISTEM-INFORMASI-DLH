@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
+import { Report } from '@/types/report';
 
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
@@ -49,11 +50,16 @@ const formSchema = z.object({
   remarks: z.string().optional(),
 });
 
-const ReportForm = () => {
+interface ReportFormProps {
+  initialData?: Report;
+  isEditing?: boolean;
+}
+
+const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const navigate = useNavigate();
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    defaultValues: initialData || {
       date: new Date().toISOString().split('T')[0],
       description: "",
       location: { street: "", village: "", subDistrict: "" },
@@ -80,13 +86,22 @@ const ReportForm = () => {
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
-    const newReport = {
-      ...values,
-      id: crypto.randomUUID(),
-      createdAt: new Date().toISOString(),
-    };
-    localStorage.setItem('reports', JSON.stringify([newReport, ...reports]));
-    showSuccess("Laporan berhasil disimpan!");
+    
+    if (isEditing && initialData) {
+      const updatedReports = reports.map((r: Report) => 
+        r.id === initialData.id ? { ...values, id: r.id, createdAt: r.createdAt } : r
+      );
+      localStorage.setItem('reports', JSON.stringify(updatedReports));
+      showSuccess("Laporan berhasil diperbarui!");
+    } else {
+      const newReport = {
+        ...values,
+        id: crypto.randomUUID(),
+        createdAt: new Date().toISOString(),
+      };
+      localStorage.setItem('reports', JSON.stringify([newReport, ...reports]));
+      showSuccess("Laporan berhasil disimpan!");
+    }
     navigate('/');
   }
 
@@ -94,12 +109,14 @@ const ReportForm = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto pb-20">
         <div className="flex items-center justify-between mb-6">
-          <Button type="button" variant="ghost" onClick={() => navigate('/')}>
+          <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
-          <h1 className="text-2xl font-bold text-primary">Input Laporan Baru</h1>
+          <h1 className="text-2xl font-bold text-primary">
+            {isEditing ? "Edit Laporan" : "Input Laporan Baru"}
+          </h1>
           <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            <Save className="mr-2 h-4 w-4" /> Simpan Laporan
+            <Save className="mr-2 h-4 w-4" /> {isEditing ? "Simpan Perubahan" : "Simpan Laporan"}
           </Button>
         </div>
 
@@ -438,8 +455,10 @@ const ReportForm = () => {
         </Card>
 
         <div className="flex justify-end gap-4">
-          <Button type="button" variant="outline" onClick={() => navigate('/')}>Batal</Button>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">Simpan Laporan</Button>
+          <Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button>
+          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">
+            {isEditing ? "Simpan Perubahan" : "Simpan Laporan"}
+          </Button>
         </div>
       </form>
     </Form>
