@@ -99,43 +99,58 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
     
+    const fuelData = {
+      pertamax: values.fuel.pertamax || 0,
+      dexlite: values.fuel.dexlite || 0,
+      solar: values.fuel.solar || 0,
+      remarks: values.fuel.remarks || "",
+    };
+
+    const photosData = {
+      zero: values.photos.zero || "",
+      fifty: values.photos.fifty || "",
+      hundred: values.photos.hundred || "",
+    };
+
     if (isEditing && initialData) {
+      const updatedReport: Report = {
+        id: initialData.id,
+        date: values.date,
+        description: values.description,
+        location: values.location,
+        photos: photosData,
+        volume: values.volume,
+        unit: values.unit,
+        equipment: values.equipment,
+        heavyEquipment: values.heavyEquipment,
+        fuel: fuelData,
+        personnel: values.personnel,
+        remarks: values.remarks || "",
+        createdAt: initialData.createdAt,
+        syncStatus: 'pending',
+      };
+
       const updatedReports = reports.map((r: Report) => 
-        r.id === initialData.id ? { 
-          ...values, 
-          id: r.id, 
-          createdAt: r.createdAt,
-          syncStatus: 'pending',
-          photos: {
-            zero: values.photos.zero || "",
-            fifty: values.photos.fifty || "",
-            hundred: values.photos.hundred || "",
-          },
-          fuel: {
-            ...values.fuel,
-            remarks: values.fuel.remarks || "",
-          },
-          remarks: values.remarks || "",
-        } : r
+        r.id === initialData.id ? updatedReport : r
       );
       localStorage.setItem('reports', JSON.stringify(updatedReports));
       showSuccess("Laporan berhasil diperbarui!");
     } else {
       const newReport: Report = {
-        ...values,
         id: crypto.randomUUID(),
+        date: values.date,
+        description: values.description,
+        location: values.location,
+        photos: photosData,
+        volume: values.volume,
+        unit: values.unit,
+        equipment: values.equipment,
+        heavyEquipment: values.heavyEquipment,
+        fuel: fuelData,
+        personnel: values.personnel,
+        remarks: values.remarks || "",
         createdAt: new Date().toISOString(),
         syncStatus: 'pending',
-        photos: {
-          zero: values.photos.zero || "",
-          fifty: values.photos.fifty || "",
-          hundred: values.photos.hundred || "",
-        },
-        fuel: {
-          ...values.fuel,
-          remarks: values.fuel.remarks || "",
-        },
-        remarks: values.remarks || "",
       };
       localStorage.setItem('reports', JSON.stringify([newReport, ...reports]));
       showSuccess("Laporan berhasil disimpan secara lokal!");
