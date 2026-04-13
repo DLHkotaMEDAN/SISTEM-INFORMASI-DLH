@@ -21,6 +21,11 @@ export interface Location {
   subDistrict: string;
 }
 
+export interface Task {
+  description: string;
+  location: Location;
+}
+
 export interface Photos {
   zero: string;
   fifty: string;
@@ -32,15 +37,16 @@ export type ReportCategory =
   | "Taman Amplas" 
   | "Taman Area" 
   | "Tim Babat" 
-  | "Penyiraman Taman" 
+  | "Tim Siram" 
   | "Tim Pohon";
 
 export interface Report {
   id: string;
   date: string;
   category: ReportCategory;
-  description: string;
-  location: Location;
+  description: string; // Deskripsi utama/ringkasan
+  location: Location;    // Lokasi utama (untuk kompatibilitas)
+  tasks?: Task[];       // Daftar kegiatan & lokasi (khusus Tim Siram)
   photos: Photos;
   volume: number;
   unit: string;
