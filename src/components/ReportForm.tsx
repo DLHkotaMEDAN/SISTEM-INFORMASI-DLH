@@ -1,6 +1,6 @@
 "use client";
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
-import { Report, ReportCategory } from '@/types/report';
+import { Report, ReportCategory, Equipment } from '@/types/report';
 import { medanDistricts } from '@/data/medan-districts';
 
 const categories: ReportCategory[] = [
@@ -99,7 +99,18 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     },
   });
 
+  const selectedCategory = form.watch("category");
   const selectedSubDistrict = form.watch("location.subDistrict");
+
+  useEffect(() => {
+    if (!isEditing) {
+      if (selectedCategory === "Tim Pohon") {
+        form.setValue("unit", "Pohon");
+      } else if (selectedCategory !== "") {
+        form.setValue("unit", "M2");
+      }
+    }
+  }, [selectedCategory, form, isEditing]);
 
   const handleSubDistrictChange = (value: string) => {
     form.setValue("location.subDistrict", value);
@@ -129,6 +140,16 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
     
+    const mappedEquipment: Equipment[] = values.equipment.map(e => ({
+      type: e.type,
+      quantity: e.quantity
+    }));
+
+    const mappedHeavyEquipment: Equipment[] = values.heavyEquipment.map(e => ({
+      type: e.type,
+      quantity: e.quantity
+    }));
+
     const reportData = {
       date: values.date,
       category: values.category as ReportCategory,
@@ -145,15 +166,18 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       },
       volume: values.volume,
       unit: values.unit,
-      equipment: values.equipment,
-      heavyEquipment: values.heavyEquipment,
+      equipment: mappedEquipment,
+      heavyEquipment: mappedHeavyEquipment,
       fuel: {
         pertamax: values.fuel.pertamax,
         dexlite: values.fuel.dexlite,
         solar: values.fuel.solar,
         remarks: values.fuel.remarks || "",
       },
-      personnel: values.personnel,
+      personnel: {
+        coordinator: values.personnel.coordinator,
+        members: values.personnel.members,
+      },
       remarks: values.remarks || "",
       syncStatus: 'pending' as const,
     };
@@ -317,7 +341,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <Card className="border-t-4 border-t-green-500">
           <CardHeader>
-            <CardTitle className="text-lg">Volume Pekerjaan</CardTitle>
+            <CardTitle className="text-lg">
+              {selectedCategory === "Tim Pohon" ? "Volume Pekerjaan" : "Luas Pekerjaan"}
+            </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormField
@@ -325,7 +351,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               name="volume"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Volume</FormLabel>
+                  <FormLabel>{selectedCategory === "Tim Pohon" ? "Jumlah Pohon" : "Luas"}</FormLabel>
                   <FormControl><Input type="number" {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
@@ -337,7 +363,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Satuan</FormLabel>
-                  <FormControl><Input placeholder="m, m2, m3, titik, dll" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Satuan..." {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}
