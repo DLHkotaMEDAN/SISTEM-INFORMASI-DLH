@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw 
+  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -34,6 +34,19 @@ const Index = () => {
       setReports(updated);
       showSuccess("Laporan dihapus");
     }
+  };
+
+  const handleExport = () => {
+    const dataStr = JSON.stringify(reports, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `backup_laporan_${new Date().toISOString().split('T')[0]}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+    showSuccess("Data berhasil diekspor ke PC!");
   };
 
   const filteredReports = reports.filter(report => 
@@ -70,6 +83,9 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport} className="hidden sm:flex">
+              <Download className="h-4 w-4 mr-2" /> Export
+            </Button>
             {isOnline && (
               <Button 
                 variant="ghost" 

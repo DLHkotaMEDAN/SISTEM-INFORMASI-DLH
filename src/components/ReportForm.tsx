@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
-import { Report } from '@/types/report';
+import { Report, Location, Equipment, Personnel } from '@/types/report';
 
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
@@ -99,6 +99,27 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
     
+    const locationData: Location = {
+      street: values.location.street,
+      village: values.location.village,
+      subDistrict: values.location.subDistrict,
+    };
+
+    const equipmentData: Equipment[] = values.equipment.map(e => ({
+      type: e.type,
+      quantity: e.quantity
+    }));
+
+    const heavyEquipmentData: Equipment[] = values.heavyEquipment.map(e => ({
+      type: e.type,
+      quantity: e.quantity
+    }));
+
+    const personnelData: Personnel = {
+      coordinator: values.personnel.coordinator,
+      members: values.personnel.members,
+    };
+
     const fuelData = {
       pertamax: values.fuel.pertamax || 0,
       dexlite: values.fuel.dexlite || 0,
@@ -117,14 +138,14 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         id: initialData.id,
         date: values.date,
         description: values.description,
-        location: values.location,
+        location: locationData,
         photos: photosData,
         volume: values.volume,
         unit: values.unit,
-        equipment: values.equipment,
-        heavyEquipment: values.heavyEquipment,
+        equipment: equipmentData,
+        heavyEquipment: heavyEquipmentData,
         fuel: fuelData,
-        personnel: values.personnel,
+        personnel: personnelData,
         remarks: values.remarks || "",
         createdAt: initialData.createdAt,
         syncStatus: 'pending',
@@ -140,14 +161,14 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         id: crypto.randomUUID(),
         date: values.date,
         description: values.description,
-        location: values.location,
+        location: locationData,
         photos: photosData,
         volume: values.volume,
         unit: values.unit,
-        equipment: values.equipment,
-        heavyEquipment: values.heavyEquipment,
+        equipment: equipmentData,
+        heavyEquipment: heavyEquipmentData,
         fuel: fuelData,
-        personnel: values.personnel,
+        personnel: personnelData,
         remarks: values.remarks || "",
         createdAt: new Date().toISOString(),
         syncStatus: 'pending',
