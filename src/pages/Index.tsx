@@ -59,7 +59,11 @@ const Index = () => {
   const stats = {
     total: reports.length,
     totalFuel: reports.reduce((acc, r) => acc + (r.fuel?.pertamax || 0) + (r.fuel?.dexlite || 0) + (r.fuel?.solar || 0), 0),
-    totalPersonnel: reports.reduce((acc, r) => acc + (r.personnel?.coordinator || 0) + (r.personnel?.members || 0), 0),
+    totalPersonnel: reports.reduce((acc, r) => {
+      const coordCount = r.personnel?.coordinator ? 1 : 0;
+      const memberCount = r.personnel?.members || 0;
+      return acc + coordCount + memberCount;
+    }, 0),
   };
 
   return (
@@ -223,7 +227,7 @@ const Index = () => {
                   <div className="grid grid-cols-2 gap-2 pt-2">
                     <div className="bg-slate-50 p-2 rounded flex items-center gap-2">
                       <Users className="h-4 w-4 text-blue-500" />
-                      <span className="text-xs font-medium">{(report.personnel?.coordinator || 0) + (report.personnel?.members || 0)} Orang</span>
+                      <span className="text-xs font-medium">{(report.personnel?.coordinator ? 1 : 0) + (report.personnel?.members || 0)} Orang</span>
                     </div>
                     <div className="bg-slate-50 p-2 rounded flex items-center gap-2">
                       <Fuel className="h-4 w-4 text-yellow-600" />

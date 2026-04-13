@@ -26,6 +26,15 @@ const categories: ReportCategory[] = [
   "Tim Pohon"
 ];
 
+const coordinatorMapping: Record<string, string> = {
+  "Tim Pohon": "Budi",
+  "Taman Kota": "Mhd. Said",
+  "Taman Area": "Ismail Siregar",
+  "Taman Amplas": "Erwinsyah",
+  "Tim Babat": "Benget Simanjuntak",
+  "Penyiraman Taman": "" // Kosongkan jika tidak ada di daftar
+};
+
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
@@ -57,7 +66,7 @@ const formSchema = z.object({
     remarks: z.string().optional().default(""),
   }),
   personnel: z.object({
-    coordinator: z.coerce.number().min(0),
+    coordinator: z.string().min(1, "Nama koordinator wajib diisi"),
     members: z.coerce.number().min(0),
   }),
   remarks: z.string().optional().default(""),
@@ -95,7 +104,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       equipment: [{ type: "", quantity: 1 }],
       heavyEquipment: [],
       fuel: { pertamax: 0, dexlite: 0, solar: 0, remarks: "" },
-      personnel: { coordinator: 0, members: 0 },
+      personnel: { coordinator: "", members: 0 },
       remarks: "",
     },
   });
@@ -105,11 +114,18 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const heavyEquipmentList = form.watch("heavyEquipment");
 
   useEffect(() => {
-    if (!isEditing) {
+    if (!isEditing && selectedCategory) {
+      // Otomatisasi Satuan
       if (selectedCategory === "Tim Pohon") {
         form.setValue("unit", "Pohon");
-      } else if (selectedCategory !== "") {
+      } else {
         form.setValue("unit", "M2");
+      }
+
+      // Otomatisasi Koordinator
+      const coordinatorName = coordinatorMapping[selectedCategory];
+      if (coordinatorName) {
+        form.setValue("personnel.coordinator", coordinatorName);
       }
     }
   }, [selectedCategory, form, isEditing]);
@@ -592,7 +608,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Koordinator</FormLabel>
-                  <FormControl><Input type="number" {...field} /></FormControl>
+                  <FormControl><Input placeholder="Nama Koordinator..." {...field} /></FormControl>
                   <FormMessage />
                 </FormItem>
               )}

@@ -11,7 +11,7 @@ export interface FuelUsage {
 }
 
 export interface Personnel {
-  coordinator: number;
+  coordinator: string;
   members: number;
 }
 
