@@ -427,11 +427,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         </Card>
 
         <Card className="border-t-4 border-t-purple-500">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg">Peralatan</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendEquip({ type: "", quantity: 1 })}>
-              <Plus className="h-4 w-4 mr-1" /> Tambah Alat
-            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {equipFields.map((field, index) => (
@@ -467,15 +464,20 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 </Button>
               </div>
             ))}
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full mt-2 border-dashed" 
+              onClick={() => appendEquip({ type: "", quantity: 1 })}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Tambah Alat
+            </Button>
           </CardContent>
         </Card>
 
         <Card className="border-t-4 border-t-red-500">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader>
             <CardTitle className="text-lg">Operasional Alat Berat</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={() => appendHeavy({ type: "", quantity: 1 })}>
-              <Plus className="h-4 w-4 mr-1" /> Tambah Alat Berat
-            </Button>
           </CardHeader>
           <CardContent className="space-y-4">
             {heavyFields.map((field, index) => (
@@ -511,6 +513,14 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 </Button>
               </div>
             ))}
+            <Button 
+              type="button" 
+              variant="outline" 
+              className="w-full mt-2 border-dashed" 
+              onClick={() => appendHeavy({ type: "", quantity: 1 })}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Tambah Alat Berat
+            </Button>
           </CardContent>
         </Card>
 
