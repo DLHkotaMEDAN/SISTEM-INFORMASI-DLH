@@ -15,6 +15,7 @@ import { useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
 import { Report, ReportCategory, Equipment } from '@/types/report';
 import { medanDistricts } from '@/data/medan-districts';
+import ImageUpload from './ImageUpload';
 
 const categories: ReportCategory[] = [
   "Taman Kota", 
@@ -371,16 +372,21 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <Card className="border-t-4 border-t-orange-500">
           <CardHeader>
-            <CardTitle className="text-lg">Foto Dokumentasi (URL)</CardTitle>
+            <CardTitle className="text-lg">Foto Dokumentasi</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <FormField
               control={form.control}
               name="photos.zero"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Foto 0%</FormLabel>
-                  <FormControl><Input placeholder="Link foto 0%..." {...field} /></FormControl>
+                  <FormControl>
+                    <ImageUpload 
+                      label="Foto 0%" 
+                      value={field.value} 
+                      onChange={field.onChange} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -390,8 +396,13 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               name="photos.fifty"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Foto 50%</FormLabel>
-                  <FormControl><Input placeholder="Link foto 50%..." {...field} /></FormControl>
+                  <FormControl>
+                    <ImageUpload 
+                      label="Foto 50%" 
+                      value={field.value} 
+                      onChange={field.onChange} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
@@ -401,8 +412,13 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               name="photos.hundred"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Foto 100%</FormLabel>
-                  <FormControl><Input placeholder="Link foto 100%..." {...field} /></FormControl>
+                  <FormControl>
+                    <ImageUpload 
+                      label="Foto 100%" 
+                      value={field.value} 
+                      onChange={field.onChange} 
+                    />
+                  </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
