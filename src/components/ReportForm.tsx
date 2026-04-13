@@ -9,13 +9,24 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess } from '@/utils/toast';
-import { Report, Location, Equipment, Personnel } from '@/types/report';
+import { Report, Location, Equipment, Personnel, ReportCategory } from '@/types/report';
+
+const categories: ReportCategory[] = [
+  "Taman Kota", 
+  "Taman Amplas", 
+  "Taman Area", 
+  "Tim Babat", 
+  "Penyiraman Taman", 
+  "Tim Pohon"
+];
 
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
+  category: z.string().min(1, "Kategori wajib dipilih"),
   description: z.string().min(5, "Uraian kegiatan minimal 5 karakter"),
   location: z.object({
     street: z.string().min(1, "Jalan wajib diisi"),
@@ -73,6 +84,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       remarks: initialData.remarks || "",
     } : {
       date: new Date().toISOString().split('T')[0],
+      category: "",
       description: "",
       location: { street: "", village: "", subDistrict: "" },
       photos: { zero: "", fifty: "", hundred: "" },
@@ -133,22 +145,27 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       hundred: values.photos.hundred || "",
     };
 
+    const reportData = {
+      date: values.date,
+      category: values.category as ReportCategory,
+      description: values.description,
+      location: locationData,
+      photos: photosData,
+      volume: values.volume,
+      unit: values.unit,
+      equipment: equipmentData,
+      heavyEquipment: heavyEquipmentData,
+      fuel: fuelData,
+      personnel: personnelData,
+      remarks: values.remarks || "",
+      syncStatus: 'pending' as const,
+    };
+
     if (isEditing && initialData) {
       const updatedReport: Report = {
+        ...reportData,
         id: initialData.id,
-        date: values.date,
-        description: values.description,
-        location: locationData,
-        photos: photosData,
-        volume: values.volume,
-        unit: values.unit,
-        equipment: equipmentData,
-        heavyEquipment: heavyEquipmentData,
-        fuel: fuelData,
-        personnel: personnelData,
-        remarks: values.remarks || "",
         createdAt: initialData.createdAt,
-        syncStatus: 'pending',
       };
 
       const updatedReports = reports.map((r: Report) => 
@@ -158,20 +175,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       showSuccess("Laporan berhasil diperbarui!");
     } else {
       const newReport: Report = {
+        ...reportData,
         id: crypto.randomUUID(),
-        date: values.date,
-        description: values.description,
-        location: locationData,
-        photos: photosData,
-        volume: values.volume,
-        unit: values.unit,
-        equipment: equipmentData,
-        heavyEquipment: heavyEquipmentData,
-        fuel: fuelData,
-        personnel: personnelData,
-        remarks: values.remarks || "",
         createdAt: new Date().toISOString(),
-        syncStatus: 'pending',
       };
       localStorage.setItem('reports', JSON.stringify([newReport, ...reports]));
       showSuccess("Laporan berhasil disimpan secara lokal!");
@@ -207,6 +213,28 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 <FormItem>
                   <FormLabel>Hari / Tanggal</FormLabel>
                   <FormControl><Input type="date" {...field} /></FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Kategori / Tim</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pilih kategori..." />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}

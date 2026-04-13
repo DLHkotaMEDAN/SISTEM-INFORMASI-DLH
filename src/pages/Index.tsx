@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download 
+  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download, Tag 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -52,7 +52,8 @@ const Index = () => {
   const filteredReports = reports.filter(report => 
     report.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
     report.location.street.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    report.location.village.toLowerCase().includes(searchQuery.toLowerCase())
+    report.location.village.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    report.category?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const stats = {
@@ -146,7 +147,7 @@ const Index = () => {
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input 
-              placeholder="Cari uraian atau lokasi..." 
+              placeholder="Cari uraian, lokasi, atau kategori..." 
               className="pl-10 bg-white"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -171,9 +172,16 @@ const Index = () => {
               >
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
-                    <div className="flex items-center text-sm text-slate-500 mb-1">
-                      <Calendar className="h-3 w-3 mr-1" />
-                      {new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center text-sm text-slate-500">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </div>
+                      {report.category && (
+                        <Badge variant="outline" className="w-fit text-[10px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">
+                          <Tag className="h-2 w-2 mr-1" /> {report.category}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       {report.syncStatus === 'pending' ? (
@@ -204,7 +212,7 @@ const Index = () => {
                       </div>
                     </div>
                   </div>
-                  <CardTitle className="text-lg line-clamp-1 group-hover:text-blue-600 transition-colors">{report.description}</CardTitle>
+                  <CardTitle className="text-lg line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">{report.description}</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex items-start gap-2 text-sm text-slate-600">

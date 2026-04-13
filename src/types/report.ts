@@ -27,9 +27,18 @@ export interface Photos {
   hundred: string;
 }
 
+export type ReportCategory = 
+  | "Taman Kota" 
+  | "Taman Amplas" 
+  | "Taman Area" 
+  | "Tim Babat" 
+  | "Penyiraman Taman" 
+  | "Tim Pohon";
+
 export interface Report {
   id: string;
   date: string;
+  category: ReportCategory;
   description: string;
   location: Location;
   photos: Photos;
@@ -41,5 +50,5 @@ export interface Report {
   personnel: Personnel;
   remarks: string;
   createdAt: string;
-  syncStatus: 'synced' | 'pending'; // Status sinkronisasi
+  syncStatus: 'synced' | 'pending';
 }
