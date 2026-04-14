@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, Truck, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, FileText, CheckCircle2 } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showSuccess, showError } from '@/utils/toast';
 
@@ -69,7 +69,7 @@ const ReportDetail = () => {
           </div>
 
           <div className="p-6 space-y-8">
-            {report.category === "Tim Siram" && report.tasks && report.tasks.length > 0 ? (
+            {report.tasks && report.tasks.length > 0 ? (
               <section>
                 <h2 className="text-lg font-semibold border-b pb-2 mb-4 flex items-center gap-2">
                   <CheckCircle2 className="h-5 w-5 text-blue-600" /> Daftar Kegiatan & Lokasi
@@ -107,8 +107,8 @@ const ReportDetail = () => {
                     <div className="flex items-start gap-2 mt-1">
                       <MapPin className="h-5 w-5 text-red-500 shrink-0" />
                       <div>
-                        <p className="font-medium">{report.location.street}</p>
-                        <p className="text-slate-600">Kel. {report.location.village}, Kec. {report.location.subDistrict}</p>
+                        <p className="font-medium">{report.location?.street}</p>
+                        <p className="text-slate-600">Kel. {report.location?.village}, Kec. {report.location?.subDistrict}</p>
                       </div>
                     </div>
                   </div>

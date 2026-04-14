@@ -12,10 +12,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save, ArrowLeft, MapPin, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { showSuccess, showError } from '@/utils/toast';
-import { Report, ReportCategory, Equipment, Task } from '@/types/report';
+import { showSuccess } from '@/utils/toast';
+import { Report, ReportCategory, Equipment } from '@/types/report';
 import { medanDistricts } from '@/data/medan-districts';
 import ImageUpload from './ImageUpload';
+import { Badge } from "@/components/ui/badge";
 
 const categories: ReportCategory[] = [
   "Taman Kota", 
@@ -44,12 +45,12 @@ const locationSchema = z.object({
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
-  description: z.string().min(5, "Uraian kegiatan minimal 5 karakter"),
-  location: locationSchema,
+  description: z.string().optional().default(""), // Deskripsi ringkasan otomatis
+  location: locationSchema.optional(), // Untuk kompatibilitas data lama
   tasks: z.array(z.object({
     description: z.string().min(1, "Uraian wajib diisi"),
     location: locationSchema,
-  })).optional(),
+  })).min(1, "Minimal harus ada satu kegiatan"),
   photos: z.object({
     zero: z.string().optional().default(""),
     fifty: z.string().optional().default(""),
@@ -94,8 +95,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       date: new Date().toISOString().split('T')[0],
       category: "",
       description: "",
-      location: { street: "", village: "", subDistrict: "" },
-      tasks: [],
+      tasks: [{ description: "", location: { street: "", village: "", subDistrict: "" } }],
       photos: { zero: "", fifty: "", hundred: "" },
       volume: 0,
       unit: "",
@@ -108,9 +108,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   });
 
   const selectedCategory = form.watch("category");
-  const selectedSubDistrict = form.watch("location.subDistrict");
   const heavyEquipmentList = form.watch("heavyEquipment");
-  const isTimSiram = selectedCategory === "Tim Siram";
 
   const { fields: taskFields, append: appendTask, remove: removeTask } = useFieldArray({
     control: form.control,
@@ -119,25 +117,20 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
   useEffect(() => {
     if (!isEditing && selectedCategory) {
+      // Auto-unit
       if (selectedCategory === "Tim Pohon") {
         form.setValue("unit", "Pohon");
       } else {
         form.setValue("unit", "M2");
       }
 
+      // Auto-coordinator
       const coordinatorName = coordinatorMapping[selectedCategory];
       if (coordinatorName) {
         form.setValue("personnel.coordinator", coordinatorName);
       }
-
-      if (isTimSiram && taskFields.length === 0) {
-        appendTask({ 
-          description: "", 
-          location: { street: "", village: "", subDistrict: "" } 
-        });
-      }
     }
-  }, [selectedCategory, form, isEditing, isTimSiram]);
+  }, [selectedCategory, form, isEditing]);
 
   const { fields: equipFields, append: appendEquip, remove: removeEquip } = useFieldArray({
     control: form.control,
@@ -152,8 +145,14 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   function onSubmit(values: z.infer<typeof formSchema>) {
     const reports = JSON.parse(localStorage.getItem('reports') || '[]');
     
+    // Gunakan lokasi pertama sebagai lokasi utama untuk kompatibilitas list
+    const mainLocation = values.tasks[0].location;
+    const mainDescription = values.tasks[0].description;
+
     const reportData = {
       ...values,
+      description: mainDescription,
+      location: mainLocation,
       category: values.category as ReportCategory,
       syncStatus: 'pending' as const,
     };
@@ -238,144 +237,90 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           </CardContent>
         </Card>
 
-        {isTimSiram ? (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold flex items-center gap-2">
-                <FileText className="text-blue-600" /> Daftar Kegiatan & Lokasi (Tim Siram)
-              </h2>
-            </div>
-            {taskFields.map((field, index) => (
-              <Card key={field.id} className="border-l-4 border-l-blue-400 relative">
-                <CardContent className="p-6 space-y-4">
-                  <div className="flex justify-between items-center">
-                    <Badge variant="secondary">Kegiatan #{index + 1}</Badge>
-                    {taskFields.length > 1 && (
-                      <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeTask(index)}>
-                        <Trash2 className="h-4 w-4 mr-1" /> Hapus
-                      </Button>
-                    )}
-                  </div>
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <FileText className="text-blue-600" /> Daftar Kegiatan & Lokasi
+            </h2>
+          </div>
+          {taskFields.map((field, index) => (
+            <Card key={field.id} className="border-l-4 border-l-blue-400 relative">
+              <CardContent className="p-6 space-y-4">
+                <div className="flex justify-between items-center">
+                  <Badge variant="secondary">Kegiatan #{index + 1}</Badge>
+                  {taskFields.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" className="text-red-500" onClick={() => removeTask(index)}>
+                      <Trash2 className="h-4 w-4 mr-1" /> Hapus
+                    </Button>
+                  )}
+                </div>
+                <FormField
+                  control={form.control}
+                  name={`tasks.${index}.description`}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Uraian Kegiatan</FormLabel>
+                      <FormControl><Input placeholder="Contoh: Pemangkasan pohon, penyiraman, dll..." {...field} /></FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <FormField
                     control={form.control}
-                    name={`tasks.${index}.description`}
+                    name={`tasks.${index}.location.street`}
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Uraian Kegiatan</FormLabel>
-                        <FormControl><Input placeholder="Contoh: Penyiraman median jalan..." {...field} /></FormControl>
+                        <FormLabel>Nama Jalan</FormLabel>
+                        <FormControl><Input placeholder="Jl. ..." {...field} /></FormControl>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FormField
-                      control={form.control}
-                      name={`tasks.${index}.location.street`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nama Jalan</FormLabel>
-                          <FormControl><Input placeholder="Jl. ..." {...field} /></FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`tasks.${index}.location.subDistrict`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kecamatan</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name={`tasks.${index}.location.village`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Kelurahan</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {form.watch(`tasks.${index}.location.subDistrict`) && 
-                                medanDistricts[form.watch(`tasks.${index}.location.subDistrict`)].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            <Button 
-              type="button" 
-              variant="outline" 
-              className="w-full border-dashed py-6" 
-              onClick={() => appendTask({ description: "", location: { street: "", village: "", subDistrict: "" } })}
-            >
-              <Plus className="mr-2 h-4 w-4" /> Tambah Kegiatan & Lokasi Baru
-            </Button>
-          </div>
-        ) : (
-          <Card className="border-t-4 border-t-blue-500">
-            <CardHeader><CardTitle className="text-lg">Uraian & Lokasi</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Uraian Kegiatan</FormLabel>
-                    <FormControl><Textarea placeholder="Jelaskan kegiatan..." {...field} /></FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <FormField
-                  control={form.control}
-                  name="location.street"
-                  render={({ field }) => (
-                    <FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location.subDistrict"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Kecamatan</FormLabel>
-                      <Select onValueChange={(v) => { form.setValue("location.subDistrict", v); form.setValue("location.village", ""); }} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name="location.village"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Kelurahan</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                        <SelectContent>{selectedSubDistrict && medanDistricts[selectedSubDistrict].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent>
-                      </Select>
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <FormField
+                    control={form.control}
+                    name={`tasks.${index}.location.subDistrict`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Kecamatan</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`tasks.${index}.location.village`}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Kelurahan</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            {form.watch(`tasks.${index}.location.subDistrict`) && 
+                              medanDistricts[form.watch(`tasks.${index}.location.subDistrict`)].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full border-dashed py-6" 
+            onClick={() => appendTask({ description: "", location: { street: "", village: "", subDistrict: "" } })}
+          >
+            <Plus className="mr-2 h-4 w-4" /> Tambah Kegiatan & Lokasi Baru
+          </Button>
+        </div>
 
         <Card className="border-t-4 border-t-green-500">
           <CardHeader><CardTitle className="text-lg">Volume Pekerjaan</CardTitle></CardHeader>
@@ -480,5 +425,4 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   );
 };
 
-import { Badge } from "@/components/ui/badge";
 export default ReportForm;
