@@ -45,6 +45,7 @@ const ReportDetail = () => {
         paperSize: 8 as any, 
         orientation: 'landscape',
         scale: 65,
+        horizontalCentered: true, // Membuat konten berada di tengah secara horizontal saat diprint
         margins: { 
           left: 0.3, 
           right: 0.3, 
