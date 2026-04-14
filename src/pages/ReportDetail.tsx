@@ -49,7 +49,6 @@ const ReportDetail = () => {
       });
       const imgData = canvas.toDataURL('image/png');
       
-      // A3 Landscape: 420mm x 297mm
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -59,7 +58,6 @@ const ReportDetail = () => {
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      // Menghitung rasio agar gambar pas di A3
       const imgProps = pdf.getImageProperties(imgData);
       const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
       const width = imgProps.width * ratio;
@@ -76,19 +74,26 @@ const ReportDetail = () => {
   const exportToExcel = () => {
     if (!report) return;
 
-    const data = [
+    // Menyiapkan data dalam format Array of Arrays (AoA) dengan tipe any[][] untuk mendukung angka dan teks
+    const data: any[][] = [
+      ["PEMERINTAH KOTA MEDAN"],
+      ["DINAS LINGKUNGAN HIDUP"],
+      ["Jl. S. Parman No. 16 Medan, Sumatera Utara"],
+      [""],
       ["LAPORAN KEGIATAN HARIAN"],
-      ["DINAS LINGKUNGAN HIDUP KOTA MEDAN"],
+      ["KATEGORI:", report.category.toUpperCase()],
+      ["TANGGAL:", new Date(report.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
+      ["ID LAPORAN:", report.id.toUpperCase()],
       [""],
-      ["KATEGORI", report.category.toUpperCase()],
-      ["TANGGAL", report.date],
-      ["KOORDINATOR", report.personnel.coordinator],
-      ["JUMLAH ANGGOTA", report.personnel.members],
+      ["I. INFORMASI PERSONIL"],
+      ["Koordinator Lapangan", ":", report.personnel.coordinator],
+      ["Jumlah Anggota", ":", `${report.personnel.members} Orang`],
       [""],
-      ["DAFTAR KEGIATAN DAN LOKASI"],
-      ["NO", "URAIAN KEGIATAN", "JALAN", "KELURAHAN", "KECAMATAN"]
+      ["II. DAFTAR KEGIATAN DAN LOKASI"],
+      ["NO", "URAIAN KEGIATAN", "LOKASI (JALAN)", "KELURAHAN", "KECAMATAN"]
     ];
 
+    // Menambahkan baris kegiatan
     report.tasks?.forEach((task, index) => {
       data.push([
         index + 1,
@@ -100,21 +105,51 @@ const ReportDetail = () => {
     });
 
     data.push([""]);
-    data.push(["VOLUME TOTAL", report.volume, getUnitByCategory(report.category)]);
+    data.push(["III. VOLUME & PERALATAN"]);
+    data.push(["Volume Pekerjaan", ":", `${report.volume} ${getUnitByCategory(report.category)}`]);
+    
+    const equipList = report.equipment.map(e => `${e.type} (${e.quantity} Unit)`).join(", ");
+    data.push(["Peralatan Kerja", ":", equipList || "-"]);
+    
+    const heavyList = report.heavyEquipment.map(e => `${e.type} (${e.quantity} Unit)`).join(", ");
+    data.push(["Alat Berat", ":", heavyList || "-"]);
+
     data.push([""]);
-    data.push(["PENGGUNAAN BBM"]);
-    data.push(["PERTAMAX (RP)", report.fuel.pertamax]);
-    data.push(["DEXLITE (L)", report.fuel.dexlite]);
-    data.push(["SOLAR (L)", report.fuel.solar]);
-    data.push(["KETERANGAN BBM", report.fuel.remarks]);
+    data.push(["IV. OPERASIONAL BBM"]);
+    data.push(["Pertamax (Rp)", ":", report.fuel.pertamax]);
+    data.push(["Dexlite (L)", ":", report.fuel.dexlite]);
+    data.push(["Solar (L)", ":", report.fuel.solar]);
+    data.push(["Keterangan BBM", ":", report.fuel.remarks || "-"]);
+
     data.push([""]);
-    data.push(["KETERANGAN TAMBAHAN", report.remarks]);
+    data.push(["V. KETERANGAN TAMBAHAN"]);
+    data.push([report.remarks || "-"]);
+
+    data.push([""]);
+    data.push([""]);
+    data.push(["TANDA TANGAN PENGESAHAN"]);
+    data.push(["Mengetahui,", "Diperiksa Oleh,", `Medan, ${new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`]);
+    data.push(["Kepala Bidang", "Pengawas Lapangan", "Koordinator Lapangan"]);
+    data.push(["", "", ""]);
+    data.push(["", "", ""]);
+    data.push(["", "", ""]);
+    data.push(["( ............................ )", "( ............................ )", `( ${report.personnel.coordinator} )`]);
 
     const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    const wscols = [
+      {wch: 5},  // No
+      {wch: 40}, // Uraian
+      {wch: 30}, // Jalan
+      {wch: 20}, // Kelurahan
+      {wch: 20}  // Kecamatan
+    ];
+    ws['!cols'] = wscols;
+
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Laporan Harian");
     XLSX.writeFile(wb, `Laporan_${report.category}_${report.date}.xlsx`);
-    showSuccess("Excel berhasil diunduh");
+    showSuccess("Excel berhasil diunduh dengan format resmi");
   };
 
   const formatCurrency = (value: number) => {
@@ -178,7 +213,6 @@ const ReportDetail = () => {
         </div>
 
         <div id="report-content" className="bg-white border shadow-lg overflow-hidden print:border-none print:shadow-none">
-          {/* Header Dokumen Resmi */}
           <div className="p-8 border-b-2 border-black flex items-center justify-between">
             <div className="flex items-center gap-6">
               <div className="w-24 h-24 bg-slate-200 rounded flex items-center justify-center border-2 border-slate-300">
@@ -198,7 +232,6 @@ const ReportDetail = () => {
           </div>
 
           <div className="p-8 space-y-8">
-            {/* Info Dasar & Personil */}
             <div className="grid grid-cols-3 gap-8">
               <div className="space-y-2">
                 <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Waktu Pelaksanaan</p>
@@ -223,7 +256,6 @@ const ReportDetail = () => {
               </div>
             </div>
 
-            {/* Tabel Kegiatan */}
             <section>
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2 bg-slate-100 p-2 border-l-4 border-blue-600">
                 <CheckCircle2 className="h-5 w-5 text-blue-600" /> DAFTAR KEGIATAN DAN LOKASI
@@ -252,7 +284,6 @@ const ReportDetail = () => {
               </table>
             </section>
 
-            {/* Dokumentasi Foto */}
             <section className="print:break-inside-avoid">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2 bg-slate-100 p-2 border-l-4 border-blue-600">
                 <FileText className="h-5 w-5 text-blue-600" /> DOKUMENTASI FOTO PEKERJAAN
@@ -277,7 +308,6 @@ const ReportDetail = () => {
               </div>
             </section>
 
-            {/* Peralatan & BBM */}
             <div className="grid grid-cols-2 gap-8 print:break-inside-avoid">
               <section>
                 <h3 className="text-md font-bold mb-3 uppercase border-b-2 border-black pb-1">Peralatan & Alat Berat</h3>
@@ -332,7 +362,6 @@ const ReportDetail = () => {
               </section>
             </div>
 
-            {/* Tanda Tangan */}
             <div className="pt-12 grid grid-cols-3 gap-8 print:break-inside-avoid">
               <div className="text-center space-y-20">
                 <p className="font-bold">Mengetahui,<br/>Kepala Bidang</p>
