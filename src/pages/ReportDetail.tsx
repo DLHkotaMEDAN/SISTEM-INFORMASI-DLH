@@ -4,9 +4,12 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, FileText, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, FileText, CheckCircle2, FileDown, Table } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showSuccess, showError } from '@/utils/toast';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -34,8 +37,62 @@ const ReportDetail = () => {
     }
   };
 
-  const handlePrint = () => {
-    window.print();
+  const exportToPDF = async () => {
+    const element = document.getElementById('report-content');
+    if (!element) return;
+
+    try {
+      const canvas = await html2canvas(element, { scale: 2 });
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`Laporan_${report?.category}_${report?.date}.pdf`);
+      showSuccess("PDF berhasil diunduh");
+    } catch (error) {
+      showError("Gagal membuat PDF");
+    }
+  };
+
+  const exportToExcel = () => {
+    if (!report) return;
+
+    const data = [
+      ["LAPORAN KEGIATAN HARIAN"],
+      ["ID Laporan", report.id],
+      ["Tanggal", report.date],
+      ["Kategori", report.category],
+      ["Koordinator", report.personnel.coordinator],
+      ["Jumlah Anggota", report.personnel.members],
+      [""],
+      ["DAFTAR KEGIATAN"],
+      ["No", "Uraian", "Jalan", "Kelurahan", "Kecamatan"]
+    ];
+
+    report.tasks?.forEach((task, index) => {
+      data.push([
+        index + 1,
+        task.description,
+        task.location.street,
+        task.location.village,
+        task.location.subDistrict
+      ]);
+    });
+
+    data.push([""]);
+    data.push(["VOLUME PEKERJAAN", `${report.volume} ${report.unit}`]);
+    data.push(["BBM PERTAMAX", report.fuel.pertamax]);
+    data.push(["BBM DEXLITE", report.fuel.dexlite]);
+    data.push(["BBM SOLAR", report.fuel.solar]);
+
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Laporan");
+    XLSX.writeFile(wb, `Laporan_${report.category}_${report.date}.xlsx`);
+    showSuccess("Excel berhasil diunduh");
   };
 
   const formatCurrency = (value: number) => {
@@ -51,12 +108,18 @@ const ReportDetail = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8 print:bg-white print:p-0">
       <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between mb-6 print:hidden">
+        <div className="flex flex-wrap items-center justify-between gap-4 mb-6 print:hidden">
           <Button variant="ghost" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handlePrint}>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={exportToExcel} className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
+              <Table className="mr-2 h-4 w-4" /> Excel
+            </Button>
+            <Button variant="outline" onClick={exportToPDF} className="bg-red-50 text-red-700 border-red-200 hover:bg-red-100">
+              <FileDown className="mr-2 h-4 w-4" /> PDF
+            </Button>
+            <Button variant="outline" onClick={() => window.print()}>
               <Printer className="mr-2 h-4 w-4" /> Cetak
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
@@ -65,7 +128,7 @@ const ReportDetail = () => {
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border overflow-hidden print:shadow-none print:border-none">
+        <div id="report-content" className="bg-white rounded-xl shadow-sm border overflow-hidden print:shadow-none print:border-none">
           <div className="bg-blue-600 p-6 text-white flex justify-between items-center">
             <div>
               <h1 className="text-2xl font-bold">LAPORAN KEGIATAN HARIAN</h1>

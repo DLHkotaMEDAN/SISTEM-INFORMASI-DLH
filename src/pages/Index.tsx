@@ -7,13 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download, Upload, Tag 
+  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download, Upload, Tag, Table 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { showSuccess, showError } from '@/utils/toast';
 import { useSync } from '@/hooks/use-sync';
+import * as XLSX from 'xlsx';
 
 const Index = () => {
   const navigate = useNavigate();
@@ -41,7 +42,7 @@ const Index = () => {
     }
   };
 
-  const handleExport = () => {
+  const handleExportJSON = () => {
     const dataStr = JSON.stringify(reports, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
     const exportFileDefaultName = `backup_laporan_${new Date().toISOString().split('T')[0]}.json`;
@@ -50,6 +51,31 @@ const Index = () => {
     linkElement.setAttribute('download', exportFileDefaultName);
     linkElement.click();
     showSuccess("Data berhasil diekspor!");
+  };
+
+  const handleExportExcel = () => {
+    if (reports.length === 0) return;
+
+    const data = reports.map(r => ({
+      Tanggal: r.date,
+      Kategori: r.category,
+      Uraian: r.description,
+      Jalan: r.location.street,
+      Kelurahan: r.location.village,
+      Kecamatan: r.location.subDistrict,
+      Volume: `${r.volume} ${r.unit}`,
+      Koordinator: r.personnel.coordinator,
+      Anggota: r.personnel.members,
+      Pertamax: r.fuel.pertamax,
+      Dexlite: r.fuel.dexlite,
+      Solar: r.fuel.solar
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Semua Laporan");
+    XLSX.writeFile(wb, `Rekap_Laporan_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showSuccess("Rekap Excel berhasil diunduh");
   };
 
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -62,7 +88,6 @@ const Index = () => {
         const importedData = JSON.parse(event.target?.result as string);
         if (Array.isArray(importedData)) {
           const existingReports = JSON.parse(localStorage.getItem('reports') || '[]');
-          // Gabungkan data (hindari duplikat ID)
           const combined = [...importedData, ...existingReports].reduce((acc: Report[], current: Report) => {
             const x = acc.find(item => item.id === current.id);
             if (!x) return acc.concat([current]);
@@ -122,8 +147,11 @@ const Index = () => {
             <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="hidden sm:flex">
               <Upload className="h-4 w-4 mr-2" /> Import
             </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} className="hidden sm:flex">
-              <Download className="h-4 w-4 mr-2" /> Export
+            <Button variant="outline" size="sm" onClick={handleExportExcel} className="hidden sm:flex bg-green-50 text-green-700 border-green-200">
+              <Table className="h-4 w-4 mr-2" /> Rekap Excel
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportJSON} className="hidden sm:flex">
+              <Download className="h-4 w-4 mr-2" /> Backup JSON
             </Button>
             <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" /> Laporan Baru
