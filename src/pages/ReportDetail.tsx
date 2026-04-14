@@ -57,12 +57,12 @@ const ReportDetail = () => {
     });
 
     // 1. Set Column Widths
-    // Width 2.08" ≈ 28.5 units in ExcelJS
+    // Width 2.08" ≈ 28.5 units (ExcelJS units are roughly 1/7th of a character width)
     worksheet.columns = [
       { key: 'no', width: 5 },
       { key: 'tgl', width: 15 },
-      { key: 'uraian', width: 25 },
-      { key: 'lokasi', width: 35 },
+      { key: 'uraian', width: 30 },
+      { key: 'lokasi', width: 40 },
       { key: 'foto0', width: 28.5 },   // 2.08"
       { key: 'foto50', width: 28.5 },  // 2.08"
       { key: 'foto100', width: 28.5 }, // 2.08"
@@ -100,20 +100,18 @@ const ReportDetail = () => {
     const headerRow6 = worksheet.getRow(6);
     const headerRow7 = worksheet.getRow(7);
 
-    // Merge sesuai instruksi
     worksheet.mergeCells('A6:A7'); // NO
     worksheet.mergeCells('B6:B7'); // HARI/TANGGAL
     worksheet.mergeCells('C6:C7'); // URAIAN
     worksheet.mergeCells('D6:D7'); // LOKASI
-    worksheet.mergeCells('E6:G6'); // FOTO DOKUMENTASI (E, F, G)
+    worksheet.mergeCells('E6:G6'); // FOTO DOKUMENTASI
     worksheet.mergeCells('H6:H7'); // VOLUME
-    worksheet.mergeCells('I6:J6'); // PERALATAN (I, J)
-    worksheet.mergeCells('K6:L6'); // OPERASIONAL ALAT BERAT (K, L)
-    worksheet.mergeCells('M6:O6'); // BAHAN BAKAR (M, N, O)
-    worksheet.mergeCells('P6:Q6'); // JUMLAH PERSONIL (P, Q)
+    worksheet.mergeCells('I6:J6'); // PERALATAN
+    worksheet.mergeCells('K6:L6'); // OPERASIONAL ALAT BERAT
+    worksheet.mergeCells('M6:O6'); // BAHAN BAKAR
+    worksheet.mergeCells('P6:Q6'); // JUMLAH PERSONIL
     worksheet.mergeCells('R6:R7'); // KETERANGAN
 
-    // Isi Label Header
     headerRow6.getCell(1).value = 'NO';
     headerRow6.getCell(2).value = 'HARI/TANGGAL';
     headerRow6.getCell(3).value = 'URAIAN';
@@ -126,7 +124,6 @@ const ReportDetail = () => {
     headerRow6.getCell(16).value = 'JUMLAH PERSONIL';
     headerRow6.getCell(18).value = 'KETERANGAN';
 
-    // Sub-header Baris 7
     headerRow7.getCell(5).value = "0%";
     headerRow7.getCell(6).value = "50%";
     headerRow7.getCell(7).value = "100%";
@@ -140,7 +137,6 @@ const ReportDetail = () => {
     headerRow7.getCell(16).value = "KOORDINATOR";
     headerRow7.getCell(17).value = "PERSONIL";
 
-    // Styling Header
     [6, 7].forEach(rowNum => {
       const row = worksheet.getRow(rowNum);
       row.eachCell((cell) => {
@@ -154,13 +150,19 @@ const ReportDetail = () => {
     // 4. Isi Data
     const startRow = 8;
     const dataRow = worksheet.getRow(startRow);
-    // Height 1.86" ≈ 134 points
-    dataRow.height = 134;
+    
+    // Row Height: 1.86" * 72 points/inch = 133.92 points
+    dataRow.height = 133.92;
 
     dataRow.getCell(1).value = 1;
     dataRow.getCell(2).value = new Date(report.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-    dataRow.getCell(3).value = report.description;
-    dataRow.getCell(4).value = `${report.location.street}, ${report.location.village}, ${report.location.subDistrict}`;
+    
+    // Gabungkan semua uraian tugas jika ada
+    const fullDescription = report.tasks?.map(t => t.description).join('\n') || report.description;
+    const fullLocation = report.tasks?.map(t => `${t.location.street}, ${t.location.village}`).join('\n') || `${report.location.street}, ${report.location.village}`;
+    
+    dataRow.getCell(3).value = fullDescription;
+    dataRow.getCell(4).value = fullLocation;
     dataRow.getCell(8).value = `${report.volume} ${getUnitByCategory(report.category)}`;
     
     dataRow.getCell(9).value = report.equipment.map(e => e.type).join('\n');
@@ -178,7 +180,7 @@ const ReportDetail = () => {
     
     dataRow.getCell(18).value = report.remarks;
 
-    // Styling Isi Data & Wrap Text
+    // Styling Isi Data & Wrap Text (WAJIB)
     dataRow.eachCell((cell) => {
       cell.font = { name: 'Times New Roman', size: 11 };
       cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
@@ -186,7 +188,8 @@ const ReportDetail = () => {
     });
 
     // 5. Tambahkan Foto (Place in Cell)
-    // Ukuran 1.86" x 2.08" ≈ 178 x 200 pixels (pada 96dpi)
+    // Width 2.08" * 96 dpi = 199.68 pixels
+    // Height 1.86" * 96 dpi = 178.56 pixels
     const addImage = async (base64: string, col: number) => {
       if (!base64) return;
       try {
@@ -196,8 +199,8 @@ const ReportDetail = () => {
         });
         worksheet.addImage(imageId, {
           tl: { col: col - 1, row: startRow - 1 },
-          ext: { width: 199, height: 178 }, // Width 2.08", Height 1.86"
-          editAs: 'oneCell'
+          ext: { width: 199, height: 178 }, // Sesuai ukuran 2.08" x 1.86"
+          editAs: 'oneCell' // Place in cell
         });
       } catch (e) {
         console.error("Gagal memuat gambar", e);
