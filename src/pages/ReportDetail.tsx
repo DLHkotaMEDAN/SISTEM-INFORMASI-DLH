@@ -3,12 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Trash2, MapPin, FileDown, Table, Edit, CheckCircle2, HardHat, Fuel, FileText, Calendar, Users } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, CheckCircle2, HardHat, FileText, Calendar, Users } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showSuccess, showError } from '@/utils/toast';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { getUnitByCategory } from '@/utils/report-helpers';
 
 const ReportDetail = () => {
@@ -35,121 +32,6 @@ const ReportDetail = () => {
       showSuccess("Laporan berhasil dihapus");
       navigate('/');
     }
-  };
-
-  const exportToPDF = async () => {
-    const element = document.getElementById('report-content');
-    if (!element) return;
-
-    try {
-      const canvas = await html2canvas(element, { 
-        scale: 2,
-        useCORS: true,
-        logging: false
-      });
-      const imgData = canvas.toDataURL('image/png');
-      
-      const pdf = new jsPDF({
-        orientation: 'landscape',
-        unit: 'mm',
-        format: 'a3'
-      });
-
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      
-      const imgProps = pdf.getImageProperties(imgData);
-      const ratio = Math.min(pdfWidth / imgProps.width, pdfHeight / imgProps.height);
-      const width = imgProps.width * ratio;
-      const height = imgProps.height * ratio;
-
-      pdf.addImage(imgData, 'PNG', 0, 0, width, height);
-      pdf.save(`Laporan_${report?.category}_${report?.date}.pdf`);
-      showSuccess("PDF berhasil diunduh");
-    } catch (error) {
-      showError("Gagal membuat PDF");
-    }
-  };
-
-  const exportToExcel = () => {
-    if (!report) return;
-
-    // Menyiapkan data dalam format Array of Arrays (AoA) dengan tipe any[][] untuk mendukung angka dan teks
-    const data: any[][] = [
-      ["PEMERINTAH KOTA MEDAN"],
-      ["DINAS LINGKUNGAN HIDUP"],
-      ["Jl. S. Parman No. 16 Medan, Sumatera Utara"],
-      [""],
-      ["LAPORAN KEGIATAN HARIAN"],
-      ["KATEGORI:", report.category.toUpperCase()],
-      ["TANGGAL:", new Date(report.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })],
-      ["ID LAPORAN:", report.id.toUpperCase()],
-      [""],
-      ["I. INFORMASI PERSONIL"],
-      ["Koordinator Lapangan", ":", report.personnel.coordinator],
-      ["Jumlah Anggota", ":", `${report.personnel.members} Orang`],
-      [""],
-      ["II. DAFTAR KEGIATAN DAN LOKASI"],
-      ["NO", "URAIAN KEGIATAN", "LOKASI (JALAN)", "KELURAHAN", "KECAMATAN"]
-    ];
-
-    // Menambahkan baris kegiatan
-    report.tasks?.forEach((task, index) => {
-      data.push([
-        index + 1,
-        task.description,
-        task.location.street,
-        task.location.village,
-        task.location.subDistrict
-      ]);
-    });
-
-    data.push([""]);
-    data.push(["III. VOLUME & PERALATAN"]);
-    data.push(["Volume Pekerjaan", ":", `${report.volume} ${getUnitByCategory(report.category)}`]);
-    
-    const equipList = report.equipment.map(e => `${e.type} (${e.quantity} Unit)`).join(", ");
-    data.push(["Peralatan Kerja", ":", equipList || "-"]);
-    
-    const heavyList = report.heavyEquipment.map(e => `${e.type} (${e.quantity} Unit)`).join(", ");
-    data.push(["Alat Berat", ":", heavyList || "-"]);
-
-    data.push([""]);
-    data.push(["IV. OPERASIONAL BBM"]);
-    data.push(["Pertamax (Rp)", ":", report.fuel.pertamax]);
-    data.push(["Dexlite (L)", ":", report.fuel.dexlite]);
-    data.push(["Solar (L)", ":", report.fuel.solar]);
-    data.push(["Keterangan BBM", ":", report.fuel.remarks || "-"]);
-
-    data.push([""]);
-    data.push(["V. KETERANGAN TAMBAHAN"]);
-    data.push([report.remarks || "-"]);
-
-    data.push([""]);
-    data.push([""]);
-    data.push(["TANDA TANGAN PENGESAHAN"]);
-    data.push(["Mengetahui,", "Diperiksa Oleh,", `Medan, ${new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`]);
-    data.push(["Kepala Bidang", "Pengawas Lapangan", "Koordinator Lapangan"]);
-    data.push(["", "", ""]);
-    data.push(["", "", ""]);
-    data.push(["", "", ""]);
-    data.push(["( ............................ )", "( ............................ )", `( ${report.personnel.coordinator} )`]);
-
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    
-    const wscols = [
-      {wch: 5},  // No
-      {wch: 40}, // Uraian
-      {wch: 30}, // Jalan
-      {wch: 20}, // Kelurahan
-      {wch: 20}  // Kecamatan
-    ];
-    ws['!cols'] = wscols;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Laporan Harian");
-    XLSX.writeFile(wb, `Laporan_${report.category}_${report.date}.xlsx`);
-    showSuccess("Excel berhasil diunduh dengan format resmi");
   };
 
   const formatCurrency = (value: number) => {
@@ -196,15 +78,6 @@ const ReportDetail = () => {
           <div className="flex flex-wrap gap-2">
             <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)} className="bg-blue-50 text-blue-700 border-blue-200">
               <Edit className="mr-2 h-4 w-4" /> Edit
-            </Button>
-            <Button variant="outline" onClick={exportToExcel} className="bg-green-50 text-green-700 border-green-200">
-              <Table className="mr-2 h-4 w-4" /> Excel
-            </Button>
-            <Button variant="outline" onClick={exportToPDF} className="bg-red-50 text-red-700 border-red-200">
-              <FileDown className="mr-2 h-4 w-4" /> PDF
-            </Button>
-            <Button variant="outline" onClick={() => window.print()}>
-              <Printer className="mr-2 h-4 w-4" /> Cetak
             </Button>
             <Button variant="destructive" onClick={handleDelete}>
               <Trash2 className="mr-2 h-4 w-4" /> Hapus
