@@ -1,18 +1,18 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, CloudOff, RefreshCw, Download, Upload, Tag, Table 
+  Trash2, Eye, Search, Edit, Cloud, CloudOff, Download, Tag, Table 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { showSuccess, showError } from '@/utils/toast';
+import { showSuccess } from '@/utils/toast';
 import { useSync } from '@/hooks/use-sync';
 import * as XLSX from 'xlsx';
 import { getUnitByCategory } from '@/utils/report-helpers';
@@ -21,8 +21,7 @@ const Index = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const { isOnline, isSyncing, syncData } = useSync();
+  const { isOnline } = useSync();
 
   useEffect(() => {
     loadReports();
@@ -41,17 +40,6 @@ const Index = () => {
       setReports(updated);
       showSuccess("Laporan dihapus");
     }
-  };
-
-  const handleExportJSON = () => {
-    const dataStr = JSON.stringify(reports, null, 2);
-    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
-    const exportFileDefaultName = `backup_laporan_${new Date().toISOString().split('T')[0]}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileDefaultName);
-    linkElement.click();
-    showSuccess("Data berhasil diekspor!");
   };
 
   const handleExportExcel = () => {
@@ -77,36 +65,6 @@ const Index = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Semua Laporan");
     XLSX.writeFile(wb, `Rekap_Laporan_${new Date().toISOString().split('T')[0]}.xlsx`);
     showSuccess("Rekap Excel berhasil diunduh");
-  };
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedData = JSON.parse(event.target?.result as string);
-        if (Array.isArray(importedData)) {
-          const existingReports = JSON.parse(localStorage.getItem('reports') || '[]');
-          const combined = [...importedData, ...existingReports].reduce((acc: Report[], current: Report) => {
-            const x = acc.find(item => item.id === current.id);
-            if (!x) return acc.concat([current]);
-            else return acc;
-          }, []);
-          
-          localStorage.setItem('reports', JSON.stringify(combined));
-          setReports(combined);
-          showSuccess(`${importedData.length} data berhasil diimport!`);
-        } else {
-          showError("Format file tidak valid");
-        }
-      } catch (err) {
-        showError("Gagal membaca file backup");
-      }
-    };
-    reader.readAsText(file);
-    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   const filteredReports = reports.filter(report => {
@@ -144,15 +102,8 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
-            <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} className="hidden sm:flex">
-              <Upload className="h-4 w-4 mr-2" /> Import
-            </Button>
             <Button variant="outline" size="sm" onClick={handleExportExcel} className="hidden sm:flex bg-green-50 text-green-700 border-green-200">
               <Table className="h-4 w-4 mr-2" /> Rekap Excel
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExportJSON} className="hidden sm:flex">
-              <Download className="h-4 w-4 mr-2" /> Backup JSON
             </Button>
             <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" /> Laporan Baru
