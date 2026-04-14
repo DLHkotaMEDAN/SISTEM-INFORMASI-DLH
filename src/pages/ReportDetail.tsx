@@ -42,10 +42,17 @@ const ReportDetail = () => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Rekap Laporan', {
       pageSetup: { 
-        paperSize: 8, // A3
+        paperSize: 8 as any, // Fix: Cast to any to avoid PaperSize type error
         orientation: 'landscape',
         scale: 65,
-        margins: { left: 0.3, right: 0.3, top: 1.0, bottom: 1.0 }
+        margins: { 
+          left: 0.3, 
+          right: 0.3, 
+          top: 1.0, 
+          bottom: 1.0,
+          header: 0, // Fix: Add missing header property
+          footer: 0  // Fix: Add missing footer property
+        }
       }
     });
 
@@ -71,7 +78,7 @@ const ReportDetail = () => {
       { key: 'ket', width: 24.64 },
     ];
 
-    // 2. Judul (Baris 1-5)
+    // 2. Judul (Baris 1-5) - Merge A-R
     const titles = [
       "PEMERINTAH KOTA MEDAN",
       "DINAS LINGKUNGAN HIDUP",
@@ -83,7 +90,7 @@ const ReportDetail = () => {
     titles.forEach((text, i) => {
       const row = worksheet.getRow(i + 1);
       row.getCell(1).value = text;
-      worksheet.mergeCells(i + 1, 1, i + 1, 18); // Merge A-R
+      worksheet.mergeCells(i + 1, 1, i + 1, 18); 
       row.getCell(1).font = { name: 'Times New Roman', size: 12, bold: true };
       row.getCell(1).alignment = { horizontal: 'center', vertical: 'middle' };
     });
@@ -92,27 +99,33 @@ const ReportDetail = () => {
     const headerRow6 = worksheet.getRow(6);
     const headerRow7 = worksheet.getRow(7);
 
-    const headers = [
-      { col: 1, label: 'NO', merge: [6, 1, 7, 1] },
-      { col: 2, label: 'HARI/TANGGAL', merge: [6, 2, 7, 2] },
-      { col: 3, label: 'URAIAN', merge: [6, 3, 7, 3] },
-      { col: 4, label: 'LOKASI', merge: [6, 4, 7, 4] },
-      { col: 5, label: 'FOTO DOKUMENTASI', merge: [6, 5, 6, 7] },
-      { col: 8, label: 'VOLUME', merge: [6, 8, 7, 8] },
-      { col: 9, label: 'PERALATAN', merge: [6, 9, 6, 10] },
-      { col: 11, label: 'OPERASIONAL ALAT BERAT', merge: [6, 11, 6, 12] },
-      { col: 13, label: 'BAHAN BAKAR YANG DIGUNAKAN', merge: [6, 13, 6, 15] },
-      { col: 16, label: 'JUMLAH PERSONIL', merge: [6, 16, 6, 17] },
-      { col: 18, label: 'KETERANGAN', merge: [6, 18, 7, 18] },
-    ];
+    // Definisi Merge sesuai permintaan
+    worksheet.mergeCells('A6:A7'); // NO
+    worksheet.mergeCells('B6:B7'); // HARI/TANGGAL
+    worksheet.mergeCells('C6:C7'); // URAIAN
+    worksheet.mergeCells('D6:D7'); // LOKASI
+    worksheet.mergeCells('E6:G6'); // FOTO DOKUMENTASI
+    worksheet.mergeCells('H6:H7'); // VOLUME
+    worksheet.mergeCells('I6:J6'); // PERALATAN
+    worksheet.mergeCells('K6:L6'); // OPERASIONAL ALAT BERAT
+    worksheet.mergeCells('M6:O6'); // BAHAN BAKAR YANG DIGUNAKAN
+    worksheet.mergeCells('P6:Q6'); // JUMLAH PERSONIL
+    worksheet.mergeCells('R6:R7'); // KETERANGAN
 
-    headers.forEach(h => {
-      const cell = headerRow6.getCell(h.col);
-      cell.value = h.label;
-      worksheet.mergeCells(h.merge[0], h.merge[1], h.merge[2], h.merge[3]);
-    });
+    // Isi Label Header Baris 6
+    headerRow6.getCell(1).value = 'NO';
+    headerRow6.getCell(2).value = 'HARI/TANGGAL';
+    headerRow6.getCell(3).value = 'URAIAN';
+    headerRow6.getCell(4).value = 'LOKASI';
+    headerRow6.getCell(5).value = 'FOTO DOKUMENTASI';
+    headerRow6.getCell(8).value = 'VOLUME';
+    headerRow6.getCell(9).value = 'PERALATAN';
+    headerRow6.getCell(11).value = 'OPERASIONAL ALAT BERAT';
+    headerRow6.getCell(13).value = 'BAHAN BAKAR YANG DIGUNAKAN';
+    headerRow6.getCell(16).value = 'JUMLAH PERSONIL';
+    headerRow6.getCell(18).value = 'KETERANGAN';
 
-    // Sub-headers baris 7
+    // Isi Label Header Baris 7 (Sub-header)
     headerRow7.getCell(5).value = "0%";
     headerRow7.getCell(6).value = "50%";
     headerRow7.getCell(7).value = "100%";
@@ -147,7 +160,7 @@ const ReportDetail = () => {
     // 4. Isi Data
     const startRow = 8;
     const dataRow = worksheet.getRow(startRow);
-    dataRow.height = 120; // Tinggi baris untuk foto
+    dataRow.height = 120;
 
     dataRow.getCell(1).value = 1;
     dataRow.getCell(2).value = new Date(report.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
@@ -155,20 +168,16 @@ const ReportDetail = () => {
     dataRow.getCell(4).value = `${report.location.street}, ${report.location.village}, ${report.location.subDistrict}`;
     dataRow.getCell(8).value = `${report.volume} ${getUnitByCategory(report.category)}`;
     
-    // Peralatan (Gabungkan list jadi string)
     dataRow.getCell(9).value = report.equipment.map(e => e.type).join('\n');
     dataRow.getCell(10).value = report.equipment.map(e => e.quantity).join('\n');
     
-    // Alat Berat
     dataRow.getCell(11).value = report.heavyEquipment.map(e => e.type).join('\n');
     dataRow.getCell(12).value = report.heavyEquipment.map(e => e.quantity).join('\n');
     
-    // BBM
     dataRow.getCell(13).value = report.fuel.pertamax || 0;
     dataRow.getCell(14).value = report.fuel.dexlite || 0;
     dataRow.getCell(15).value = report.fuel.solar || 0;
     
-    // Personil
     dataRow.getCell(16).value = report.personnel.coordinator;
     dataRow.getCell(17).value = report.personnel.members;
     
@@ -179,7 +188,6 @@ const ReportDetail = () => {
       cell.font = { name: 'Times New Roman', size: 12 };
       cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
       
-      // Alignment: Teks Left, Angka Center
       if ([1, 2, 8, 10, 12, 13, 14, 15, 17].includes(colNum)) {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
       } else {
