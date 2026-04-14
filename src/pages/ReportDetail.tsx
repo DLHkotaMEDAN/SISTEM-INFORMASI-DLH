@@ -56,27 +56,26 @@ const ReportDetail = () => {
       }
     });
 
-    // 1. Set Column Widths
-    // Width 2.08" ≈ 28.5 units (ExcelJS units are roughly 1/7th of a character width)
+    // 1. Set Column Widths (A-R)
     worksheet.columns = [
-      { key: 'no', width: 5 },
-      { key: 'tgl', width: 15 },
-      { key: 'uraian', width: 30 },
-      { key: 'lokasi', width: 40 },
-      { key: 'foto0', width: 28.5 },   // 2.08"
-      { key: 'foto50', width: 28.5 },  // 2.08"
-      { key: 'foto100', width: 28.5 }, // 2.08"
-      { key: 'vol', width: 12 },
-      { key: 'alat_jns', width: 15 },
-      { key: 'alat_jlh', width: 10 },
-      { key: 'berat_jns', width: 15 },
-      { key: 'berat_jlh', width: 8 },
-      { key: 'bbm_p', width: 15 },
-      { key: 'bbm_d', width: 10 },
-      { key: 'bbm_s', width: 10 },
-      { key: 'pers_k', width: 20 },
-      { key: 'pers_p', width: 10 },
-      { key: 'ket', width: 25 },
+      { key: 'no', width: 3.73 },       // A
+      { key: 'tgl', width: 11.18 },     // B
+      { key: 'uraian', width: 17.82 },  // C
+      { key: 'lokasi', width: 27.91 },  // D
+      { key: 'foto0', width: 27.82 },   // E
+      { key: 'foto50', width: 27.82 },  // F
+      { key: 'foto100', width: 27.82 }, // G
+      { key: 'vol', width: 10.09 },     // H
+      { key: 'alat_jns', width: 13.82 },// I
+      { key: 'alat_jlh', width: 9.91 }, // J
+      { key: 'berat_jns', width: 12.36 },// K
+      { key: 'berat_jlh', width: 6 },    // L
+      { key: 'bbm_p', width: 12.73 },   // M
+      { key: 'bbm_d', width: 9.73 },    // N
+      { key: 'bbm_s', width: 12.73 },   // O
+      { key: 'pers_k', width: 17.18 },  // P
+      { key: 'pers_p', width: 7.73 },   // Q
+      { key: 'ket', width: 24.64 },     // R
     ];
 
     // 2. Judul (Baris 1-5)
@@ -157,7 +156,6 @@ const ReportDetail = () => {
     dataRow.getCell(1).value = 1;
     dataRow.getCell(2).value = new Date(report.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
     
-    // Gabungkan semua uraian tugas jika ada
     const fullDescription = report.tasks?.map(t => t.description).join('\n') || report.description;
     const fullLocation = report.tasks?.map(t => `${t.location.street}, ${t.location.village}`).join('\n') || `${report.location.street}, ${report.location.village}`;
     
@@ -180,7 +178,7 @@ const ReportDetail = () => {
     
     dataRow.getCell(18).value = report.remarks;
 
-    // Styling Isi Data & Wrap Text (WAJIB)
+    // Styling Isi Data & Wrap Text
     dataRow.eachCell((cell) => {
       cell.font = { name: 'Times New Roman', size: 11 };
       cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
@@ -188,8 +186,6 @@ const ReportDetail = () => {
     });
 
     // 5. Tambahkan Foto (Place in Cell)
-    // Width 2.08" * 96 dpi = 199.68 pixels
-    // Height 1.86" * 96 dpi = 178.56 pixels
     const addImage = async (base64: string, col: number) => {
       if (!base64) return;
       try {
@@ -200,7 +196,7 @@ const ReportDetail = () => {
         worksheet.addImage(imageId, {
           tl: { col: col - 1, row: startRow - 1 },
           ext: { width: 199, height: 178 }, // Sesuai ukuran 2.08" x 1.86"
-          editAs: 'oneCell' // Place in cell
+          editAs: 'oneCell'
         });
       } catch (e) {
         console.error("Gagal memuat gambar", e);
