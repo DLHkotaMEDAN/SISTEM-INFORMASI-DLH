@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, FileText, CheckCircle2, FileDown, Table } from 'lucide-react';
+import { ArrowLeft, Printer, Trash2, MapPin, Calendar, Users, Fuel, HardHat, FileText, CheckCircle2, FileDown, Table, Edit } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showSuccess, showError } from '@/utils/toast';
 import * as XLSX from 'xlsx';
@@ -114,6 +114,9 @@ const ReportDetail = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)} className="bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100">
+              <Edit className="mr-2 h-4 w-4" /> Edit
+            </Button>
             <Button variant="outline" onClick={exportToExcel} className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100">
               <Table className="mr-2 h-4 w-4" /> Excel
             </Button>
