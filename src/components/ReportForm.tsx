@@ -33,7 +33,7 @@ const coordinatorMapping: Record<string, string> = {
   "Taman Area": "Ismail Siregar",
   "Taman Amplas": "Erwinsyah",
   "Tim Babat": "Benget Simanjuntak",
-  "Tim Siram": "" 
+  "Tim Siram": "Aluddin Siregar / M. Irwan Syahputra, SE" 
 };
 
 const locationSchema = z.object({
