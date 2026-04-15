@@ -10,14 +10,15 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, MapPin, FileText } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { showSuccess } from '@/utils/toast';
-import { Report, ReportCategory, Equipment } from '@/types/report';
+import { showSuccess, showError } from '@/utils/toast';
+import { Report, ReportCategory } from '@/types/report';
 import { medanDistricts } from '@/data/medan-districts';
 import ImageUpload from './ImageUpload';
 import { Badge } from "@/components/ui/badge";
 import { getUnitByCategory } from '@/utils/report-helpers';
+import { reportService } from '@/services/reportService';
 
 const categories: ReportCategory[] = [
   "Taman Kota", 
@@ -47,7 +48,6 @@ const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
   description: z.string().optional().default(""),
-  location: locationSchema.optional(),
   tasks: z.array(z.object({
     description: z.string().min(1, "Uraian wajib diisi"),
     location: locationSchema,
@@ -58,7 +58,6 @@ const formSchema = z.object({
     hundred: z.string().optional().default(""),
   }),
   volume: z.coerce.number().min(0),
-  unit: z.string().optional().default(""),
   equipment: z.array(z.object({
     type: z.string().min(1, "Jenis alat wajib diisi"),
     quantity: z.coerce.number().min(1),
@@ -68,9 +67,7 @@ const formSchema = z.object({
     quantity: z.coerce.number().min(1),
   })),
   fuel: z.object({
-    pertamax: z.coerce.number().refine((val) => val === 0 || val >= 10000, {
-      message: "Minimal Rp. 10.000 jika diisi",
-    }).default(0),
+    pertamax: z.coerce.number().default(0),
     dexlite: z.coerce.number().default(0),
     solar: z.coerce.number().default(0),
     remarks: z.string().optional().default(""),
@@ -89,10 +86,7 @@ interface ReportFormProps {
 
 const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const navigate = useNavigate();
-  const [suggestions, setSuggestions] = useState<{
-    equipment: string[];
-    heavyEquipment: string[];
-  }>({ equipment: [], heavyEquipment: [] });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -106,7 +100,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       tasks: [{ description: "", location: { street: "", village: "", subDistrict: "" } }],
       photos: { zero: "", fifty: "", hundred: "" },
       volume: 0,
-      unit: "",
       equipment: [{ type: "", quantity: 1 }],
       heavyEquipment: [],
       fuel: { pertamax: 0, dexlite: 0, solar: 0, remarks: "" },
@@ -124,20 +117,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   });
 
   useEffect(() => {
-    const reports: Report[] = JSON.parse(localStorage.getItem('reports') || '[]');
-    const equipTypes = new Set<string>();
-    const heavyEquipTypes = new Set<string>();
-
-    reports.forEach(r => {
-      r.equipment?.forEach(e => e.type && equipTypes.add(e.type));
-      r.heavyEquipment?.forEach(h => h.type && heavyEquipTypes.add(h.type));
-    });
-
-    setSuggestions({
-      equipment: Array.from(equipTypes),
-      heavyEquipment: Array.from(heavyEquipTypes)
-    });
-
     if (!isEditing && selectedCategory) {
       const coordinatorName = coordinatorMapping[selectedCategory];
       if (coordinatorName) {
@@ -156,63 +135,48 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     name: "heavyEquipment",
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const reports = JSON.parse(localStorage.getItem('reports') || '[]');
-    const mainLocation = values.tasks[0].location;
-    const mainDescription = values.tasks[0].description;
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    try {
+      const mainLocation = values.tasks[0].location;
+      const mainDescription = values.tasks[0].description;
 
-    const reportData = {
-      ...values,
-      description: mainDescription,
-      location: mainLocation,
-      category: values.category as ReportCategory,
-      unit: getUnitByCategory(values.category),
-      syncStatus: 'pending' as const,
-    };
+      const reportData = {
+        ...values,
+        description: mainDescription,
+        location: mainLocation,
+        category: values.category as ReportCategory,
+        unit: getUnitByCategory(values.category),
+      };
 
-    if (isEditing && initialData) {
-      const updatedReport: Report = {
-        ...reportData,
-        id: initialData.id,
-        createdAt: initialData.createdAt,
-      } as Report;
-
-      const updatedReports = reports.map((r: Report) => 
-        r.id === initialData.id ? updatedReport : r
-      );
-      localStorage.setItem('reports', JSON.stringify(updatedReports));
-      showSuccess("Laporan berhasil diperbarui!");
-    } else {
-      const newReport: Report = {
-        ...reportData,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-      } as Report;
-      localStorage.setItem('reports', JSON.stringify([newReport, ...reports]));
-      showSuccess("Laporan berhasil disimpan!");
+      if (isEditing && initialData) {
+        await reportService.updateReport(initialData.id, reportData);
+        showSuccess("Laporan berhasil diperbarui di cloud!");
+      } else {
+        await reportService.createReport(reportData);
+        showSuccess("Laporan berhasil disimpan ke cloud!");
+      }
+      navigate('/');
+    } catch (error) {
+      console.error(error);
+      showError("Gagal menyimpan ke database cloud");
+    } finally {
+      setIsSubmitting(false);
     }
-    navigate('/');
   }
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto pb-20">
-        <datalist id="equipment-suggestions">
-          {suggestions.equipment.map(s => <option key={s} value={s} />)}
-        </datalist>
-        <datalist id="heavy-equipment-suggestions">
-          {suggestions.heavyEquipment.map(s => <option key={s} value={s} />)}
-        </datalist>
-
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
           <h1 className="text-2xl font-bold text-primary">
-            {isEditing ? "Edit Laporan" : "Input Laporan Baru"}
+            {isEditing ? "Edit Laporan Cloud" : "Input Laporan Baru Cloud"}
           </h1>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-            <Save className="mr-2 h-4 w-4" /> Simpan
+          <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+            <Save className="mr-2 h-4 w-4" /> {isSubmitting ? "Menyimpan..." : "Simpan"}
           </Button>
         </div>
 
@@ -274,7 +238,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               </CardContent>
             </Card>
           ))}
-          <Button type="button" variant="outline" className="w-full border-dashed py-6" onClick={() => appendTask({ description: "", location: { street: "", village: "", subDistrict: "" } })}><Plus className="mr-2 h-4 w-4" /> Tambah Kegiatan & Lokasi Baru</Button>
+          <Button type="button" variant="outline" className="w-full border-dashed py-6" onClick={() => appendTask({ description: "", location: { street: "", village: { street: "", village: "", subDistrict: "" } } } as any)}><Plus className="mr-2 h-4 w-4" /> Tambah Kegiatan & Lokasi Baru</Button>
         </div>
 
         <Card className="border-t-4 border-t-green-500">
@@ -305,12 +269,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               <div key={field.id} className="flex gap-4 items-end">
                 <div className="flex-1">
                   <FormField control={form.control} name={`equipment.${index}.type`} render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jenis Alat</FormLabel>
-                      <FormControl>
-                        <Input {...field} list="equipment-suggestions" placeholder="Ketik atau pilih..." />
-                      </FormControl>
-                    </FormItem>
+                    <FormItem><FormLabel>Jenis Alat</FormLabel><FormControl><Input {...field} placeholder="Ketik jenis alat..." /></FormControl></FormItem>
                   )} />
                 </div>
                 <div className="w-24"><FormField control={form.control} name={`equipment.${index}.quantity`} render={({ field }) => (
@@ -330,12 +289,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               <div key={field.id} className="flex gap-4 items-end">
                 <div className="flex-1">
                   <FormField control={form.control} name={`heavyEquipment.${index}.type`} render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Jenis Alat Berat</FormLabel>
-                      <FormControl>
-                        <Input {...field} list="heavy-equipment-suggestions" placeholder="Ketik atau pilih..." />
-                      </FormControl>
-                    </FormItem>
+                    <FormItem><FormLabel>Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Ketik jenis alat berat..." /></FormControl></FormItem>
                   )} />
                 </div>
                 <div className="w-24"><FormField control={form.control} name={`heavyEquipment.${index}.quantity`} render={({ field }) => (
@@ -352,13 +306,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           <Card className="border-t-4 border-t-yellow-500">
             <CardHeader><CardTitle className="text-lg">Bahan Bakar</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <FormField control={form.control} name="fuel.pertamax" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pertamax (Rp)</FormLabel>
-                  <FormControl><Input type="number" placeholder="Min Rp. 10.000" {...field} /></FormControl>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField control={form.control} name="fuel.pertamax" render={({ field }) => (<FormItem><FormLabel>Pertamax (Rp)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
               <FormField control={form.control} name="fuel.dexlite" render={({ field }) => (<FormItem><FormLabel>Dexlite (Liter)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
               <FormField control={form.control} name="fuel.solar" render={({ field }) => (<FormItem><FormLabel>Solar (Liter)</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
               <div className="md:col-span-3"><FormField control={form.control} name="fuel.remarks" render={({ field }) => (<FormItem><FormLabel>Keterangan BBM</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /></div>
@@ -381,7 +329,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button>
-          <Button type="submit" className="bg-blue-600 hover:bg-blue-700 px-8">Simpan Laporan</Button>
+          <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8">
+            {isSubmitting ? "Menyimpan..." : "Simpan Laporan"}
+          </Button>
         </div>
       </form>
     </Form>

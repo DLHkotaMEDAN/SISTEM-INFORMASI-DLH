@@ -5,23 +5,32 @@ import { useParams, useNavigate } from 'react-router-dom';
 import ReportForm from '@/components/ReportForm';
 import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
+import { reportService } from '@/services/reportService';
 
 const EditReport = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [report, setReport] = useState<Report | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const reports = JSON.parse(localStorage.getItem('reports') || '[]');
-    const found = reports.find((r: Report) => r.id === id);
-    if (found) {
-      setReport(found);
-    } else {
-      showError("Laporan tidak ditemukan");
-      navigate('/');
-    }
-  }, [id, navigate]);
+    if (id) loadReport(id);
+  }, [id]);
 
+  const loadReport = async (reportId: string) => {
+    try {
+      setLoading(true);
+      const data = await reportService.getReportById(reportId);
+      setReport(data);
+    } catch (error) {
+      showError("Laporan tidak ditemukan di database");
+      navigate('/');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) return <div className="p-20 text-center">Memuat data...</div>;
   if (!report) return null;
 
   return (

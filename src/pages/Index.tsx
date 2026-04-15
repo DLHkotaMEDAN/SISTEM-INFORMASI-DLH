@@ -7,38 +7,49 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, CloudOff, Download, Tag, Table 
+  Trash2, Eye, Search, Edit, Cloud, CloudOff, Tag, Table 
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { MadeWithDyad } from "@/components/made-with-dyad";
-import { showSuccess } from '@/utils/toast';
-import { useSync } from '@/hooks/use-sync';
+import { showSuccess, showError } from '@/utils/toast';
+import { reportService } from '@/services/reportService';
 import * as XLSX from 'xlsx';
 import { getUnitByCategory } from '@/utils/report-helpers';
 
 const Index = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const { isOnline } = useSync();
 
   useEffect(() => {
     loadReports();
   }, []);
 
-  const loadReports = () => {
-    const savedReports = JSON.parse(localStorage.getItem('reports') || '[]');
-    setReports(savedReports);
+  const loadReports = async () => {
+    try {
+      setLoading(true);
+      const data = await reportService.getAllReports();
+      setReports(data);
+    } catch (error) {
+      console.error(error);
+      showError("Gagal memuat data dari database");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Hapus laporan ini?")) {
-      const updated = reports.filter(r => r.id !== id);
-      localStorage.setItem('reports', JSON.stringify(updated));
-      setReports(updated);
-      showSuccess("Laporan dihapus");
+    if (window.confirm("Hapus laporan ini secara permanen dari database?")) {
+      try {
+        await reportService.deleteReport(id);
+        setReports(reports.filter(r => r.id !== id));
+        showSuccess("Laporan berhasil dihapus");
+      } catch (error) {
+        showError("Gagal menghapus laporan");
+      }
     }
   };
 
@@ -94,10 +105,10 @@ const Index = () => {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="bg-blue-600 p-2 rounded-lg"><FileText className="text-white h-6 w-6" /></div>
-              <h1 className="text-xl font-bold text-slate-900 hidden md:block">Sistem Laporan</h1>
+              <h1 className="text-xl font-bold text-slate-900 hidden md:block">Sistem Laporan Cloud</h1>
             </div>
-            <Badge variant={isOnline ? "outline" : "destructive"} className="flex gap-1 items-center">
-              {isOnline ? <><Cloud className="h-3 w-3 text-green-500" /> Online</> : <><CloudOff className="h-3 w-3" /> Offline</>}
+            <Badge variant="outline" className="flex gap-1 items-center text-green-600 border-green-200 bg-green-50">
+              <Cloud className="h-3 w-3" /> Database Terhubung
             </Badge>
           </div>
 
@@ -142,7 +153,9 @@ const Index = () => {
           <p className="text-sm text-slate-500">{filteredReports.length} Laporan ditemukan</p>
         </div>
 
-        {filteredReports.length === 0 ? (
+        {loading ? (
+          <div className="text-center py-20">Memuat data dari cloud...</div>
+        ) : filteredReports.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
             <FileText className="mx-auto h-12 w-12 text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-900">Tidak ada laporan</h3>
@@ -158,7 +171,6 @@ const Index = () => {
                       <Badge variant="outline" className="w-fit text-[10px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200"><Tag className="h-2 w-2 mr-1" /> {report.category}</Badge>
                     </div>
                     <div className="flex items-center gap-2">
-                      {report.syncStatus === 'pending' ? <Badge variant="secondary" className="text-[10px] h-5">Pending</Badge> : <Cloud className="h-3 w-3 text-green-500" />}
                       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}><Edit className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 className="h-4 w-4" /></Button>
