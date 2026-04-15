@@ -7,6 +7,7 @@ import Index from "./pages/Index";
 import CreateReport from "./pages/CreateReport";
 import EditReport from "./pages/EditReport";
 import ReportDetail from "./pages/ReportDetail";
+import PrintRekap from "./pages/PrintRekap";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/create" element={<CreateReport />} />
           <Route path="/edit/:id" element={<EditReport />} />
           <Route path="/report/:id" element={<ReportDetail />} />
+          <Route path="/print-rekap" element={<PrintRekap />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

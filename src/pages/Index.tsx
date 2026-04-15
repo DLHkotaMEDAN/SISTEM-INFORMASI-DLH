@@ -7,21 +7,42 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, Tag, Table 
+  Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Report } from '@/types/report';
+import { Report, ReportCategory } from '@/types/report';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import * as XLSX from 'xlsx';
 import { getUnitByCategory } from '@/utils/report-helpers';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+const categories: string[] = [
+  "semua", "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
+];
 
 const Index = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
 
   useEffect(() => {
     loadReports();
@@ -59,9 +80,7 @@ const Index = () => {
       return;
     }
 
-    // Menyiapkan data untuk Excel
     const data = reports.map((r, index) => {
-      // Jika Tim Siram, gabungkan semua lokasi jalan
       const lokasiJalan = r.category === "Tim Siram" && r.tasks 
         ? r.tasks.map(t => t.location.street).join(", ")
         : r.location.street;
@@ -86,8 +105,6 @@ const Index = () => {
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
-    
-    // Mengatur lebar kolom otomatis (sederhana)
     const wscols = [
       {wch: 5}, {wch: 12}, {wch: 15}, {wch: 30}, {wch: 30}, 
       {wch: 15}, {wch: 15}, {wch: 10}, {wch: 10}, {wch: 20}, 
@@ -97,11 +114,13 @@ const Index = () => {
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Rekap Laporan");
-    
-    // Download file
     const fileName = `Rekap_Laporan_DLH_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
     showSuccess("Rekap Excel berhasil diunduh");
+  };
+
+  const handlePrintAction = () => {
+    navigate(`/print-rekap?category=${selectedPrintCategory}`);
   };
 
   const filteredReports = reports.filter(report => {
@@ -139,6 +158,37 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="hidden sm:flex bg-slate-50 text-slate-700 border-slate-200">
+                  <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Cetak Rekap Laporan</DialogTitle>
+                  <DialogDescription>Pilih kategori laporan yang ingin dicetak.</DialogDescription>
+                </DialogHeader>
+                <div className="py-4">
+                  <Select onValueChange={setSelectedPrintCategory} defaultValue={selectedPrintCategory}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih Kategori" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat === 'semua' ? 'Semua Kategori' : cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <DialogFooter>
+                  <Button onClick={handlePrintAction} className="bg-blue-600">Buka Preview Cetak</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Button variant="outline" size="sm" onClick={handleExportExcel} className="hidden sm:flex bg-green-50 text-green-700 border-green-200">
               <Table className="h-4 w-4 mr-2" /> Rekap Excel
             </Button>
