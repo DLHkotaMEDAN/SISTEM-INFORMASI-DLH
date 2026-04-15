@@ -101,7 +101,7 @@ const ReportDetail = () => {
                     <div key={i} className="text-sm border-b border-dashed pb-2 last:border-0">
                       <p className="font-bold">{he.type} ({he.quantity} Unit)</p>
                       <div className="grid grid-cols-3 gap-2 mt-1 text-[11px] text-slate-600">
-                        <span className="flex items-center gap-1"><Fuel size={10} /> P: {he.fuel.pertamax}</span>
+                        <span className="flex items-center gap-1"><Fuel size={10} /> P: {he.fuel.pertamax} L</span>
                         <span className="flex items-center gap-1"><Fuel size={10} /> D: {he.fuel.dexlite} L</span>
                         <span className="flex items-center gap-1"><Fuel size={10} /> S: {he.fuel.solar} L</span>
                       </div>

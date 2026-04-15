@@ -271,7 +271,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 </div>
                 
                 <div className="grid grid-cols-3 gap-4 p-3 bg-white rounded border border-red-100">
-                  <FormField control={form.control} name={`heavyEquipment.${index}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1"><Fuel size={10} /> Pertamax (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                  <FormField control={form.control} name={`heavyEquipment.${index}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1"><Fuel size={10} /> Pertamax (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name={`heavyEquipment.${index}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1"><Fuel size={10} /> Dexlite (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
                   <FormField control={form.control} name={`heavyEquipment.${index}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1"><Fuel size={10} /> Solar (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
                 </div>
