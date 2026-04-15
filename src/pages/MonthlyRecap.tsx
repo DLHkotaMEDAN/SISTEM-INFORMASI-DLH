@@ -140,7 +140,7 @@ const MonthlyRecap = () => {
                   </td>
                   <td className="border-2 border-black p-2 align-top whitespace-normal break-words">{r.description}</td>
                   <td className="border-2 border-black p-2 align-top whitespace-normal break-words">
-                    {r.category === "Tim Siram" && r.tasks ? r.tasks.map(t => t.location.street).join(", ") : r.location.street}
+                    {`${r.location.street}, ${r.location.village}, ${r.location.subDistrict}`}
                   </td>
                   <td className="border-2 border-black p-2 text-center font-bold align-top">{r.volume}</td>
                   <td className="border-2 border-black p-2 text-center align-top">{getUnitByCategory(r.category)}</td>
