@@ -116,8 +116,8 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-1 w-[150px]" rowSpan={2}>Lokasi</th>
                 <th className="border-2 border-black p-1" colSpan={3}>Dokumentasi</th>
                 <th className="border-2 border-black p-1 w-[60px]" rowSpan={2}>Vol</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Peralatan</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Alat Berat</th>
+                <th className="border-2 border-black p-1 w-[120px]" colSpan={2}>Peralatan</th>
+                <th className="border-2 border-black p-1 w-[120px]" colSpan={2}>Alat Berat</th>
                 <th className="border-2 border-black p-1 w-[105px]" colSpan={3}>BBM (Liter)</th>
                 <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Koordinator</th>
                 <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan</th>
@@ -126,6 +126,13 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-1 w-[210px]">0%</th>
                 <th className="border-2 border-black p-1 w-[210px]">50%</th>
                 <th className="border-2 border-black p-1 w-[210px]">100%</th>
+                {/* Peralatan Sub-columns */}
+                <th className="border-2 border-black p-1 w-[80px]">Jenis</th>
+                <th className="border-2 border-black p-1 w-[40px]">Jml</th>
+                {/* Alat Berat Sub-columns */}
+                <th className="border-2 border-black p-1 w-[80px]">Jenis</th>
+                <th className="border-2 border-black p-1 w-[40px]">Jml</th>
+                {/* BBM Sub-columns */}
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">P</th>
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">D</th>
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">S</th>
@@ -167,20 +174,41 @@ const MonthlyRecap = () => {
                     <td className="border-2 border-black p-1 text-center font-bold align-top">
                       {r.volume} {getUnitByCategory(r.category)}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.equipment?.map((e, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
-                          {e.type} ({e.quantity})
-                        </div>
-                      ))}
+                    
+                    {/* Peralatan Body */}
+                    <td className="border-2 border-black p-0 align-top" colSpan={2}>
+                      <table className="w-full border-collapse">
+                        <tbody>
+                          {r.equipment?.map((e, i) => (
+                            <tr key={i} className="border-b border-black last:border-0">
+                              <td className="p-1 w-[80px] border-r border-black break-words">{e.type}</td>
+                              <td className="p-1 w-[40px] text-center">{e.quantity}</td>
+                            </tr>
+                          ))}
+                          {(!r.equipment || r.equipment.length === 0) && (
+                            <tr><td className="p-1 text-center italic text-slate-400" colSpan={2}>-</td></tr>
+                          )}
+                        </tbody>
+                      </table>
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.heavyEquipment?.map((he, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
-                          {he.type} ({he.quantity})
-                        </div>
-                      ))}
+
+                    {/* Alat Berat Body */}
+                    <td className="border-2 border-black p-0 align-top" colSpan={2}>
+                      <table className="w-full border-collapse">
+                        <tbody>
+                          {r.heavyEquipment?.map((he, i) => (
+                            <tr key={i} className="border-b border-black last:border-0">
+                              <td className="p-1 w-[80px] border-r border-black break-words">{he.type}</td>
+                              <td className="p-1 w-[40px] text-center">{he.quantity}</td>
+                            </tr>
+                          ))}
+                          {(!r.heavyEquipment || r.heavyEquipment.length === 0) && (
+                            <tr><td className="p-1 text-center italic text-slate-400" colSpan={2}>-</td></tr>
+                          )}
+                        </tbody>
+                      </table>
                     </td>
+
                     <td className="border-2 border-black p-1 text-center align-top">{r.fuel?.pertamax || 0}</td>
                     <td className="border-2 border-black p-1 text-center align-top">{r.fuel?.dexlite || 0}</td>
                     <td className="border-2 border-black p-1 text-center align-top">{r.fuel?.solar || 0}</td>
@@ -190,14 +218,14 @@ const MonthlyRecap = () => {
                 );
               }) : (
                 <tr>
-                  <td colSpan={15} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
+                  <td colSpan={17} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
                 </tr>
               )}
             </tbody>
             {reports.length > 0 && (
               <tfoot className="font-bold bg-slate-50">
                 <tr>
-                  <td colSpan={10} className="border-2 border-black p-1 text-right">TOTAL PENGGUNAAN BBM</td>
+                  <td colSpan={12} className="border-2 border-black p-1 text-right">TOTAL PENGGUNAAN BBM</td>
                   <td className="border-2 border-black p-1 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.pertamax || 0), 0)}</td>
                   <td className="border-2 border-black p-1 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.dexlite || 0), 0)}</td>
                   <td className="border-2 border-black p-1 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.solar || 0), 0)}</td>
