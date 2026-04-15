@@ -113,7 +113,7 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-2 w-[30px]">No</th>
                 <th className="border-2 border-black p-2 w-[100px]">Hari / Tgl</th>
                 <th className="border-2 border-black p-2 w-[160px]">Uraian Kegiatan</th>
-                <th className="border-2 border-black p-2">Lokasi</th>
+                <th className="border-2 border-black p-2 w-[250px]">Lokasi</th>
                 <th className="border-2 border-black p-2 w-[60px]">Volume</th>
                 <th className="border-2 border-black p-2 w-[60px]">Satuan</th>
                 <th className="border-2 border-black p-2 w-[100px]">Koordinator</th>
