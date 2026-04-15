@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer
+  Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer, FileBarChart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report, ReportCategory } from '@/types/report';
@@ -158,10 +158,14 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="hidden sm:flex bg-purple-50 text-purple-700 border-purple-200">
+              <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
+            </Button>
+
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm" className="hidden sm:flex bg-slate-50 text-slate-700 border-slate-200">
-                  <Printer className="h-4 w-4 mr-2" /> Cetak Laporan
+                  <Printer className="h-4 w-4 mr-2" /> Cetak Harian
                 </Button>
               </DialogTrigger>
               <DialogContent>

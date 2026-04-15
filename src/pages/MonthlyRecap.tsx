@@ -1,0 +1,214 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Report } from '@/types/report';
+import { reportService } from '@/services/reportService';
+import { getUnitByCategory } from '@/utils/report-helpers';
+import { ArrowLeft, Printer, FileSpreadsheet } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+const months = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+const MonthlyRecap = () => {
+  const navigate = useNavigate();
+  const [reports, setReports] = useState<Report[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedCategory, setSelectedCategory] = useState("semua");
+
+  useEffect(() => {
+    loadData();
+  }, [selectedMonth, selectedYear, selectedCategory]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      let data = await reportService.getAllReports();
+      
+      // Filter berdasarkan bulan dan tahun
+      data = data.filter(r => {
+        const reportDate = new Date(r.date);
+        const m = (reportDate.getMonth() + 1).toString();
+        const y = reportDate.getFullYear().toString();
+        
+        const matchMonth = m === selectedMonth;
+        const matchYear = y === selectedYear;
+        const matchCategory = selectedCategory === "semua" || r.category === selectedCategory;
+        
+        return matchMonth && matchYear && matchCategory;
+      });
+      
+      // Urutkan berdasarkan tanggal
+      data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      setReports(data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 p-0 md:p-8">
+      {/* Control Panel - No Print */}
+      <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <Button variant="ghost" onClick={() => navigate('/')}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+          </Button>
+          
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+              <SelectTrigger className="w-[140px]"><SelectValue placeholder="Bulan" /></SelectTrigger>
+              <SelectContent>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
+            </Select>
+
+            <Select value={selectedYear} onValueChange={setSelectedYear}>
+              <SelectTrigger className="w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
+              <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+
+            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Kategori" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Kategori</SelectItem>
+                <SelectItem value="Taman Kota">Taman Kota</SelectItem>
+                <SelectItem value="Taman Amplas">Taman Amplas</SelectItem>
+                <SelectItem value="Taman Area">Taman Area</SelectItem>
+                <SelectItem value="Tim Babat">Tim Babat</SelectItem>
+                <SelectItem value="Tim Siram">Tim Siram</SelectItem>
+                <SelectItem value="Tim Pohon">Tim Pohon</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <Button onClick={() => window.print()} className="bg-blue-600">
+            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+          </Button>
+        </div>
+      </div>
+
+      {/* Print Content */}
+      <div className="print-area bg-white p-8 mx-auto max-w-[1200px] shadow-lg border min-h-[297mm]">
+        {/* Header Dinas */}
+        <div className="text-center border-b-4 border-double border-black pb-4 mb-6">
+          <h1 className="text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
+          <h2 className="text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
+          <p className="text-sm italic">Jl. Sidorame No.12, Kec. Medan Perjuangan, Kota Medan, Sumatera Utara</p>
+        </div>
+
+        <div className="text-center mb-8">
+          <h3 className="text-lg font-bold underline uppercase">REKAPITULASI LAPORAN KEGIATAN HARIAN</h3>
+          <p className="font-medium">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+          {selectedCategory !== "semua" && <p className="font-bold">Kategori: {selectedCategory.toUpperCase()}</p>}
+        </div>
+
+        {/* Table Content */}
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse border-2 border-black text-[11px]">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border-2 border-black p-2 w-8">No</th>
+                <th className="border-2 border-black p-2 w-24">Hari / Tanggal</th>
+                <th className="border-2 border-black p-2">Uraian Kegiatan</th>
+                <th className="border-2 border-black p-2">Lokasi</th>
+                <th className="border-2 border-black p-2 w-16">Volume</th>
+                <th className="border-2 border-black p-2 w-16">Satuan</th>
+                <th className="border-2 border-black p-2 w-24">Koordinator</th>
+                <th className="border-2 border-black p-2 w-32" colSpan={3}>BBM (Liter)</th>
+              </tr>
+              <tr className="bg-slate-50">
+                <th colSpan={7} className="border-2 border-black"></th>
+                <th className="border-2 border-black p-1 text-[9px]">P</th>
+                <th className="border-2 border-black p-1 text-[9px]">D</th>
+                <th className="border-2 border-black p-1 text-[9px]">S</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reports.length > 0 ? reports.map((r, idx) => (
+                <tr key={r.id}>
+                  <td className="border-2 border-black p-2 text-center">{idx + 1}</td>
+                  <td className="border-2 border-black p-2 text-center">{new Date(r.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</td>
+                  <td className="border-2 border-black p-2">{r.description}</td>
+                  <td className="border-2 border-black p-2">
+                    {r.category === "Tim Siram" && r.tasks ? r.tasks.map(t => t.location.street).join(", ") : r.location.street}
+                  </td>
+                  <td className="border-2 border-black p-2 text-center font-bold">{r.volume}</td>
+                  <td className="border-2 border-black p-2 text-center">{getUnitByCategory(r.category)}</td>
+                  <td className="border-2 border-black p-2 text-center">{r.personnel.coordinator}</td>
+                  <td className="border-2 border-black p-2 text-center">{r.fuel?.pertamax || 0}</td>
+                  <td className="border-2 border-black p-2 text-center">{r.fuel?.dexlite || 0}</td>
+                  <td className="border-2 border-black p-2 text-center">{r.fuel?.solar || 0}</td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={10} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
+                </tr>
+              )}
+            </tbody>
+            {reports.length > 0 && (
+              <tfoot className="font-bold bg-slate-50">
+                <tr>
+                  <td colSpan={7} className="border-2 border-black p-2 text-right">TOTAL PENGGUNAAN BBM</td>
+                  <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.pertamax || 0), 0)}</td>
+                  <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.dexlite || 0), 0)}</td>
+                  <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.solar || 0), 0)}</td>
+                </tr>
+              </tfoot>
+            )}
+          </table>
+        </div>
+
+        {/* Footer Tanda Tangan */}
+        <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
+          <div className="text-center">
+            <p>Mengetahui,</p>
+            <p className="font-bold">Kepala Bidang / Kasi</p>
+            <div className="h-24"></div>
+            <p className="font-bold underline">( ............................................ )</p>
+            <p>NIP. ............................................</p>
+          </div>
+          <div className="text-center">
+            <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="font-bold">Dibuat Oleh,</p>
+            <div className="h-24"></div>
+            <p className="font-bold underline">( ............................................ )</p>
+            <p>Koordinator Lapangan</p>
+          </div>
+        </div>
+      </div>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        @media print {
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          .print-area { 
+            box-shadow: none !important; 
+            border: none !important; 
+            padding: 0 !important; 
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: none !important;
+          }
+          @page { 
+            size: landscape; 
+            margin: 1.5cm; 
+          }
+          table { page-break-inside: auto; }
+          tr { page-break-inside: avoid; page-break-after: auto; }
+        }
+      `}} />
+    </div>
+  );
+};
+
+export default MonthlyRecap;
