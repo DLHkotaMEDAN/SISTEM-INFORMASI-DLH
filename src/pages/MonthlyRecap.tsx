@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, FileSpreadsheet } from 'lucide-react';
+import { ArrowLeft, Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -33,7 +33,6 @@ const MonthlyRecap = () => {
       setLoading(true);
       let data = await reportService.getAllReports();
       
-      // Filter berdasarkan bulan dan tahun
       data = data.filter(r => {
         const reportDate = new Date(r.date);
         const m = (reportDate.getMonth() + 1).toString();
@@ -46,9 +45,7 @@ const MonthlyRecap = () => {
         return matchMonth && matchYear && matchCategory;
       });
       
-      // Urutkan berdasarkan tanggal
       data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-      
       setReports(data);
     } catch (error) {
       console.error(error);
@@ -59,7 +56,6 @@ const MonthlyRecap = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
-      {/* Control Panel - No Print */}
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Button variant="ghost" onClick={() => navigate('/')}>
@@ -97,9 +93,7 @@ const MonthlyRecap = () => {
         </div>
       </div>
 
-      {/* Print Content */}
-      <div className="print-area bg-white p-8 mx-auto max-w-[1200px] shadow-lg border min-h-[297mm]">
-        {/* Header Dinas */}
+      <div className="print-area bg-white p-8 mx-auto shadow-lg border min-h-[297mm]">
         <div className="text-center border-b-4 border-double border-black pb-4 mb-6">
           <h1 className="text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
           <h2 className="text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
@@ -112,7 +106,6 @@ const MonthlyRecap = () => {
           {selectedCategory !== "semua" && <p className="font-bold">Kategori: {selectedCategory.toUpperCase()}</p>}
         </div>
 
-        {/* Table Content */}
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border-2 border-black text-[11px]">
             <thead>
@@ -168,7 +161,6 @@ const MonthlyRecap = () => {
           </table>
         </div>
 
-        {/* Footer Tanda Tangan */}
         <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
           <div className="text-center">
             <p>Mengetahui,</p>
@@ -198,10 +190,11 @@ const MonthlyRecap = () => {
             margin: 0 !important;
             width: 100% !important;
             max-width: none !important;
+            zoom: 0.65; /* Skala 65% */
           }
           @page { 
-            size: landscape; 
-            margin: 1.5cm; 
+            size: A3 landscape; 
+            margin: 1.0cm 0.3cm 1.0cm 0.3cm; /* Top, Right, Bottom, Left */
           }
           table { page-break-inside: auto; }
           tr { page-break-inside: avoid; page-break-after: auto; }
