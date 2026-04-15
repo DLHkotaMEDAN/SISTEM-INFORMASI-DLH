@@ -110,55 +110,76 @@ const MonthlyRecap = () => {
           <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
             <thead>
               <tr className="bg-slate-100">
-                <th className="border-2 border-black p-2 w-[30px]">No</th>
-                <th className="border-2 border-black p-2 w-[100px]">Hari / Tgl</th>
-                <th className="border-2 border-black p-2 w-[160px]">Uraian Kegiatan</th>
-                <th className="border-2 border-black p-2 w-[250px]">Lokasi</th>
-                <th className="border-2 border-black p-2 w-[60px]">Volume</th>
-                <th className="border-2 border-black p-2 w-[60px]">Satuan</th>
-                <th className="border-2 border-black p-2 w-[100px]">Koordinator</th>
+                <th className="border-2 border-black p-2 w-[30px]" rowSpan={2}>No</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Hari / Tgl</th>
+                <th className="border-2 border-black p-2 w-[160px]" rowSpan={2}>Uraian Kegiatan</th>
+                <th className="border-2 border-black p-2 w-[250px]" rowSpan={2}>Lokasi</th>
+                <th className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
+                <th className="border-2 border-black p-2 w-[60px]" rowSpan={2}>Vol</th>
+                <th className="border-2 border-black p-2 w-[60px]" rowSpan={2}>Satuan</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Koordinator</th>
                 <th className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>
               </tr>
               <tr className="bg-slate-50">
-                <th colSpan={7} className="border-2 border-black"></th>
+                <th className="border-2 border-black p-1 w-[80px]">0%</th>
+                <th className="border-2 border-black p-1 w-[80px]">50%</th>
+                <th className="border-2 border-black p-1 w-[80px]">100%</th>
                 <th className="border-2 border-black p-1 text-[9px] w-[40px]">P</th>
                 <th className="border-2 border-black p-1 text-[9px] w-[40px]">D</th>
                 <th className="border-2 border-black p-1 text-[9px] w-[40px]">S</th>
               </tr>
             </thead>
             <tbody>
-              {reports.length > 0 ? reports.map((r, idx) => (
-                <tr key={r.id}>
-                  <td className="border-2 border-black p-2 text-center align-top">{idx + 1}</td>
-                  <td className="border-2 border-black p-2 text-center align-top whitespace-normal break-words">
-                    {new Date(r.date).toLocaleDateString('id-ID', { 
-                      weekday: 'long', 
-                      day: '2-digit', 
-                      month: 'short', 
-                      year: 'numeric' 
-                    })}
-                  </td>
-                  <td className="border-2 border-black p-2 align-top whitespace-normal break-words">{r.description}</td>
-                  <td className="border-2 border-black p-2 align-top whitespace-normal break-words">
-                    {`${r.location.street}, ${r.location.village}, ${r.location.subDistrict}`}
-                  </td>
-                  <td className="border-2 border-black p-2 text-center font-bold align-top">{r.volume}</td>
-                  <td className="border-2 border-black p-2 text-center align-top">{getUnitByCategory(r.category)}</td>
-                  <td className="border-2 border-black p-2 text-center align-top whitespace-normal break-words">{r.personnel.coordinator}</td>
-                  <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.pertamax || 0}</td>
-                  <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.dexlite || 0}</td>
-                  <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.solar || 0}</td>
-                </tr>
-              )) : (
+              {reports.length > 0 ? reports.map((r, idx) => {
+                const firstTask = r.tasks?.[0];
+                return (
+                  <tr key={r.id}>
+                    <td className="border-2 border-black p-2 text-center align-top">{idx + 1}</td>
+                    <td className="border-2 border-black p-2 text-center align-top whitespace-normal break-words">
+                      {new Date(r.date).toLocaleDateString('id-ID', { 
+                        weekday: 'long', 
+                        day: '2-digit', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
+                    </td>
+                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words">{r.description}</td>
+                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words">
+                      {`${r.location.street}, ${r.location.village}, ${r.location.subDistrict}`}
+                    </td>
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="aspect-video bg-slate-100 border border-slate-300 overflow-hidden">
+                        {firstTask?.photos?.zero ? <img src={firstTask.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
+                      </div>
+                    </td>
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="aspect-video bg-slate-100 border border-slate-300 overflow-hidden">
+                        {firstTask?.photos?.fifty ? <img src={firstTask.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
+                      </div>
+                    </td>
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="aspect-video bg-slate-100 border border-slate-300 overflow-hidden">
+                        {firstTask?.photos?.hundred ? <img src={firstTask.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
+                      </div>
+                    </td>
+                    <td className="border-2 border-black p-2 text-center font-bold align-top">{r.volume}</td>
+                    <td className="border-2 border-black p-2 text-center align-top">{getUnitByCategory(r.category)}</td>
+                    <td className="border-2 border-black p-2 text-center align-top whitespace-normal break-words">{r.personnel.coordinator}</td>
+                    <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.pertamax || 0}</td>
+                    <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.dexlite || 0}</td>
+                    <td className="border-2 border-black p-2 text-center align-top">{r.fuel?.solar || 0}</td>
+                  </tr>
+                );
+              }) : (
                 <tr>
-                  <td colSpan={10} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
+                  <td colSpan={13} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
                 </tr>
               )}
             </tbody>
             {reports.length > 0 && (
               <tfoot className="font-bold bg-slate-50">
                 <tr>
-                  <td colSpan={7} className="border-2 border-black p-2 text-right">TOTAL PENGGUNAAN BBM</td>
+                  <td colSpan={10} className="border-2 border-black p-2 text-right">TOTAL PENGGUNAAN BBM</td>
                   <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.pertamax || 0), 0)}</td>
                   <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.dexlite || 0), 0)}</td>
                   <td className="border-2 border-black p-2 text-center">{reports.reduce((acc, r) => acc + (r.fuel?.solar || 0), 0)}</td>
