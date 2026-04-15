@@ -40,9 +40,9 @@ const locationSchema = z.object({
 });
 
 const fuelSchema = z.object({
-  pertamax: z.coerce.number().default(0),
-  dexlite: z.coerce.number().default(0),
-  solar: z.coerce.number().default(0),
+  pertamax: z.coerce.number().int().default(0),
+  dexlite: z.coerce.number().int().default(0),
+  solar: z.coerce.number().int().default(0),
 });
 
 const formSchema = z.object({
@@ -57,19 +57,19 @@ const formSchema = z.object({
     fifty: z.string().optional().default(""),
     hundred: z.string().optional().default(""),
   }),
-  volume: z.coerce.number().min(0),
+  volume: z.coerce.number().int().min(0),
   equipment: z.array(z.object({
     type: z.string().min(1, "Jenis alat wajib diisi"),
-    quantity: z.coerce.number().min(1),
+    quantity: z.coerce.number().int().min(1),
   })),
   heavyEquipment: z.array(z.object({
     type: z.string().min(1, "Jenis alat berat wajib diisi"),
-    quantity: z.coerce.number().min(1),
+    quantity: z.coerce.number().int().min(1),
     fuel: fuelSchema,
   })),
   personnel: z.object({
     coordinator: z.string().min(1, "Nama koordinator wajib diisi"),
-    members: z.coerce.number().min(0),
+    members: z.coerce.number().int().min(0),
   }),
   remarks: z.string().optional().default(""),
 });
@@ -131,12 +131,26 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         location: values.tasks[0].location as Location,
         tasks: values.tasks as Task[],
         photos: values.photos as Photos,
-        volume: values.volume,
+        volume: Math.round(values.volume),
         unit: getUnitByCategory(values.category),
-        equipment: values.equipment as Equipment[],
-        heavyEquipment: values.heavyEquipment as HeavyEquipment[],
+        equipment: values.equipment.map(e => ({ 
+          type: e.type, 
+          quantity: Math.round(e.quantity) 
+        })),
+        heavyEquipment: values.heavyEquipment.map(he => ({ 
+          type: he.type,
+          quantity: Math.round(he.quantity),
+          fuel: {
+            pertamax: Math.round(he.fuel.pertamax),
+            dexlite: Math.round(he.fuel.dexlite),
+            solar: Math.round(he.fuel.solar)
+          }
+        })),
         fuel: totalFuel,
-        personnel: values.personnel as Personnel,
+        personnel: {
+          coordinator: values.personnel.coordinator,
+          members: Math.round(values.personnel.members)
+        },
         remarks: values.remarks || "",
       };
 
