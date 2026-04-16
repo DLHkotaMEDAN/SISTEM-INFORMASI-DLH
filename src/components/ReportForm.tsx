@@ -31,7 +31,6 @@ const coordinatorMapping: Record<string, string> = {
   "Tim Babat": "Benget Simanjuntak",
 };
 
-// Pemetaan Koordinator berdasarkan Plat Kendaraan (Berlaku untuk Tim Siram & Tim Pohon)
 const vehicleCoordinatorMapping: Record<string, string> = {
   "BK 8128 A": "M. Irwan Syahputra, SE",
   "BK 9031 J": "Aluddin Gultom",
@@ -69,6 +68,7 @@ const taskSchema = z.object({
   })),
   heavyEquipment: z.array(z.object({
     type: z.string().min(1, "Jenis alat berat wajib diisi"),
+    vehicle: z.string().optional().default(""),
     quantity: z.coerce.number().int().min(1),
     fuel: fuelSchema,
   })),
@@ -96,6 +96,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const navigate = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
+  const [existingVehicles, setExistingVehicles] = useState<string[]>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -129,17 +130,36 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   });
 
   const selectedCategory = form.watch("category");
-  
   const { fields: taskFields, append: appendTask, remove: removeTask } = useFieldArray({ control: form.control, name: "tasks" });
 
-  // Auto-fill coordinator based on category or vehicle
+  useEffect(() => {
+    const fetchVehicles = async () => {
+      try {
+        const reports = await reportService.getAllReports();
+        const vehicles = new Set(existingVehicles);
+        reports.forEach(r => {
+          r.tasks?.forEach(t => {
+            if (t.vehicle) vehicles.add(t.vehicle);
+            t.heavyEquipment?.forEach(he => {
+              if (he.vehicle) vehicles.add(he.vehicle);
+            });
+          });
+        });
+        setExistingVehicles(Array.from(vehicles));
+      } catch (e) { console.error(e); }
+    };
+    fetchVehicles();
+  }, []);
+
   useEffect(() => {
     if (!isEditing && selectedCategory) {
       const tasks = form.getValues("tasks");
       const updatedTasks = tasks.map(task => {
         let coordinator = task.personnel.coordinator;
         if (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon") {
-          coordinator = task.vehicle ? vehicleCoordinatorMapping[task.vehicle] || "" : "";
+          // Jika ada plat di alat berat pertama, gunakan itu untuk koordinator
+          const firstVehicle = task.heavyEquipment?.[0]?.vehicle || task.vehicle;
+          coordinator = firstVehicle ? vehicleCoordinatorMapping[firstVehicle] || "" : "";
         } else {
           coordinator = coordinatorMapping[selectedCategory] || "";
         }
@@ -154,16 +174,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     for (let i = 0; i < updatedTasks.length; i++) {
       const task = updatedTasks[i];
       setUploadProgress(`Mengunggah foto kegiatan #${i + 1}...`);
-      
-      if (task.photos.zero && task.photos.zero.startsWith('data:image')) {
-        task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
-      }
-      if (task.photos.fifty && task.photos.fifty.startsWith('data:image')) {
-        task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
-      }
-      if (task.photos.hundred && task.photos.hundred.startsWith('data:image')) {
-        task.photos.hundred = await storageService.uploadPhoto(task.photos.hundred, `task_${i}_100`);
-      }
+      if (task.photos.zero?.startsWith('data:image')) task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
+      if (task.photos.fifty?.startsWith('data:image')) task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
+      if (task.photos.hundred?.startsWith('data:image')) task.photos.hundred = await storageService.uploadPhoto(task.photos.hundred, `task_${i}_100`);
     }
     return updatedTasks;
   };
@@ -172,7 +185,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     setIsSubmitting(true);
     try {
       const processedTasksWithUrls = await uploadTaskPhotos(values.tasks);
-
       let totalVolume = 0;
       let totalFuel: FuelUsage = { pertamax: 0, dexlite: 0, solar: 0 };
       let allEquipment: Equipment[] = [];
@@ -195,7 +207,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
-        vehicle: finalTasks[0].vehicle,
+        vehicle: finalTasks[0].heavyEquipment?.[0]?.vehicle || finalTasks[0].vehicle,
         description: finalTasks[0].description,
         location: finalTasks[0].location as Location,
         tasks: finalTasks as Task[],
@@ -221,7 +233,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       navigate('/');
     } catch (error) {
       console.error(error);
-      showError("Gagal menyimpan data atau mengunggah foto");
+      showError("Gagal menyimpan data");
     } finally {
       setIsSubmitting(false);
       setUploadProgress("");
@@ -231,6 +243,10 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto pb-20">
+        <datalist id="vehicle-list">
+          {existingVehicles.map(v => <option key={v} value={v} />)}
+        </datalist>
+
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Laporan" : "Input Laporan Baru"}</h1>
@@ -283,20 +299,11 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                   <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
                     <div className="flex items-center justify-between">
                       <FormLabel className="flex items-center gap-2"><MapPin size={14} className="text-red-500" /> Daftar Kelurahan</FormLabel>
-                      <Button 
-                        type="button" 
-                        variant="outline" 
-                        size="sm" 
-                        className="h-7 text-[10px] bg-white"
-                        onClick={() => {
-                          const current = form.getValues(`tasks.${taskIndex}.location.village`);
-                          form.setValue(`tasks.${taskIndex}.location.village`, [...current, ""]);
-                        }}
-                      >
-                        <Plus size={12} className="mr-1" /> Tambah Kelurahan
-                      </Button>
+                      <Button type="button" variant="outline" size="sm" className="h-7 text-[10px] bg-white" onClick={() => {
+                        const current = form.getValues(`tasks.${taskIndex}.location.village`);
+                        form.setValue(`tasks.${taskIndex}.location.village`, [...current, ""]);
+                      }}><Plus size={12} className="mr-1" /> Tambah Kelurahan</Button>
                     </div>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {form.watch(`tasks.${taskIndex}.location.village`)?.map((_, vIdx) => (
                         <div key={vIdx} className="flex gap-2 items-center">
@@ -304,27 +311,15 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                             <FormItem className="flex-1">
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl><SelectTrigger className="bg-white h-9 text-xs"><SelectValue placeholder="Pilih Kelurahan..." /></SelectTrigger></FormControl>
-                                <SelectContent>
-                                  {form.watch(`tasks.${taskIndex}.location.subDistrict`) && medanDistricts[form.watch(`tasks.${taskIndex}.location.subDistrict`)].map(v => (
-                                    <SelectItem key={v} value={v}>{v}</SelectItem>
-                                  ))}
-                                </SelectContent>
+                                <SelectContent>{form.watch(`tasks.${taskIndex}.location.subDistrict`) && medanDistricts[form.watch(`tasks.${taskIndex}.location.subDistrict`)].map(v => (<SelectItem key={v} value={v}>{v}</SelectItem>))}</SelectContent>
                               </Select>
                             </FormItem>
                           )} />
                           {form.watch(`tasks.${taskIndex}.location.village`).length > 1 && (
-                            <Button 
-                              type="button" 
-                              variant="ghost" 
-                              size="icon" 
-                              className="h-9 w-9 text-red-400 hover:text-red-600"
-                              onClick={() => {
-                                const current = form.getValues(`tasks.${taskIndex}.location.village`);
-                                form.setValue(`tasks.${taskIndex}.location.village`, current.filter((_, i) => i !== vIdx));
-                              }}
-                            >
-                              <Trash2 size={14} />
-                            </Button>
+                            <Button type="button" variant="ghost" size="icon" className="h-9 w-9 text-red-400 hover:text-red-600" onClick={() => {
+                              const current = form.getValues(`tasks.${taskIndex}.location.village`);
+                              form.setValue(`tasks.${taskIndex}.location.village`, current.filter((_, i) => i !== vIdx));
+                            }}><Trash2 size={14} /></Button>
                           )}
                         </div>
                       ))}
@@ -340,73 +335,50 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                     <FormField control={form.control} name={`tasks.${taskIndex}.photos.hundred`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 100%" value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
                   </div>
                   <FormField control={form.control} name={`tasks.${taskIndex}.volume`} render={({ field }) => (
-                    <FormItem className="max-w-[200px]">
-                      <FormLabel>Volume ({getUnitByCategory(selectedCategory)})</FormLabel>
-                      <FormControl><Input type="number" {...field} /></FormControl>
-                    </FormItem>
+                    <FormItem className="max-w-[200px]"><FormLabel>Volume ({getUnitByCategory(selectedCategory)})</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
                   )} />
                 </div>
 
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 text-sm font-bold text-red-600"><Fuel size={16} /> Operasional Alat Berat & BBM</div>
-                  
-                  {(selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon") && (
-                    <div className="p-4 border rounded-lg bg-orange-50/30 border-orange-200 mb-4">
-                      <FormField control={form.control} name={`tasks.${taskIndex}.vehicle`} render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="flex items-center gap-2 text-orange-700"><Truck size={14} /> Pilih Plat Kendaraan</FormLabel>
-                          <Select onValueChange={(val) => {
-                            field.onChange(val);
-                            // Auto-update coordinator for this task
-                            const coordinator = vehicleCoordinatorMapping[val] || "";
-                            form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator);
-                          }} value={field.value}>
-                            <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder="Pilih Plat..." /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {selectedCategory === "Tim Siram" ? (
-                                <>
-                                  <SelectItem value="BK 8128 A">BK 8128 A</SelectItem>
-                                  <SelectItem value="BK 9031 J">BK 9031 J</SelectItem>
-                                </>
-                              ) : (
-                                <>
-                                  <SelectItem value="BK 8265 A">BK 8265 A</SelectItem>
-                                  <SelectItem value="BK 8266 A">BK 8266 A</SelectItem>
-                                  <SelectItem value="BK 8451 J">BK 8451 J</SelectItem>
-                                </>
-                              )}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )} />
-                    </div>
-                  )}
-
                   <div className="space-y-4">
                     {form.watch(`tasks.${taskIndex}.heavyEquipment`)?.map((_, heIdx) => (
                       <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
-                        <div className="flex gap-4 items-end">
-                          <div className="flex-1">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel>Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Excavator..." /></FormControl></FormItem>)} />
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                          <div className="md:col-span-5">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Excavator..." /></FormControl></FormItem>)} />
                           </div>
-                          <div className="w-24">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel>Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                          <div className="md:col-span-4">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.vehicle`} render={({ field }) => (
+                              <FormItem><FormLabel className="text-xs">Plat Kendaraan</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX" onChange={(e) => {
+                                field.onChange(e);
+                                if (heIdx === 0 && (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon")) {
+                                  const coordinator = vehicleCoordinatorMapping[e.target.value] || "";
+                                  if (coordinator) form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator);
+                                }
+                              }} /></FormControl></FormItem>
+                            )} />
                           </div>
-                          <Button type="button" variant="destructive" size="icon" onClick={() => {
-                            const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`);
-                            form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx));
-                          }}><Trash2 className="h-4 w-4" /></Button>
+                          <div className="md:col-span-2">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                          </div>
+                          <div className="md:col-span-1 flex justify-end">
+                            <Button type="button" variant="destructive" size="icon" className="h-10 w-10" onClick={() => {
+                              const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`);
+                              form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx));
+                            }}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 p-3 bg-white rounded border border-red-100">
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1">Pertamax (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1">Dexlite (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] flex items-center gap-1">Solar (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Pertamax (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Dexlite (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Solar (L)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
                         </div>
                       </div>
                     ))}
                     <Button type="button" variant="outline" size="sm" className="w-full border-dashed" onClick={() => {
                       const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || [];
-                      form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", quantity: 1, fuel: { pertamax: 0, dexlite: 0, solar: 0 } }]);
+                      form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", quantity: 1, fuel: { pertamax: 0, dexlite: 0, solar: 0 } }]);
                     }}><Plus className="h-3 w-3 mr-2" /> Tambah Alat Berat</Button>
                   </div>
                 </div>
@@ -441,11 +413,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div>
-                  <FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (
-                    <FormItem>
-                      <FormControl><Input {...field} placeholder="Catatan khusus untuk lokasi/kegiatan ini..." /></FormControl>
-                    </FormItem>
-                  )} />
+                  <FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Catatan khusus untuk lokasi/kegiatan ini..." /></FormControl></FormItem>)} />
                 </div>
               </CardContent>
             </Card>

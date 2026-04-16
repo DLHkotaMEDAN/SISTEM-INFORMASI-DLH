@@ -11,6 +11,7 @@ export interface FuelUsage {
 }
 
 export interface HeavyEquipment extends Equipment {
+  vehicle?: string;
   fuel: FuelUsage;
 }
 
@@ -55,7 +56,7 @@ export interface Report {
   id: string;
   date: string;
   category: ReportCategory;
-  vehicle?: string; // Tetap ada untuk kompatibilitas data lama jika perlu, tapi input akan pindah ke task
+  vehicle?: string;
   description: string;
   location: Location;
   tasks: Task[];
