@@ -54,9 +54,23 @@ const MonthlyRecap = () => {
     }
   };
 
+  // Meratakan laporan menjadi daftar tugas (tasks) agar setiap kegiatan muncul di baris sendiri
+  const flatTasks = reports.flatMap((report, reportIdx) => 
+    report.tasks.map((task, taskIdx) => ({
+      ...task,
+      reportId: report.id,
+      reportDate: report.date,
+      reportCategory: report.category,
+      reportRemarks: report.remarks,
+      isFirstInReport: taskIdx === 0,
+      taskCount: report.tasks.length,
+      displayIdx: reportIdx + 1
+    }))
+  );
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
-      <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
+      <div className="max-w-[1400px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <Button variant="ghost" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -88,150 +102,159 @@ const MonthlyRecap = () => {
           </div>
 
           <Button onClick={() => window.print()} className="bg-blue-600">
-            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap A3
           </Button>
         </div>
       </div>
 
-      <div className="print-area bg-white p-8 mx-auto shadow-lg border min-h-[297mm]">
+      <div className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
         <div className="text-center border-b-4 border-double border-black pb-4 mb-6">
-          <h1 className="text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
-          <h2 className="text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
+          <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
+          <h2 className="text-3xl font-black uppercase">Dinas Lingkungan Hidup</h2>
           <p className="text-sm italic">Jl. Sidorame No.12, Kec. Medan Perjuangan, Kota Medan, Sumatera Utara</p>
         </div>
 
         <div className="text-center mb-8">
-          <h3 className="text-lg font-bold underline uppercase">REKAPITULASI LAPORAN KEGIATAN HARIAN</h3>
-          <p className="font-medium">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
-          {selectedCategory !== "semua" && <p className="font-bold">Kategori: {selectedCategory.toUpperCase()}</p>}
+          <h3 className="text-xl font-bold underline uppercase">REKAPITULASI LAPORAN KEGIATAN HARIAN</h3>
+          <p className="text-lg font-medium">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+          {selectedCategory !== "semua" && <p className="text-lg font-bold">Kategori: {selectedCategory.toUpperCase()}</p>}
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-2 border-black text-[10px] table-fixed">
+          <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
             <thead>
               <tr className="bg-slate-100">
-                <th className="border-2 border-black p-1 w-[25px]" rowSpan={2}>No</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Hari / Tgl</th>
-                <th className="border-2 border-black p-1 w-[130px]" rowSpan={2}>Uraian Kegiatan</th>
-                <th className="border-2 border-black p-1 w-[150px]" rowSpan={2}>Lokasi</th>
-                <th className="border-2 border-black p-1" colSpan={3}>Dokumentasi</th>
-                <th className="border-2 border-black p-1 w-[60px]" rowSpan={2}>Vol</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Peralatan</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Alat Berat</th>
-                <th className="border-2 border-black p-1 w-[105px]" colSpan={3}>BBM (Liter)</th>
-                <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Koordinator</th>
-                <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan</th>
+                <th className="border-2 border-black p-2 w-[35px]" rowSpan={2}>No</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Hari / Tgl</th>
+                <th className="border-2 border-black p-2 w-[180px]" rowSpan={2}>Uraian Kegiatan</th>
+                <th className="border-2 border-black p-2 w-[200px]" rowSpan={2}>Lokasi</th>
+                <th className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
+                <th className="border-2 border-black p-2 w-[70px]" rowSpan={2}>Vol</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Peralatan</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Alat Berat</th>
+                <th className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>
+                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Koordinator</th>
+                <th className="border-2 border-black p-2 w-[120px]" rowSpan={2}>Keterangan</th>
               </tr>
               <tr className="bg-slate-50">
-                <th className="border-2 border-black p-1 w-[105px]">0%</th>
-                <th className="border-2 border-black p-1 w-[105px]">50%</th>
-                <th className="border-2 border-black p-1 w-[105px]">100%</th>
-                <th className="border-2 border-black p-1 text-[8px] w-[35px]">P</th>
-                <th className="border-2 border-black p-1 text-[8px] w-[35px]">D</th>
-                <th className="border-2 border-black p-1 text-[8px] w-[35px]">S</th>
+                <th className="border-2 border-black p-1 w-[110px]">0%</th>
+                <th className="border-2 border-black p-1 w-[110px]">50%</th>
+                <th className="border-2 border-black p-1 w-[110px]">100%</th>
+                <th className="border-2 border-black p-1 text-[9px] w-[40px]">P</th>
+                <th className="border-2 border-black p-1 text-[9px] w-[40px]">D</th>
+                <th className="border-2 border-black p-1 text-[9px] w-[40px]">S</th>
               </tr>
             </thead>
             <tbody>
-              {reports.length > 0 ? reports.map((r, idx) => {
-                const firstTask = r.tasks?.[0];
-                const villages = Array.isArray(firstTask?.location.village) 
-                  ? firstTask.location.village.join(", ") 
-                  : firstTask?.location.village;
+              {flatTasks.length > 0 ? flatTasks.map((task, idx) => {
+                const villages = Array.isArray(task.location.village) 
+                  ? task.location.village.join(", ") 
+                  : task.location.village;
                 
                 return (
-                  <tr key={r.id}>
-                    <td className="border-2 border-black p-1 text-center align-top">{idx + 1}</td>
-                    <td className="border-2 border-black p-1 text-center align-top whitespace-normal break-words">
-                      {new Date(r.date).toLocaleDateString('id-ID', { 
-                        weekday: 'short', 
-                        day: '2-digit', 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })}
+                  <tr key={`${task.reportId}-${idx}`}>
+                    {task.isFirstInReport ? (
+                      <>
+                        <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={task.taskCount}>{task.displayIdx}</td>
+                        <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={task.taskCount}>
+                          {new Date(task.reportDate).toLocaleDateString('id-ID', { 
+                            weekday: 'short', 
+                            day: '2-digit', 
+                            month: 'short', 
+                            year: 'numeric' 
+                          })}
+                        </td>
+                      </>
+                    ) : null}
+                    
+                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words">{task.description}</td>
+                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words">
+                      {`${task.location.street}, ${villages}, ${task.location.subDistrict}`}
                     </td>
-                    <td className="border-2 border-black p-1 align-top whitespace-normal break-words">{r.description}</td>
-                    <td className="border-2 border-black p-1 align-top whitespace-normal break-words">
-                      {`${firstTask?.location.street}, ${villages}, ${firstTask?.location.subDistrict}`}
-                    </td>
-                    <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {firstTask?.photos?.zero ? <img src={firstTask.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
+                        {task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
                       </div>
                     </td>
-                    <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {firstTask?.photos?.fifty ? <img src={firstTask.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
+                        {task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
                       </div>
                     </td>
-                    <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {firstTask?.photos?.hundred ? <img src={firstTask.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
+                    <td className="border-2 border-black p-1 align-middle">
+                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
+                        {task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
                       </div>
                     </td>
-                    <td className="border-2 border-black p-1 text-center font-bold align-top">
-                      {r.volume} {getUnitByCategory(r.category)}
+                    <td className="border-2 border-black p-2 text-center font-bold align-top">
+                      {task.volume} {getUnitByCategory(task.reportCategory)}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.equipment?.map((e, i) => (
+                    <td className="border-2 border-black p-2 align-top text-[10px]">
+                      {task.equipment?.map((e, i) => (
                         <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
                           {e.type} ({e.quantity})
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.heavyEquipment?.map((he, i) => (
+                    <td className="border-2 border-black p-2 align-top text-[10px]">
+                      {task.heavyEquipment?.map((he, i) => (
                         <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
                           {he.type} ({he.quantity})
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.heavyEquipment?.map((he, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1 text-center">
+                    <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                      {task.heavyEquipment?.map((he, i) => (
+                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
                           {he.fuel?.pertamax || 0}
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.heavyEquipment?.map((he, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1 text-center">
+                    <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                      {task.heavyEquipment?.map((he, i) => (
+                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
                           {he.fuel?.dexlite || 0}
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-1 align-top text-[9px]">
-                      {r.heavyEquipment?.map((he, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1 text-center">
+                    <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                      {task.heavyEquipment?.map((he, i) => (
+                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
                           {he.fuel?.solar || 0}
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-1 text-center align-top whitespace-normal break-words">{r.personnel.coordinator}</td>
-                    <td className="border-2 border-black p-1 align-top whitespace-normal break-words">{r.remarks || "-"}</td>
+                    <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
+                    
+                    {task.isFirstInReport ? (
+                      <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic" rowSpan={task.taskCount}>
+                        {task.reportRemarks || "-"}
+                      </td>
+                    ) : null}
                   </tr>
                 );
               }) : (
                 <tr>
-                  <td colSpan={15} className="border-2 border-black p-8 text-center text-slate-400 italic">Tidak ada data laporan untuk periode ini</td>
+                  <td colSpan={15} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 gap-8 text-sm">
+        <div className="mt-16 grid grid-cols-2 gap-20 text-base">
           <div className="text-center">
             <p>Mengetahui,</p>
             <p className="font-bold">Kepala Bidang / Kasi</p>
-            <div className="h-24"></div>
-            <p className="font-bold underline">( ............................................ )</p>
+            <div className="h-32"></div>
+            <p className="font-bold underline text-lg">( ............................................ )</p>
             <p>NIP. ............................................</p>
           </div>
           <div className="text-center">
             <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
             <p className="font-bold">Dibuat Oleh,</p>
-            <div className="h-24"></div>
-            <p className="font-bold underline">( ............................................ )</p>
+            <div className="h-32"></div>
+            <p className="font-bold underline text-lg">( ............................................ )</p>
             <p>Koordinator Lapangan</p>
           </div>
         </div>
@@ -248,14 +271,21 @@ const MonthlyRecap = () => {
             margin: 0 !important;
             width: 100% !important;
             max-width: none !important;
-            zoom: 0.52;
           }
           @page { 
             size: A3 landscape; 
-            margin: 0.5cm;
+            margin: 1.5cm;
           }
-          table { page-break-inside: auto; }
-          tr { page-break-inside: avoid; page-break-after: auto; }
+          table { 
+            page-break-inside: auto; 
+            width: 100% !important;
+          }
+          tr { 
+            page-break-inside: avoid; 
+            page-break-after: auto; 
+          }
+          thead { display: table-header-group; }
+          tfoot { display: table-footer-group; }
         }
       `}} />
     </div>
