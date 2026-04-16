@@ -123,9 +123,9 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan</th>
               </tr>
               <tr className="bg-slate-50">
-                <th className="border-2 border-black p-1 w-[210px]">0%</th>
-                <th className="border-2 border-black p-1 w-[210px]">50%</th>
-                <th className="border-2 border-black p-1 w-[210px]">100%</th>
+                <th className="border-2 border-black p-1 w-[105px]">0%</th>
+                <th className="border-2 border-black p-1 w-[105px]">50%</th>
+                <th className="border-2 border-black p-1 w-[105px]">100%</th>
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">P</th>
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">D</th>
                 <th className="border-2 border-black p-1 text-[8px] w-[35px]">S</th>
@@ -150,17 +150,17 @@ const MonthlyRecap = () => {
                       {`${r.location.street}, ${r.location.village}, ${r.location.subDistrict}`}
                     </td>
                     <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[260px] bg-slate-100 border border-slate-300 overflow-hidden">
+                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
                         {firstTask?.photos?.zero ? <img src={firstTask.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[260px] bg-slate-100 border border-slate-300 overflow-hidden">
+                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
                         {firstTask?.photos?.fifty ? <img src={firstTask.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-0.5 align-middle">
-                      <div className="w-full h-[260px] bg-slate-100 border border-slate-300 overflow-hidden">
+                      <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
                         {firstTask?.photos?.hundred ? <img src={firstTask.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
                       </div>
                     </td>
