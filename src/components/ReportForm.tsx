@@ -186,21 +186,13 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         });
         task.equipment.forEach((e: any) => allEquipment.push(e as Equipment));
         totalMembers += task.personnel.members;
-
-        // Jika Tim Siram, tambahkan plat ke deskripsi jika belum ada
-        if (values.category === "Tim Siram" && task.vehicle) {
-          const platePrefix = `[${task.vehicle}] `;
-          if (!task.description.startsWith(platePrefix)) {
-            task.description = `${platePrefix}${task.description}`;
-          }
-        }
         return task;
       });
 
       const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
-        vehicle: finalTasks[0].vehicle, // Simpan vehicle pertama sebagai default report vehicle
+        vehicle: finalTasks[0].vehicle,
         description: finalTasks[0].description,
         location: finalTasks[0].location as Location,
         tasks: finalTasks as Task[],

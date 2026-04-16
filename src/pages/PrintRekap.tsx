@@ -37,6 +37,10 @@ const PrintRekap = () => {
     }
   };
 
+  const cleanDescription = (desc: string) => {
+    return desc.replace(/^\[BK\s\d+\s[A-Z]+\]\s*/, '');
+  };
+
   if (loading) return <div className="p-20 text-center">Menyiapkan data cetak...</div>;
 
   return (
@@ -83,7 +87,7 @@ const PrintRekap = () => {
                 <div key={i} className="space-y-6 border-b-2 border-slate-100 pb-12 last:border-0">
                   <div className="flex items-center gap-3">
                     <div className="bg-black text-white w-8 h-8 flex items-center justify-center font-bold rounded-full text-sm">{i + 1}</div>
-                    <h3 className="text-lg font-bold">Kegiatan: {task.description}</h3>
+                    <h3 className="text-lg font-bold">Kegiatan: {cleanDescription(task.description)}</h3>
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
