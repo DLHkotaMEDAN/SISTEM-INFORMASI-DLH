@@ -39,6 +39,7 @@ export interface Task {
   equipment: Equipment[];
   heavyEquipment: HeavyEquipment[];
   personnel: Personnel;
+  vehicle?: string;
   remarks?: string;
 }
 
@@ -54,7 +55,7 @@ export interface Report {
   id: string;
   date: string;
   category: ReportCategory;
-  vehicle?: string;
+  vehicle?: string; // Tetap ada untuk kompatibilitas data lama jika perlu, tapi input akan pindah ke task
   description: string;
   location: Location;
   tasks: Task[];

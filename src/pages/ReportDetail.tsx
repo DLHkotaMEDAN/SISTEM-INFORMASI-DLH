@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
 import { getUnitByCategory } from '@/utils/report-helpers';
@@ -53,7 +53,6 @@ const ReportDetail = () => {
             <div className="text-right">
               <h3 className="text-lg font-bold underline">LAPORAN KEGIATAN HARIAN</h3>
               <p className="font-bold">{report.category.toUpperCase()}</p>
-              {report.vehicle && <p className="text-sm font-bold">PLAT: {report.vehicle}</p>}
             </div>
           </div>
 
@@ -83,6 +82,13 @@ const ReportDetail = () => {
 
                     <div className="bg-slate-50 p-4 rounded border space-y-3">
                       <p className="text-slate-500 text-xs uppercase font-bold mb-1">Sumber Daya & Personil</p>
+                      
+                      {task.vehicle && (
+                        <div className="mb-3 p-2 bg-orange-50 border border-orange-100 rounded flex items-center gap-2 text-orange-700 font-bold text-xs">
+                          <Truck size={14} /> PLAT: {task.vehicle}
+                        </div>
+                      )}
+
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
                           <p className="flex items-center gap-1 font-bold"><Users size={12} /> Koordinator:</p>

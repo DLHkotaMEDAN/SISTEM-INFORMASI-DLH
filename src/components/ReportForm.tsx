@@ -73,13 +73,13 @@ const taskSchema = z.object({
     coordinator: z.string().min(1, "Nama koordinator wajib diisi"),
     members: z.coerce.number().int().min(0),
   }),
+  vehicle: z.string().optional(),
   remarks: z.string().optional().default(""),
 });
 
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
-  vehicle: z.string().optional(),
   tasks: z.array(taskSchema).min(1),
   remarks: z.string().optional().default(""),
 });
@@ -99,7 +99,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     defaultValues: initialData ? {
       date: initialData.date,
       category: initialData.category,
-      vehicle: initialData.vehicle || "",
       tasks: initialData.tasks.map(t => ({
         ...t,
         location: {
@@ -111,7 +110,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     } : {
       date: new Date().toISOString().split('T')[0],
       category: "",
-      vehicle: "",
       tasks: [{ 
         description: "", 
         location: { street: "", village: [""], subDistrict: "" },
@@ -120,6 +118,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         equipment: [{ type: "", quantity: 1 }],
         heavyEquipment: [],
         personnel: { coordinator: "", members: 0 },
+        vehicle: "",
         remarks: ""
       }],
       remarks: "",
@@ -127,17 +126,17 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   });
 
   const selectedCategory = form.watch("category");
-  const selectedVehicle = form.watch("vehicle");
   
   const { fields: taskFields, append: appendTask, remove: removeTask } = useFieldArray({ control: form.control, name: "tasks" });
 
+  // Auto-fill coordinator based on category or vehicle
   useEffect(() => {
     if (!isEditing && selectedCategory) {
       const tasks = form.getValues("tasks");
       const updatedTasks = tasks.map(task => {
         let coordinator = task.personnel.coordinator;
         if (selectedCategory === "Tim Siram") {
-          coordinator = selectedVehicle ? siramCoordinatorMapping[selectedVehicle] || "" : "";
+          coordinator = task.vehicle ? siramCoordinatorMapping[task.vehicle] || "" : "";
         } else {
           coordinator = coordinatorMapping[selectedCategory] || "";
         }
@@ -145,7 +144,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       });
       form.setValue("tasks", updatedTasks);
     }
-  }, [selectedCategory, selectedVehicle, form, isEditing]);
+  }, [selectedCategory, form, isEditing]);
 
   const uploadTaskPhotos = async (tasks: any[]) => {
     const updatedTasks = [...tasks];
@@ -188,13 +187,12 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         task.equipment.forEach((e: any) => allEquipment.push(e as Equipment));
         totalMembers += task.personnel.members;
 
-        if (values.category === "Tim Siram" && values.vehicle) {
-          const platePrefix = `[${values.vehicle}] `;
-          const cleanDescription = task.description.startsWith(platePrefix) 
-            ? task.description.slice(platePrefix.length) 
-            : task.description;
-          
-          return { ...task, description: `${platePrefix}${cleanDescription}` };
+        // Jika Tim Siram, tambahkan plat ke deskripsi jika belum ada
+        if (values.category === "Tim Siram" && task.vehicle) {
+          const platePrefix = `[${task.vehicle}] `;
+          if (!task.description.startsWith(platePrefix)) {
+            task.description = `${platePrefix}${task.description}`;
+          }
         }
         return task;
       });
@@ -202,7 +200,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
-        vehicle: values.vehicle,
+        vehicle: finalTasks[0].vehicle, // Simpan vehicle pertama sebagai default report vehicle
         description: finalTasks[0].description,
         location: finalTasks[0].location as Location,
         tasks: finalTasks as Task[],
@@ -260,26 +258,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
             )} />
           </CardContent>
         </Card>
-
-        {selectedCategory === "Tim Siram" && (
-          <Card className="border-l-4 border-l-orange-500 bg-orange-50/30">
-            <CardHeader><CardTitle className="text-sm flex items-center gap-2"><Truck size={16} /> Kendaraan Operasional</CardTitle></CardHeader>
-            <CardContent>
-              <FormField control={form.control} name="vehicle" render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Pilih Plat Kendaraan</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
-                    <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder="Pilih Plat..." /></SelectTrigger></FormControl>
-                    <SelectContent>
-                      <SelectItem value="BK 8128 A">BK 8128 A</SelectItem>
-                      <SelectItem value="BK 9031 J">BK 9031 J</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </FormItem>
-              )} />
-            </CardContent>
-          </Card>
-        )}
 
         <div className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="text-blue-600" /> Daftar Kegiatan & Sumber Daya</h2>
@@ -376,6 +354,29 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
                 <div className="pt-6 border-t border-slate-100 space-y-4">
                   <div className="flex items-center gap-2 text-sm font-bold text-red-600"><Fuel size={16} /> Operasional Alat Berat & BBM</div>
+                  
+                  {selectedCategory === "Tim Siram" && (
+                    <div className="p-4 border rounded-lg bg-orange-50/30 border-orange-200 mb-4">
+                      <FormField control={form.control} name={`tasks.${taskIndex}.vehicle`} render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2 text-orange-700"><Truck size={14} /> Pilih Plat Kendaraan</FormLabel>
+                          <Select onValueChange={(val) => {
+                            field.onChange(val);
+                            // Auto-update coordinator for this task
+                            const coordinator = siramCoordinatorMapping[val] || "";
+                            form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator);
+                          }} value={field.value}>
+                            <FormControl><SelectTrigger className="bg-white"><SelectValue placeholder="Pilih Plat..." /></SelectTrigger></FormControl>
+                            <SelectContent>
+                              <SelectItem value="BK 8128 A">BK 8128 A</SelectItem>
+                              <SelectItem value="BK 9031 J">BK 9031 J</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </FormItem>
+                      )} />
+                    </div>
+                  )}
+
                   <div className="space-y-4">
                     {form.watch(`tasks.${taskIndex}.heavyEquipment`)?.map((_, heIdx) => (
                       <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
@@ -452,6 +453,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
             equipment: [{ type: "", quantity: 1 }],
             heavyEquipment: [],
             personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 },
+            vehicle: "",
             remarks: ""
           })}><Plus className="mr-2 h-5 w-5" /> Tambah Kegiatan & Lokasi Baru</Button>
         </div>

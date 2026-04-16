@@ -5,7 +5,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, Fuel, Users, Wrench, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Printer, Fuel, Users, Wrench, MessageSquare, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const PrintRekap = () => {
@@ -68,7 +68,6 @@ const PrintRekap = () => {
               <div className="text-right">
                 <h3 className="text-lg font-bold underline">LAPORAN KEGIATAN HARIAN</h3>
                 <p className="font-bold">{report.category.toUpperCase()}</p>
-                {report.vehicle && <p className="text-sm font-bold">PLAT: {report.vehicle}</p>}
               </div>
             </div>
 
@@ -100,6 +99,13 @@ const PrintRekap = () => {
 
                       <div className="bg-slate-50 p-4 rounded border border-slate-200 space-y-3">
                         <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Sumber Daya & Personil</p>
+                        
+                        {task.vehicle && (
+                          <div className="mb-2 p-1 bg-orange-50 border border-orange-100 rounded flex items-center gap-2 text-orange-700 font-bold text-[10px]">
+                            <Truck size={12} /> PLAT: {task.vehicle}
+                          </div>
+                        )}
+
                         <div className="grid grid-cols-2 gap-4 text-[11px]">
                           <div>
                             <p className="flex items-center gap-1 font-bold"><Users size={12} /> Koordinator:</p>
