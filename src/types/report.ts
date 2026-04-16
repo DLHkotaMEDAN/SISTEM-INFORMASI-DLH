@@ -21,7 +21,7 @@ export interface Personnel {
 
 export interface Location {
   street: string;
-  village: string;
+  village: string[];
   subDistrict: string;
 }
 

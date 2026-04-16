@@ -59,7 +59,7 @@ const PrintRekap = () => {
       <div className="print-container space-y-12">
         {reports.map((report) => (
           <div key={report.id} className="bg-white border shadow-none break-after-page p-8 space-y-8 mx-auto max-w-[900px]">
-            {/* Header - Sama dengan Detail */}
+            {/* Header */}
             <div className="border-b-2 border-black pb-4 flex justify-between items-center">
               <div>
                 <h1 className="text-xl font-bold">PEMERINTAH KOTA MEDAN</h1>
@@ -91,7 +91,10 @@ const PrintRekap = () => {
                     <div className="space-y-4">
                       <div className="bg-slate-50 p-4 rounded border border-slate-200">
                         <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Lokasi & Volume</p>
-                        <p className="font-bold text-sm">{task.location.street}, {task.location.village}, {task.location.subDistrict}</p>
+                        <p className="font-bold text-sm">{task.location.street}</p>
+                        <p className="text-[10px] text-slate-600">
+                          Kel: {Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village}, Kec: {task.location.subDistrict}
+                        </p>
                         <p className="text-blue-600 font-bold mt-2 text-sm">Volume: {task.volume} {getUnitByCategory(report.category)}</p>
                       </div>
 
@@ -139,7 +142,6 @@ const PrintRekap = () => {
                       </div>
                     </div>
 
-                    {/* Grid Foto - Sama dengan Detail */}
                     <div className="grid grid-cols-3 gap-2">
                       {['0%', '50%', '100%'].map((label, idx) => {
                         const img = idx === 0 ? task.photos.zero : idx === 1 ? task.photos.fifty : task.photos.hundred;
@@ -158,7 +160,6 @@ const PrintRekap = () => {
               ))}
             </div>
 
-            {/* Keterangan Umum */}
             {report.remarks && (
               <div className="pt-6 border-t-2 border-black">
                 <p className="text-slate-500 text-[10px] uppercase font-bold mb-1">Keterangan Tambahan (Umum)</p>

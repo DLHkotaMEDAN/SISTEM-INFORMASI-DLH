@@ -74,7 +74,10 @@ const ReportDetail = () => {
                   <div className="space-y-4">
                     <div className="bg-slate-50 p-4 rounded border">
                       <p className="text-slate-500 text-xs uppercase font-bold mb-1">Lokasi & Volume</p>
-                      <p className="font-bold">{task.location.street}, {task.location.village}, {task.location.subDistrict}</p>
+                      <p className="font-bold">{task.location.street}</p>
+                      <p className="text-xs text-slate-600">
+                        Kel: {Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village}, Kec: {task.location.subDistrict}
+                      </p>
                       <p className="text-blue-600 font-bold mt-2">Volume: {task.volume} {getUnitByCategory(report.category)}</p>
                     </div>
 

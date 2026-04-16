@@ -134,6 +134,10 @@ const MonthlyRecap = () => {
             <tbody>
               {reports.length > 0 ? reports.map((r, idx) => {
                 const firstTask = r.tasks?.[0];
+                const villages = Array.isArray(firstTask?.location.village) 
+                  ? firstTask.location.village.join(", ") 
+                  : firstTask?.location.village;
+                
                 return (
                   <tr key={r.id}>
                     <td className="border-2 border-black p-1 text-center align-top">{idx + 1}</td>
@@ -147,7 +151,7 @@ const MonthlyRecap = () => {
                     </td>
                     <td className="border-2 border-black p-1 align-top whitespace-normal break-words">{r.description}</td>
                     <td className="border-2 border-black p-1 align-top whitespace-normal break-words">
-                      {`${r.location.street}, ${r.location.village}, ${r.location.subDistrict}`}
+                      {`${firstTask?.location.street}, ${villages}, ${firstTask?.location.subDistrict}`}
                     </td>
                     <td className="border-2 border-black p-0.5 align-middle">
                       <div className="w-full h-[130px] bg-slate-100 border border-slate-300 overflow-hidden">
