@@ -23,13 +23,10 @@ export const reportService = {
     return data as Report;
   },
 
-  async createReport(report: Omit<Report, 'id' | 'createdAt' | 'syncStatus'>) {
+  async createReport(report: Omit<Report, 'id' | 'createdAt'>) {
     const { data, error } = await supabase
       .from('reports')
-      .insert([{
-        ...report,
-        syncStatus: 'synced'
-      }])
+      .insert([report])
       .select()
       .single();
     
@@ -40,10 +37,7 @@ export const reportService = {
   async updateReport(id: string, report: Partial<Report>) {
     const { data, error } = await supabase
       .from('reports')
-      .update({
-        ...report,
-        syncStatus: 'synced'
-      })
+      .update(report)
       .eq('id', id)
       .select()
       .single();

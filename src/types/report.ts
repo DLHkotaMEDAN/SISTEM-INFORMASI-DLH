@@ -63,7 +63,6 @@ export interface Report {
   personnel: Personnel;
   remarks: string;
   createdAt: string;
-  syncStatus: 'synced' | 'pending';
   unit: string;
   volume: number;
 }

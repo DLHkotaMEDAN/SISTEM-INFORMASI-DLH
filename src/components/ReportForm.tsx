@@ -145,15 +145,12 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       const task = updatedTasks[i];
       setUploadProgress(`Mengunggah foto kegiatan #${i + 1}...`);
       
-      // Upload foto 0% jika berupa base64
       if (task.photos.zero && task.photos.zero.startsWith('data:image')) {
         task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
       }
-      // Upload foto 50% jika berupa base64
       if (task.photos.fifty && task.photos.fifty.startsWith('data:image')) {
         task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
       }
-      // Upload foto 100% jika berupa base64
       if (task.photos.hundred && task.photos.hundred.startsWith('data:image')) {
         task.photos.hundred = await storageService.uploadPhoto(task.photos.hundred, `task_${i}_100`);
       }
@@ -164,7 +161,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      // 1. Unggah semua foto ke Supabase Storage terlebih dahulu
       const processedTasksWithUrls = await uploadTaskPhotos(values.tasks);
 
       let totalVolume = 0;
@@ -195,7 +191,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         return task;
       });
 
-      const reportData: Omit<Report, 'id' | 'createdAt' | 'syncStatus'> = {
+      const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
         vehicle: values.vehicle,
