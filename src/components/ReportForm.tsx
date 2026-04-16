@@ -153,13 +153,32 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
       const totalVolume = values.tasks.reduce((acc, curr) => acc + curr.volume, 0);
 
+      // Logika untuk memasukkan Plat Kendaraan ke dalam Uraian Kegiatan khusus Tim Siram
+      const processedTasks = values.tasks.map(task => {
+        if (values.category === "Tim Siram" && values.vehicle) {
+          // Hindari duplikasi jika sudah ada plat di awal
+          const platePrefix = `[${values.vehicle}] `;
+          const cleanDescription = task.description.startsWith(platePrefix) 
+            ? task.description.slice(platePrefix.length) 
+            : task.description;
+          
+          return {
+            ...task,
+            description: `${platePrefix}${cleanDescription}`
+          };
+        }
+        return task;
+      });
+
+      const mainDescription = processedTasks[0].description;
+
       const reportData: Omit<Report, 'id' | 'createdAt' | 'syncStatus'> = {
         date: values.date,
         category: values.category as ReportCategory,
         vehicle: values.vehicle,
-        description: values.tasks[0].description,
+        description: mainDescription,
         location: values.tasks[0].location as Location,
-        tasks: values.tasks as Task[],
+        tasks: processedTasks as Task[],
         volume: totalVolume,
         unit: getUnitByCategory(values.category),
         equipment: values.equipment.map(e => ({ type: e.type, quantity: Math.round(e.quantity) })),
