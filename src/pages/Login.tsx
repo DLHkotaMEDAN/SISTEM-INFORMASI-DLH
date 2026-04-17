@@ -33,7 +33,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      // Otomatis menambahkan @gmail.com di belakang username
+      // Otomatis menambahkan @gmail.com di belakang username jika belum ada
       const email = username.includes('@') ? username : `${username}@gmail.com`;
       
       const { error } = await supabase.auth.signInWithPassword({
@@ -42,7 +42,6 @@ const Login = () => {
       });
 
       if (error) throw error;
-      // Navigasi akan ditangani oleh useEffect saat session berubah
     } catch (error: any) {
       console.error("Login error:", error);
       showError(error.message === "Invalid login credentials" 
@@ -59,9 +58,9 @@ const Login = () => {
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto mb-4">
             <img 
-              src="dyad-media://media/sleepy-chameleon-twirl/.dyad/media/fe4aaacb1b993e249a0e59981647a541.png" 
+              src="dyad-media://media/sleepy-chameleon-twirl/.dyad/media/661f769496604.png" 
               alt="Logo Dinas Lingkungan Hidup Kota Medan" 
-              className="h-32 w-32 object-contain mx-auto mix-blend-multiply"
+              className="h-40 w-40 object-contain mx-auto"
             />
           </div>
           <div className="space-y-1">
