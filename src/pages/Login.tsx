@@ -57,11 +57,18 @@ const Login = () => {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md shadow-xl border-t-4 border-t-blue-600">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto bg-blue-600 p-3 rounded-2xl w-fit">
+          <div className="mx-auto bg-blue-600 p-3 rounded-2xl w-fit mb-2">
             <FileText className="text-white h-8 w-8" />
           </div>
-          <CardTitle className="text-2xl font-bold">Sistem Laporan DLH</CardTitle>
-          <p className="text-slate-500 text-sm">Silakan masuk untuk mengelola laporan</p>
+          <div className="space-y-1">
+            <CardTitle className="text-xl md:text-2xl font-bold leading-tight">
+              Sistem Laporan Wilayah Medan Kota
+            </CardTitle>
+            <p className="text-sm md:text-base font-semibold text-blue-700">
+              Dinas Lingkungan Hidup Kota Medan
+            </p>
+          </div>
+          <p className="text-slate-500 text-xs mt-2">Silakan masuk untuk mengelola laporan</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
@@ -99,7 +106,7 @@ const Login = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 h-11 font-bold"
+              className="w-full bg-blue-600 hover:bg-blue-700 h-11 font-bold mt-2"
               disabled={loading}
             >
               {loading ? (
