@@ -148,8 +148,6 @@ const Index = () => {
 
   const stats = {
     total: reports.length,
-    totalFuel: reports.reduce((acc, r) => acc + (r.fuel?.pertamax || 0) + (r.fuel?.dexlite || 0) + (r.fuel?.solar || 0), 0),
-    totalPersonnel: reports.reduce((acc, r) => acc + (r.personnel?.coordinator ? 1 : 0) + (r.personnel?.members || 0), 0),
   };
 
   return (
@@ -241,24 +239,12 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Stats Grid - Responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
-          <Card className="bg-white border-none shadow-sm">
+        {/* Stats Grid - Only Total Reports */}
+        <div className="mb-6">
+          <Card className="bg-white border-none shadow-sm max-w-xs">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="bg-blue-100 p-2 rounded-full text-blue-600"><FileText className="h-5 w-5" /></div>
-              <div><p className="text-[10px] uppercase font-bold text-slate-400">Laporan</p><p className="text-lg font-bold">{stats.total}</p></div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-none shadow-sm">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="bg-yellow-100 p-2 rounded-full text-yellow-600"><Fuel className="h-5 w-5" /></div>
-              <div><p className="text-[10px] uppercase font-bold text-slate-400">BBM</p><p className="text-lg font-bold">{stats.totalFuel} L</p></div>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-none shadow-sm">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="bg-cyan-100 p-2 rounded-full text-cyan-600"><Users className="h-5 w-5" /></div>
-              <div><p className="text-[10px] uppercase font-bold text-slate-400">Personil</p><p className="text-lg font-bold">{stats.totalPersonnel}</p></div>
+              <div><p className="text-[10px] uppercase font-bold text-slate-400">Total Laporan</p><p className="text-lg font-bold">{stats.total}</p></div>
             </CardContent>
           </Card>
         </div>
