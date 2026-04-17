@@ -48,12 +48,19 @@ const categories: string[] = [
 
 const Index = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, session, loading: authLoading, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+
+  // Logika Pengalihan: Jika tidak ada sesi dan loading selesai, arahkan ke login
+  useEffect(() => {
+    if (!authLoading && !session) {
+      navigate('/login');
+    }
+  }, [session, authLoading, navigate]);
 
   useEffect(() => {
     if (profile) loadReports();
@@ -149,6 +156,18 @@ const Index = () => {
       inTasks
     );
   });
+
+  // Tampilkan loading screen saat mengecek status auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-500 font-medium">Memeriksa sesi...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">
