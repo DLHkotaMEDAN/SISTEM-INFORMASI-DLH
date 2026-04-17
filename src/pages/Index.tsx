@@ -8,7 +8,7 @@ import { Badge } from "../components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
   Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer, FileBarChart,
-  MoreVertical, LogOut, User, Settings
+  MoreVertical, LogOut, User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '../types/report';
@@ -55,6 +55,7 @@ const Index = () => {
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
+  // Logika Pengalihan: Jika tidak ada sesi dan loading selesai, arahkan ke login
   useEffect(() => {
     if (!authLoading && !session) {
       navigate('/login');
@@ -156,6 +157,7 @@ const Index = () => {
     );
   });
 
+  // Tampilkan loading screen saat mengecek status auth
   if (authLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50">
@@ -192,12 +194,6 @@ const Index = () => {
 
           <div className="flex items-center gap-2">
             <div className="hidden lg:flex items-center gap-2">
-              {profile?.role === 'admin' && (
-                <Button variant="outline" size="sm" onClick={() => navigate('/admin/users')} className="bg-blue-50 text-blue-700 border-blue-200">
-                  <Users className="h-4 w-4 mr-2" /> Manajemen User
-                </Button>
-              )}
-              
               <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
                 <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
               </Button>
@@ -252,11 +248,6 @@ const Index = () => {
                 </div>
                 <DropdownMenuSeparator />
                 <div className="lg:hidden">
-                  {profile?.role === 'admin' && (
-                    <DropdownMenuItem onClick={() => navigate('/admin/users')}>
-                      <Users className="h-4 w-4 mr-2 text-blue-600" /> Manajemen User
-                    </DropdownMenuItem>
-                  )}
                   <DropdownMenuItem onClick={() => navigate('/monthly-rekap')}>
                     <FileBarChart className="h-4 w-4 mr-2 text-purple-600" /> Rekap Bulanan
                   </DropdownMenuItem>
