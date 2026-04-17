@@ -25,6 +25,7 @@ export interface Report {
       street: string;
     };
   }>;
+  photos?: string[]; // Array URL foto
   remarks?: string;
   createdAt?: string;
 }
