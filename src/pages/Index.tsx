@@ -62,7 +62,6 @@ const Index = () => {
   const loadReports = async () => {
     try {
       setLoading(true);
-      // Jika admin, ambil semua. Jika user, filter berdasarkan kategori profilnya.
       const categoryFilter = profile?.role === 'admin' ? null : profile?.category;
       const data = await reportService.getAllReports(categoryFilter);
       setReports(data);
@@ -71,6 +70,15 @@ const Index = () => {
       showError("Gagal memuat data dari database");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      showError("Gagal keluar");
     }
   };
 
@@ -246,7 +254,7 @@ const Index = () => {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                 </div>
-                <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                   <LogOut className="h-4 w-4 mr-2" /> Keluar
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -260,7 +268,6 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Stats Grid - Only Total Reports */}
         <div className="mb-6">
           <Card className="bg-white border-none shadow-sm max-w-xs">
             <CardContent className="p-4 flex items-center gap-3">
