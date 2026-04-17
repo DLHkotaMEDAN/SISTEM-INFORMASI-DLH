@@ -32,10 +32,10 @@ const Login = () => {
     try {
       // Logika Pintar: 
       // Jika input mengandung '@', gunakan sebagai email langsung.
-      // Jika tidak, tambahkan domain internal @dlh.id
+      // Jika tidak, tambahkan domain internal @gmail.com
       let email = username.trim();
       if (!email.includes('@')) {
-        email = `${email.toLowerCase().replace(/\s+/g, '_')}@dlh.id`;
+        email = `${email.toLowerCase().replace(/\s+/g, '_')}@gmail.com`;
       }
       
       const { error } = await supabase.auth.signInWithPassword({
