@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -30,6 +30,9 @@ const Login = () => {
 
     setLoading(true);
     try {
+      // Logika Pintar: 
+      // Jika input mengandung '@', gunakan sebagai email langsung.
+      // Jika tidak, tambahkan domain internal @gmail.com
       let email = username.trim();
       if (!email.includes('@')) {
         email = `${email.toLowerCase().replace(/\s+/g, '_')}@gmail.com`;
@@ -101,15 +104,6 @@ const Login = () => {
               {loading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : "Masuk Sekarang"}
             </Button>
           </form>
-
-          <div className="mt-4 flex flex-col gap-3 items-center">
-            <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline font-medium">
-              Lupa Kata Sandi?
-            </Link>
-            <div className="text-sm text-slate-500">
-              Belum punya akun? <Link to="/register" className="text-blue-600 hover:underline font-bold">Daftar Sekarang</Link>
-            </div>
-          </div>
 
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
             <p className="text-[10px] text-blue-700 font-medium leading-relaxed text-center">
