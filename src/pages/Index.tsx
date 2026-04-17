@@ -8,13 +8,14 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, Users, Fuel, 
   Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer, FileBarChart,
-  MoreVertical, Download
+  MoreVertical, LogOut, User
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
+import { useAuth } from '@/context/AuthContext';
 import * as XLSX from 'xlsx';
 import { getUnitByCategory } from '@/utils/report-helpers';
 import {
@@ -38,6 +39,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 
 const categories: string[] = [
@@ -46,6 +48,7 @@ const categories: string[] = [
 
 const Index = () => {
   const navigate = useNavigate();
+  const { profile, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -53,13 +56,15 @@ const Index = () => {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   useEffect(() => {
-    loadReports();
-  }, []);
+    if (profile) loadReports();
+  }, [profile]);
 
   const loadReports = async () => {
     try {
       setLoading(true);
-      const data = await reportService.getAllReports();
+      // Jika admin, ambil semua. Jika user, filter berdasarkan kategori profilnya.
+      const categoryFilter = profile?.role === 'admin' ? null : profile?.category;
+      const data = await reportService.getAllReports(categoryFilter);
       setReports(data);
     } catch (error) {
       console.error(error);
@@ -160,9 +165,16 @@ const Index = () => {
             </div>
             <div className="flex flex-col">
               <h1 className="text-sm md:text-lg font-bold text-slate-900 leading-tight">Sistem Laporan</h1>
-              <Badge variant="outline" className="w-fit text-[8px] md:text-[10px] py-0 h-4 bg-green-50 text-green-600 border-green-200">
-                <Cloud className="h-2 w-2 mr-1" /> Cloud
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="w-fit text-[8px] md:text-[10px] py-0 h-4 bg-green-50 text-green-600 border-green-200">
+                  <Cloud className="h-2 w-2 mr-1" /> Cloud
+                </Badge>
+                {profile && (
+                  <Badge variant="secondary" className="text-[8px] md:text-[10px] py-0 h-4 bg-blue-50 text-blue-600 border-blue-100">
+                    {profile.role === 'admin' ? 'Administrator' : profile.category}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
@@ -209,15 +221,20 @@ const Index = () => {
               </Button>
             </div>
 
-            {/* Mobile Menu Dropdown */}
-            <div className="lg:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9">
-                    <MoreVertical className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+            {/* User Menu Dropdown */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="icon" className="h-9 w-9 rounded-full border-blue-200 bg-blue-50 text-blue-600">
+                  <User className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <div className="p-2 px-3">
+                  <p className="text-xs font-bold text-slate-900">{profile?.role === 'admin' ? 'Administrator' : 'User Tim'}</p>
+                  <p className="text-[10px] text-slate-500">{profile?.category || 'Semua Akses'}</p>
+                </div>
+                <DropdownMenuSeparator />
+                <div className="lg:hidden">
                   <DropdownMenuItem onClick={() => navigate('/monthly-rekap')}>
                     <FileBarChart className="h-4 w-4 mr-2 text-purple-600" /> Rekap Bulanan
                   </DropdownMenuItem>
@@ -227,9 +244,13 @@ const Index = () => {
                   <DropdownMenuItem onClick={handleExportExcel}>
                     <Table className="h-4 w-4 mr-2 text-green-600" /> Rekap Excel
                   </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+                  <DropdownMenuSeparator />
+                </div>
+                <DropdownMenuItem onClick={signOut} className="text-red-600 focus:text-red-600 focus:bg-red-50">
+                  <LogOut className="h-4 w-4 mr-2" /> Keluar
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             <Button onClick={() => navigate('/create')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4">
               <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
@@ -263,6 +284,9 @@ const Index = () => {
           <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
             <FileText className="mx-auto h-12 w-12 text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-900">Tidak ada laporan</h3>
+            <p className="text-sm text-slate-500 mt-1">
+              {profile?.role === 'user' ? `Menampilkan laporan untuk kategori: ${profile.category}` : 'Belum ada data laporan.'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

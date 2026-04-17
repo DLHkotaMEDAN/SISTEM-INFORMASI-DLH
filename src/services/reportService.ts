@@ -2,11 +2,17 @@ import { supabase } from '@/lib/supabase';
 import { Report } from '@/types/report';
 
 export const reportService = {
-  async getAllReports() {
-    const { data, error } = await supabase
+  async getAllReports(categoryFilter?: string | null) {
+    let query = supabase
       .from('reports')
       .select('*')
       .order('date', { ascending: false });
+    
+    if (categoryFilter) {
+      query = query.eq('category', categoryFilter);
+    }
+    
+    const { data, error } = await query;
     
     if (error) throw error;
     return data as Report[];
