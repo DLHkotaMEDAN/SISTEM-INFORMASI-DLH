@@ -5,9 +5,10 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useAuth } from '@/context/AuthContext';
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -18,19 +19,33 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 const MonthlyRecap = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  
+  // Default category berdasarkan profil user jika bukan admin
   const [selectedCategory, setSelectedCategory] = useState("semua");
 
   useEffect(() => {
-    loadData();
-  }, [selectedMonth, selectedYear, selectedCategory]);
+    if (profile) {
+      if (profile.role !== 'admin' && profile.category) {
+        setSelectedCategory(profile.category);
+      }
+    }
+  }, [profile]);
+
+  useEffect(() => {
+    if (profile) {
+      loadData();
+    }
+  }, [selectedMonth, selectedYear, selectedCategory, profile]);
 
   const loadData = async () => {
     try {
       setLoading(true);
+      // Gunakan service untuk ambil data, filter kategori dilakukan di sisi klien untuk rekap ini
       let data = await reportService.getAllReports();
       
       data = data.filter(r => {
@@ -40,7 +55,16 @@ const MonthlyRecap = () => {
         
         const matchMonth = m === selectedMonth;
         const matchYear = y === selectedYear;
-        const matchCategory = selectedCategory === "semua" || r.category === selectedCategory;
+        
+        // Logika Filter Kategori:
+        // 1. Jika admin, ikuti pilihan dropdown (bisa "semua")
+        // 2. Jika user, paksa hanya kategori timnya sendiri
+        let matchCategory = false;
+        if (profile?.role === 'admin') {
+          matchCategory = selectedCategory === "semua" || r.category === selectedCategory;
+        } else {
+          matchCategory = r.category === profile?.category;
+        }
         
         return matchMonth && matchYear && matchCategory;
       });
@@ -67,6 +91,8 @@ const MonthlyRecap = () => {
     }))
   );
 
+  const isUserRestricted = profile?.role !== 'admin';
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1400px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
@@ -86,18 +112,31 @@ const MonthlyRecap = () => {
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
 
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Kategori" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="semua">Semua Kategori</SelectItem>
-                <SelectItem value="Taman Kota">Taman Kota</SelectItem>
-                <SelectItem value="Taman Amplas">Taman Amplas</SelectItem>
-                <SelectItem value="Taman Area">Taman Area</SelectItem>
-                <SelectItem value="Tim Babat">Tim Babat</SelectItem>
-                <SelectItem value="Tim Siram">Tim Siram</SelectItem>
-                <SelectItem value="Tim Pohon">Tim Pohon</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Select 
+                value={selectedCategory} 
+                onValueChange={setSelectedCategory}
+                disabled={isUserRestricted}
+              >
+                <SelectTrigger className={`w-[180px] ${isUserRestricted ? 'bg-slate-50 text-slate-500' : ''}`}>
+                  <SelectValue placeholder="Kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Kategori</SelectItem>
+                  <SelectItem value="Taman Kota">Taman Kota</SelectItem>
+                  <SelectItem value="Taman Amplas">Taman Amplas</SelectItem>
+                  <SelectItem value="Taman Area">Taman Area</SelectItem>
+                  <SelectItem value="Tim Babat">Tim Babat</SelectItem>
+                  <SelectItem value="Tim Siram">Tim Siram</SelectItem>
+                  <SelectItem value="Tim Pohon">Tim Pohon</SelectItem>
+                </SelectContent>
+              </Select>
+              {isUserRestricted && (
+                <div className="absolute -top-2 -right-2 bg-amber-100 text-amber-700 p-1 rounded-full border border-amber-200 shadow-sm" title="Akses Terbatas">
+                  <Lock size={10} />
+                </div>
+              )}
+            </div>
           </div>
 
           <Button onClick={() => window.print()} className="bg-blue-600">
@@ -116,7 +155,7 @@ const MonthlyRecap = () => {
         <div className="text-center mb-8">
           <h3 className="text-xl font-bold underline uppercase">REKAPITULASI LAPORAN KEGIATAN HARIAN</h3>
           <p className="text-lg font-medium">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
-          {selectedCategory !== "semua" && <p className="text-lg font-bold">Kategori: {selectedCategory.toUpperCase()}</p>}
+          <p className="text-lg font-bold">Kategori: {isUserRestricted ? profile?.category?.toUpperCase() : selectedCategory.toUpperCase()}</p>
         </div>
 
         <div className="overflow-x-auto">
