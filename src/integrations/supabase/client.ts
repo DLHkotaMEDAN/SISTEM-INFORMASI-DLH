@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Mengambil URL dan Key dari environment variables
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://ffgksqjznamthsdbkstu.supabase.co";
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZmZ2tzcWp6bmFtdGhzZGJrc3R1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxOTc0NjEsImV4cCI6MjA5MTc3MzQ2MX0.4Go520hgy0N_GB9pppoGloj6JQtOpTtdjxfLqiLIFpg";
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
