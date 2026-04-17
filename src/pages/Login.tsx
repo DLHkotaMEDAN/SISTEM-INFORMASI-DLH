@@ -58,7 +58,7 @@ const Login = () => {
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto mb-4">
             <img 
-              src="dyad-media://media/sleepy-chameleon-twirl/.dyad/media/661f769496604.png" 
+              src="dyad-media://media/sleepy-chameleon-twirl/.dyad/media/d772b988b2f517885576c2f47b8d9f3b.png" 
               alt="Logo Dinas Lingkungan Hidup Kota Medan" 
               className="h-40 w-40 object-contain mx-auto"
             />
