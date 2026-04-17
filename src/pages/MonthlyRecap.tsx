@@ -166,7 +166,7 @@ const MonthlyRecap = () => {
         <div className="text-center border-b-4 border-double border-black pb-4 mb-6">
           <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
           <h2 className="text-3xl font-black uppercase">Dinas Lingkungan Hidup</h2>
-          <p className="text-sm italic">Jl. Sidorame No.12, Kec. Medan Perjuangan, Kota Medan, Sumatera Utara</p>
+          <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
         </div>
 
         <div className="text-center mb-8 space-y-1">
