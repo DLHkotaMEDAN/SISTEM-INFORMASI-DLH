@@ -5,13 +5,15 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown, Table } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
+import * as XLSX from 'xlsx';
+import { showSuccess, showError } from '@/utils/toast';
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -89,6 +91,51 @@ const MonthlyRecap = () => {
     }
   };
 
+  const handleExportExcel = () => {
+    if (reports.length === 0) {
+      showError("Tidak ada data untuk diekspor");
+      return;
+    }
+
+    const data = reports.map((r, index) => {
+      const lokasiJalan = r.category === "Tim Siram" && r.tasks 
+        ? r.tasks.map(t => t.location.street).join(", ")
+        : r.location.street;
+
+      return {
+        "No": index + 1,
+        "Tanggal": r.date,
+        "Kategori / Tim": r.category,
+        "Uraian Kegiatan": r.description,
+        "Lokasi (Jalan)": lokasiJalan,
+        "Kelurahan": Array.isArray(r.location.village) ? r.location.village.join(", ") : r.location.village,
+        "Kecamatan": r.location.subDistrict,
+        "Volume": r.volume,
+        "Satuan": getUnitByCategory(r.category),
+        "Koordinator": r.personnel.coordinator,
+        "Jumlah Anggota": r.personnel.members,
+        "BBM Pertamax (L)": r.fuel?.pertamax || 0,
+        "BBM Dexlite (L)": r.fuel?.dexlite || 0,
+        "BBM Solar (L)": r.fuel?.solar || 0,
+        "Keterangan": r.remarks || "-"
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wscols = [
+      {wch: 5}, {wch: 12}, {wch: 15}, {wch: 30}, {wch: 30}, 
+      {wch: 15}, {wch: 15}, {wch: 10}, {wch: 10}, {wch: 20}, 
+      {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 30}
+    ];
+    ws['!cols'] = wscols;
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Rekap Laporan");
+    const fileName = `Rekap_Laporan_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    showSuccess("Rekap Excel berhasil diunduh");
+  };
+
   const toggleCategory = (category: string) => {
     if (category === 'semua') {
       setSelectedCategories(['semua']);
@@ -124,7 +171,6 @@ const MonthlyRecap = () => {
 
   const isUserRestricted = profile?.role !== 'admin';
 
-  // Logika Penandatangan
   const showSignatory4 = selectedCategories.includes('semua') || 
     selectedCategories.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
   
@@ -217,9 +263,14 @@ const MonthlyRecap = () => {
             </Select>
           </div>
 
-          <Button onClick={() => window.print()} className="bg-blue-600">
-            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap A3
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={handleExportExcel} variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              <Table className="mr-2 h-4 w-4" /> Rekap Excel
+            </Button>
+            <Button onClick={() => window.print()} className="bg-blue-600">
+              <Printer className="mr-2 h-4 w-4" /> Cetak Rekap A3
+            </Button>
+          </div>
         </div>
       </div>
 

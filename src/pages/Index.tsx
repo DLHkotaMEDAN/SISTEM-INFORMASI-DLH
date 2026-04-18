@@ -6,9 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  Plus, FileText, MapPin, Calendar, Users, Fuel, 
-  Trash2, Eye, Search, Edit, Cloud, Tag, Table, Printer, FileBarChart,
-  MoreVertical, LogOut, User, Lock
+  Plus, FileText, MapPin, Calendar, 
+  Trash2, Eye, Search, Edit, Cloud, Tag, Printer, FileBarChart,
+  LogOut, User, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -16,7 +16,6 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { useAuth } from '@/context/AuthContext';
-import * as XLSX from 'xlsx';
 import { getUnitByCategory } from '@/utils/report-helpers';
 import {
   Dialog,
@@ -60,7 +59,6 @@ const Index = () => {
   useEffect(() => {
     if (profile) {
       loadReports();
-      // Set default print category based on profile if restricted
       if (isUserRestricted && profile.category) {
         setSelectedPrintCategory(profile.category);
       }
@@ -103,51 +101,6 @@ const Index = () => {
     }
   };
 
-  const handleExportExcel = () => {
-    if (reports.length === 0) {
-      showError("Tidak ada data untuk diekspor");
-      return;
-    }
-
-    const data = reports.map((r, index) => {
-      const lokasiJalan = r.category === "Tim Siram" && r.tasks 
-        ? r.tasks.map(t => t.location.street).join(", ")
-        : r.location.street;
-
-      return {
-        "No": index + 1,
-        "Tanggal": r.date,
-        "Kategori / Tim": r.category,
-        "Uraian Kegiatan": r.description,
-        "Lokasi (Jalan)": lokasiJalan,
-        "Kelurahan": r.location.village,
-        "Kecamatan": r.location.subDistrict,
-        "Volume": r.volume,
-        "Satuan": getUnitByCategory(r.category),
-        "Koordinator": r.personnel.coordinator,
-        "Jumlah Anggota": r.personnel.members,
-        "BBM Pertamax (L)": r.fuel?.pertamax || 0,
-        "BBM Dexlite (L)": r.fuel?.dexlite || 0,
-        "BBM Solar (L)": r.fuel?.solar || 0,
-        "Keterangan": r.remarks || "-"
-      };
-    });
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wscols = [
-      {wch: 5}, {wch: 12}, {wch: 15}, {wch: 30}, {wch: 30}, 
-      {wch: 15}, {wch: 15}, {wch: 10}, {wch: 10}, {wch: 20}, 
-      {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 30}
-    ];
-    ws['!cols'] = wscols;
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Rekap Laporan");
-    const fileName = `Rekap_Laporan_DLH_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
-    showSuccess("Rekap Excel berhasil diunduh");
-  };
-
   const handlePrintAction = () => {
     setIsPrintDialogOpen(false);
     navigate(`/print-rekap?category=${selectedPrintCategory}`);
@@ -166,10 +119,6 @@ const Index = () => {
       inTasks
     );
   });
-
-  const stats = {
-    total: reports.length,
-  };
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -246,10 +195,25 @@ const Index = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+            </div>
 
-              <Button variant="outline" size="sm" onClick={handleExportExcel} className="bg-green-50 text-green-700 border-green-200">
-                <Table className="h-4 w-4 mr-2" /> Rekap Excel
-              </Button>
+            {/* Mobile Print Icon Button */}
+            <div className="lg:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9 border-slate-200 bg-slate-50 text-slate-600">
+                    <Printer className="h-5 w-5" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem onClick={() => navigate('/monthly-rekap')}>
+                    <FileBarChart className="h-4 w-4 mr-2 text-purple-600" /> Rekap Bulanan
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setIsPrintDialogOpen(true)}>
+                    <Printer className="h-4 w-4 mr-2 text-slate-600" /> Cetak Harian
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
 
             {/* User Menu Dropdown */}
@@ -265,18 +229,6 @@ const Index = () => {
                   <p className="text-[10px] text-slate-500">{profile?.category || 'Semua Akses'}</p>
                 </div>
                 <DropdownMenuSeparator />
-                <div className="lg:hidden">
-                  <DropdownMenuItem onClick={() => navigate('/monthly-rekap')}>
-                    <FileBarChart className="h-4 w-4 mr-2 text-purple-600" /> Rekap Bulanan
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsPrintDialogOpen(true)}>
-                    <Printer className="h-4 w-4 mr-2 text-slate-600" /> Cetak Harian
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleExportExcel}>
-                    <Table className="h-4 w-4 mr-2 text-green-600" /> Rekap Excel
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                </div>
                 <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:text-red-600 focus:bg-red-50">
                   <LogOut className="h-4 w-4 mr-2" /> Keluar
                 </DropdownMenuItem>
@@ -295,7 +247,7 @@ const Index = () => {
           <Card className="bg-white border-none shadow-sm max-w-xs">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="bg-blue-100 p-2 rounded-full text-blue-600"><FileText className="h-5 w-5" /></div>
-              <div><p className="text-[10px] uppercase font-bold text-slate-400">Total Laporan</p><p className="text-lg font-bold">{stats.total}</p></div>
+              <div><p className="text-[10px] uppercase font-bold text-slate-400">Total Laporan</p><p className="text-lg font-bold">{reports.length}</p></div>
             </CardContent>
           </Card>
         </div>
