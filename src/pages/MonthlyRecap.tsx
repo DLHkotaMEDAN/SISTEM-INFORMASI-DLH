@@ -185,13 +185,13 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-2 w-[180px]" rowSpan={2}>Lokasi</th>
                 <th className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
                 <th className="border-2 border-black p-2 w-[70px]" rowSpan={2}>Vol</th>
-                <th className="border-2 border-black p-2 w-[140px]" rowSpan={2}>Peralatan</th>
-                <th className="border-2 border-black p-2 w-[140px]" rowSpan={2}>Alat Berat</th>
+                <th className="border-2 border-black p-2 w-[115px]" rowSpan={2}>Peralatan</th>
+                <th className="border-2 border-black p-2 w-[115px]" rowSpan={2}>Alat Berat</th>
                 {recapMode === "with-fuel" && (
                   <th className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>
                 )}
                 <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Koordinator</th>
-                <th className="border-2 border-black p-2 w-[120px]" rowSpan={2}>Keterangan</th>
+                <th className="border-2 border-black p-2 w-[170px]" rowSpan={2}>Keterangan</th>
               </tr>
               <tr className="bg-slate-50">
                 <th className="border-2 border-black p-1 w-[110px]">0%</th>
@@ -252,7 +252,7 @@ const MonthlyRecap = () => {
                     </td>
                     <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">
                       {task.equipment?.map((e, i) => (
-                        <div key={i} className="mb-0.5">
+                        <div key={i} className="mb-0.5 whitespace-nowrap">
                           • {e.type} ({e.quantity})
                         </div>
                       ))}
