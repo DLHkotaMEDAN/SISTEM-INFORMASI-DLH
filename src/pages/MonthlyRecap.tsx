@@ -250,39 +250,39 @@ const MonthlyRecap = () => {
                     <td className="border-2 border-black p-2 text-center font-bold align-top">
                       {task.volume} {getUnitByCategory(task.reportCategory)}
                     </td>
-                    <td className="border-2 border-black p-2 align-top text-[10px]">
+                    <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">
                       {task.equipment?.map((e, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
-                          {e.type} ({e.quantity})
+                        <div key={i} className="mb-0.5">
+                          • {e.type} ({e.quantity})
                         </div>
                       ))}
                     </td>
-                    <td className="border-2 border-black p-2 align-top text-[10px] overflow-hidden">
+                    <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">
                       {task.heavyEquipment?.map((he, i) => (
-                        <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1 whitespace-nowrap">
-                          {he.type} {he.vehicle || ""}
+                        <div key={i} className="mb-0.5 whitespace-nowrap">
+                          • {he.type} {he.vehicle || ""}
                         </div>
                       ))}
                     </td>
                     {recapMode === "with-fuel" && (
                       <>
-                        <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                        <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">
                           {task.heavyEquipment?.map((he, i) => (
-                            <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
+                            <div key={i} className="mb-0.5">
                               {he.fuel?.pertamax || 0}
                             </div>
                           ))}
                         </td>
-                        <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                        <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">
                           {task.heavyEquipment?.map((he, i) => (
-                            <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
+                            <div key={i} className="mb-0.5">
                               {he.fuel?.dexlite || 0}
                             </div>
                           ))}
                         </td>
-                        <td className="border-2 border-black p-2 align-top text-[10px] text-center">
+                        <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">
                           {task.heavyEquipment?.map((he, i) => (
-                            <div key={i} className="mb-1 border-b border-slate-200 last:border-0 pb-1">
+                            <div key={i} className="mb-0.5">
                               {he.fuel?.solar || 0}
                             </div>
                           ))}
