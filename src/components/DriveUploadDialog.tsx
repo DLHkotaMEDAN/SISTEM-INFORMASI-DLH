@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Folder, User, FileText, Loader2, CloudUpload } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { cn } from "@/lib/utils";
 
 const CLIENT_ID = "323264526689-91gea696tm6ftv49jt4lb4tqjo5a1947.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyDzRtvJVVWSYJ1e9VGKBhA1CxRYtlda1PY";
@@ -38,7 +39,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   useEffect(() => {
     if (!isOpen) return;
 
-    // Load Google Identity Services (GIS)
     if (!document.getElementById('google-gis')) {
       const script = document.createElement("script");
       script.id = 'google-gis';
@@ -48,17 +48,13 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
       document.body.appendChild(script);
     }
 
-    // Load Google API Client (GAPI) for Picker
     if (!document.getElementById('google-gapi')) {
       const gapiScript = document.createElement("script");
       gapiScript.id = 'google-gapi';
       gapiScript.src = "https://apis.google.com/js/api.js";
       gapiScript.onload = () => {
         (window as any).gapi.load('picker', {
-          callback: () => {
-            console.log("Picker API loaded");
-            setIsPickerApiLoaded(true);
-          }
+          callback: () => setIsPickerApiLoaded(true)
         });
       };
       document.body.appendChild(gapiScript);
@@ -72,19 +68,21 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   const handleAuth = () => {
     try {
       const origin = window.location.protocol + '//' + window.location.host;
-      
       const client = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         ux_mode: 'popup',
-        origin: origin, // Tambahkan origin di sini
-        callback: (response: any) => {
+        origin: origin,
+        callback: async (response: any) => {
           if (response.access_token) {
             setAccessToken(response.access_token);
-            fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${response.access_token}`)
-              .then(res => res.json())
-              .then(data => setUserEmail(data.email))
-              .catch(() => setUserEmail("Akun Terhubung"));
+            try {
+              const res = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${response.access_token}`);
+              const data = await res.json();
+              setUserEmail(data.email || "Akun Terhubung");
+            } catch (e) {
+              setUserEmail("Akun Terhubung");
+            }
           }
         },
       });
@@ -102,8 +100,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
 
     const google = (window as any).google;
-    const gapi = (window as any).gapi;
-
     if (!isPickerApiLoaded || !google || !google.picker) {
       showError("Modul pemilih folder belum siap. Silakan tunggu sebentar...");
       return;
@@ -132,7 +128,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
       picker.setVisible(true);
     } catch (err: any) {
       console.error("Picker error:", err);
-      showError(`Gagal membuka pemilih: ${err.message || "Cek izin API Key"}`);
+      showError(`Gagal membuka pemilih: ${err.message}`);
     }
   };
 
@@ -155,8 +151,11 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[425px]">
+    <Dialog open={isOpen} onOpenChange={(open) => !isUploading && onClose()}>
+      <DialogContent 
+        className="sm:max-w-[425px]"
+        onPointerDownOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CloudUpload className="text-blue-600" /> Simpan ke Drive
@@ -188,10 +187,13 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
               variant="outline" 
               onClick={handleAuth}
               disabled={isUploading}
-              className="justify-start font-normal h-10 border-slate-200"
+              className={cn(
+                "justify-start font-normal h-10 border-slate-200",
+                userEmail && "text-blue-600 border-blue-200 bg-blue-50"
+              )}
             >
               {userEmail ? (
-                <span className="text-blue-600 font-medium truncate">{userEmail}</span>
+                <span className="font-bold truncate">{userEmail}</span>
               ) : (
                 <span className="text-slate-500">Klik untuk pilih akun...</span>
               )}
@@ -206,9 +208,12 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
               variant="outline" 
               onClick={openPicker}
               disabled={!accessToken || isUploading}
-              className="justify-start font-normal h-10 border-slate-200"
+              className={cn(
+                "justify-start font-normal h-10 border-slate-200",
+                folderId !== "root" && "text-green-600 border-green-200 bg-green-50"
+              )}
             >
-              <span className="truncate">{folderName}</span>
+              <span className="truncate font-medium">{folderName}</span>
               {!isPickerApiLoaded && accessToken && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
             </Button>
             {!accessToken && <p className="text-[10px] text-amber-600 italic">* Pilih akun dulu untuk memilih folder</p>}
