@@ -124,17 +124,29 @@ const MonthlyRecap = () => {
       window.scrollTo(0, 0);
       
       // Tunggu sebentar agar rendering stabil
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 800));
 
       const canvas = await html2canvas(printRef.current, {
-        scale: 3, // Tingkatkan skala untuk ketajaman teks
+        scale: 2.5, // Skala yang seimbang antara ketajaman dan ukuran file
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1600, // Paksa lebar window saat capture
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 1600, // Paksa lebar window saat capture agar tabel tidak terpotong horizontal
+        onclone: (clonedDoc) => {
+          // Pastikan elemen di dalam klon tidak memiliki overflow yang mengganggu
+          const element = clonedDoc.querySelector('.print-area') as HTMLElement;
+          if (element) {
+            element.style.overflow = 'visible';
+            element.style.maxHeight = 'none';
+          }
+        }
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -148,7 +160,8 @@ const MonthlyRecap = () => {
       const canvasRatio = canvas.height / canvas.width;
       const targetHeight = pdfWidth * canvasRatio;
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, targetHeight > pdfHeight ? pdfHeight : targetHeight);
+      // Jika konten lebih panjang dari satu halaman A3, biarkan ia mengisi halaman
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, targetHeight);
       
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
@@ -404,23 +417,23 @@ const MonthlyRecap = () => {
           <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
             <thead>
               <tr className="bg-slate-100">
-                <th className="border-2 border-black p-2 w-[35px]" rowSpan={2}>No</th>
-                <th className="border-2 border-black p-2 w-[70px]" rowSpan={2}>Hari / Tgl</th>
-                <th className="border-2 border-black p-2 w-[110px]" rowSpan={2}>Uraian Kegiatan</th>
-                <th className="border-2 border-black p-2 w-[150px]" rowSpan={2}>Lokasi</th>
-                <th className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
-                <th className="border-2 border-black p-2 w-[65px]" rowSpan={2}>Vol</th>
-                <th className="border-2 border-black p-2 w-[115px]" rowSpan={2}>Peralatan</th>
-                <th className="border-2 border-black p-2 w-[115px]" rowSpan={2}>Alat Berat</th>
-                {recapMode === "with-fuel" && (<th className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>)}
-                <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Koordinator</th>
-                <th className="border-2 border-black p-2 w-[170px]" rowSpan={2}>Keterangan</th>
+                <th className="border-2 border-black p-2 w-[35px] bg-slate-100" rowSpan={2}>No</th>
+                <th className="border-2 border-black p-2 w-[70px] bg-slate-100" rowSpan={2}>Hari / Tgl</th>
+                <th className="border-2 border-black p-2 w-[110px] bg-slate-100" rowSpan={2}>Uraian Kegiatan</th>
+                <th className="border-2 border-black p-2 w-[150px] bg-slate-100" rowSpan={2}>Lokasi</th>
+                <th className="border-2 border-black p-2 bg-slate-100" colSpan={3}>Dokumentasi</th>
+                <th className="border-2 border-black p-2 w-[65px] bg-slate-100" rowSpan={2}>Vol</th>
+                <th className="border-2 border-black p-2 w-[115px] bg-slate-100" rowSpan={2}>Peralatan</th>
+                <th className="border-2 border-black p-2 w-[115px] bg-slate-100" rowSpan={2}>Alat Berat</th>
+                {recapMode === "with-fuel" && (<th className="border-2 border-black p-2 w-[120px] bg-slate-100" colSpan={3}>BBM (Liter)</th>)}
+                <th className="border-2 border-black p-2 w-[100px] bg-slate-100" rowSpan={2}>Koordinator</th>
+                <th className="border-2 border-black p-2 w-[170px] bg-slate-100" rowSpan={2}>Keterangan</th>
               </tr>
               <tr className="bg-slate-50">
-                <th className="border-2 border-black p-1 w-[142px]">0%</th>
-                <th className="border-2 border-black p-1 w-[142px]">50%</th>
-                <th className="border-2 border-black p-1 w-[142px]">100%</th>
-                {recapMode === "with-fuel" && (<><th className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
+                <th className="border-2 border-black p-1 w-[142px] bg-slate-50">0%</th>
+                <th className="border-2 border-black p-1 w-[142px] bg-slate-50">50%</th>
+                <th className="border-2 border-black p-1 w-[142px] bg-slate-50">100%</th>
+                {recapMode === "with-fuel" && (<><th className="border-2 border-black p-1 text-[9px] w-[40px] bg-slate-50">P</th><th className="border-2 border-black p-1 text-[9px] w-[40px] bg-slate-50">D</th><th className="border-2 border-black p-1 text-[9px] w-[40px] bg-slate-50">S</th></>)}
               </tr>
             </thead>
             <tbody>
