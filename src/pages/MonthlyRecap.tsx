@@ -120,18 +120,21 @@ const MonthlyRecap = () => {
     const toastId = showLoading("Sedang memproses PDF kualitas tinggi...");
     
     try {
+      // Pastikan posisi scroll di paling atas agar tidak terpotong
       window.scrollTo(0, 0);
-      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Tunggu sebentar agar rendering stabil
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const canvas = await html2canvas(printRef.current, {
-        scale: 2.5,
+        scale: 3, // Tingkatkan skala untuk ketajaman teks
         useCORS: true,
         logging: false,
         backgroundColor: "#ffffff",
-        windowWidth: 1600,
+        windowWidth: 1600, // Paksa lebar window saat capture
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
@@ -140,6 +143,8 @@ const MonthlyRecap = () => {
       
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Hitung rasio agar pas di satu halaman A3
       const canvasRatio = canvas.height / canvas.width;
       const targetHeight = pdfWidth * canvasRatio;
 
@@ -398,7 +403,7 @@ const MonthlyRecap = () => {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
             <thead>
-              <tr style={{ backgroundColor: '#f1f5f9', color: '#000000' }}>
+              <tr className="bg-slate-100">
                 <th className="border-2 border-black p-2 w-[35px]" rowSpan={2}>No</th>
                 <th className="border-2 border-black p-2 w-[70px]" rowSpan={2}>Hari / Tgl</th>
                 <th className="border-2 border-black p-2 w-[110px]" rowSpan={2}>Uraian Kegiatan</th>
@@ -411,7 +416,7 @@ const MonthlyRecap = () => {
                 <th className="border-2 border-black p-2 w-[100px]" rowSpan={2}>Koordinator</th>
                 <th className="border-2 border-black p-2 w-[170px]" rowSpan={2}>Keterangan</th>
               </tr>
-              <tr style={{ backgroundColor: '#f8fafc', color: '#000000' }}>
+              <tr className="bg-slate-50">
                 <th className="border-2 border-black p-1 w-[142px]">0%</th>
                 <th className="border-2 border-black p-1 w-[142px]">50%</th>
                 <th className="border-2 border-black p-1 w-[142px]">100%</th>
