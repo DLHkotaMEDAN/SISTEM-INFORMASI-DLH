@@ -23,8 +23,8 @@ const ImageUpload = ({ value, onChange, label }: ImageUploadProps) => {
     
     reader.onload = async (e) => {
       const originalBase64 = e.target?.result as string;
-      // Proses Resize & Compress: Width 2.26", Height 2.95", JPG, Quality 70%
-      const processedBase64 = await compressImage(originalBase64, 2.26, 2.95, 0.7);
+      // Proses Resize & Compress: Width 2.26", Height 2.95", JPG, Quality 90% (0.9)
+      const processedBase64 = await compressImage(originalBase64, 2.26, 2.95, 0.9);
       onChange(processedBase64);
       setIsProcessing(false);
     };
@@ -91,7 +91,7 @@ const ImageUpload = ({ value, onChange, label }: ImageUploadProps) => {
               <Upload size={20} className="text-slate-500 group-hover:text-blue-600" />
             </div>
             <p className="text-xs font-medium text-slate-600">Klik atau Paste</p>
-            <p className="text-[10px] text-slate-400 mt-1">Ukuran: 2.26" x 2.95"</p>
+            <p className="text-[10px] text-slate-400 mt-1">Ukuran: 2.26" x 2.95" (150 PPI)</p>
           </div>
         )}
         <input
