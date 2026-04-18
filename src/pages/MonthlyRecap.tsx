@@ -233,18 +233,18 @@ const MonthlyRecap = () => {
                       {`${task.location.street}, ${villages}, ${task.location.subDistrict}`}
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
-                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
+                      <div className="w-full h-[180px] bg-slate-100 border border-slate-300 overflow-hidden flex items-center justify-center">
+                        {task.photos?.zero ? <img src={task.photos.zero} className="max-w-full max-h-full object-contain" alt="0%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
-                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
+                      <div className="w-full h-[180px] bg-slate-100 border border-slate-300 overflow-hidden flex items-center justify-center">
+                        {task.photos?.fifty ? <img src={task.photos.fifty} className="max-w-full max-h-full object-contain" alt="50%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
-                      <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
+                      <div className="w-full h-[180px] bg-slate-100 border border-slate-300 overflow-hidden flex items-center justify-center">
+                        {task.photos?.hundred ? <img src={task.photos.hundred} className="max-w-full max-h-full object-contain" alt="100%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-2 text-center font-bold align-top">
