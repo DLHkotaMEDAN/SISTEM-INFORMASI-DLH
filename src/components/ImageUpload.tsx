@@ -74,7 +74,7 @@ const ImageUpload = ({ value, onChange, label }: ImageUploadProps) => {
           </div>
         ) : value ? (
           <>
-            <img src={value} alt={label} className="w-full h-full object-cover" />
+            <img src={value} alt={label} className="w-full h-full object-fill" />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <button
                 type="button"

@@ -234,17 +234,17 @@ const MonthlyRecap = () => {
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
                       <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-cover" alt="0%" /> : null}
+                        {task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
                       <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-cover" alt="50%" /> : null}
+                        {task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-1 align-middle">
                       <div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">
-                        {task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-cover" alt="100%" /> : null}
+                        {task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}
                       </div>
                     </td>
                     <td className="border-2 border-black p-2 text-center font-bold align-top">

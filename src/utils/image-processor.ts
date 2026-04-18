@@ -2,7 +2,7 @@
  * Mengompres dan meresize gambar sebelum diunggah
  * Target: Width 2.26" dan Height 2.95" dengan resolusi 150 PPI
  * 
- * UPDATE: Resolusi ditingkatkan ke 150 PPI dan kualitas ke 90%
+ * UPDATE: Gambar ditarik (stretch) agar seluruh sisi dan timestamp terlihat
  */
 export const compressImage = (
   base64: string, 
@@ -30,7 +30,8 @@ export const compressImage = (
         return;
       }
 
-      // Gambar ditarik (stretch) untuk mengisi seluruh area canvas
+      // Gambar ditarik (stretch) untuk mengisi seluruh area canvas tanpa pemotongan (no crop)
+      // Ini memastikan seluruh sisi gambar dan timestamp terlihat
       ctx.drawImage(img, 0, 0, width, height);
 
       // Ekspor sebagai JPG dengan kualitas 90%
