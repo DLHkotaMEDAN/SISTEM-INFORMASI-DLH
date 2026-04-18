@@ -18,6 +18,7 @@ import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast
 import { supabase } from '@/lib/supabase';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import DriveUploadDialog from '@/components/DriveUploadDialog';
 import {
   Tooltip,
   TooltipContent,
@@ -51,7 +52,7 @@ const MonthlyRecap = () => {
   const { profile, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isUploading, setIsUploading] = useState(false);
+  const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
@@ -113,21 +114,18 @@ const MonthlyRecap = () => {
     }
   };
 
-  const handleSaveToDrive = async () => {
-    if (!printRef.current || reports.length === 0) return;
+  const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
+    if (!printRef.current) return;
     
-    const toastId = showLoading("Menyiapkan PDF dan mengunggah ke Drive...");
-    setIsUploading(true);
+    const toastId = showLoading("Sedang memproses PDF...");
     
     try {
-      // 1. Render HTML ke Canvas
       const canvas = await html2canvas(printRef.current, {
-        scale: 2, // Kualitas tinggi
+        scale: 2,
         useCORS: true,
         logging: false,
       });
       
-      // 2. Konversi Canvas ke PDF (A3 Landscape)
       const imgData = canvas.toDataURL('image/jpeg', 0.8);
       const pdf = new jsPDF({
         orientation: 'landscape',
@@ -142,21 +140,20 @@ const MonthlyRecap = () => {
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
-      // 3. Panggil Edge Function untuk upload ke Drive
-      const fileName = `Rekap_${months[parseInt(selectedMonth)-1]}_${selectedYear}_${selectedCategories.join('_')}.pdf`;
-      
-      const { data, error } = await supabase.functions.invoke('upload-to-drive', {
-        body: { pdfBase64, fileName }
+      const { error } = await supabase.functions.invoke('upload-to-drive', {
+        body: { 
+          pdfBase64, 
+          fileName: config.fileName.endsWith('.pdf') ? config.fileName : `${config.fileName}.pdf`,
+          folderId: config.folderId,
+          userAccessToken: config.accessToken
+        }
       });
 
       if (error) throw error;
-      
-      showSuccess("PDF berhasil diproses! Pastikan Google Drive API sudah dikonfigurasi.");
     } catch (error: any) {
       console.error(error);
-      showError("Gagal mengunggah: " + error.message);
+      throw error;
     } finally {
-      setIsUploading(false);
       dismissToast(toastId);
     }
   };
@@ -358,14 +355,21 @@ const MonthlyRecap = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button onClick={handleSaveToDrive} disabled={isUploading || reports.length === 0} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CloudUpload className="mr-2 h-4 w-4" />} Simpan ke Drive
+            <Button onClick={() => setIsDriveDialogOpen(true)} disabled={reports.length === 0} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+              <CloudUpload className="mr-2 h-4 w-4" /> Simpan ke Drive
             </Button>
             <Button onClick={handleExportExcel} variant="outline" className="bg-green-50 text-green-700 border-green-200"><Table className="mr-2 h-4 w-4" /> Rekap Excel</Button>
             <Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak Rekap A3</Button>
           </div>
         </div>
       </div>
+
+      <DriveUploadDialog 
+        isOpen={isDriveDialogOpen}
+        onClose={() => setIsDriveDialogOpen(false)}
+        onUpload={handleDriveUpload}
+        defaultFileName={`Rekap_${months[parseInt(selectedMonth)-1]}_${selectedYear}`}
+      />
 
       <div ref={printRef} className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
