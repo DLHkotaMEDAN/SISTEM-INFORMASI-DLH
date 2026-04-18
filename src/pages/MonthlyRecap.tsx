@@ -373,100 +373,105 @@ const MonthlyRecap = () => {
         </div>
 
         {/* Bagian Tanda Tangan Dinamis */}
-        <div className="mt-16 grid grid-cols-4 gap-4 text-[11px] leading-tight">
-          {/* Penandatangan 1: Kabid (Selalu Muncul) */}
-          <div className="text-center flex flex-col justify-between h-48">
-            <div>
-              <p>Mengetahui :</p>
-              <p className="font-bold">Kabid Tata Lingkungan</p>
-              <p>Dinas Lingkungan Hidup</p>
-              <p>Kota Medan</p>
-            </div>
-            <div>
-              <p className="font-bold underline">Heni Rustati, ST, M.Si</p>
-              <p>NIP. 19720223 200604 2 002</p>
-            </div>
+        <div className="mt-12">
+          <div className="flex justify-end mb-4 text-[11px]">
+            <p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
           </div>
+          <div className="grid grid-cols-4 gap-4 text-[11px] leading-tight">
+            {/* Penandatangan 1: Kabid (Selalu Muncul) */}
+            <div className="text-center flex flex-col justify-between h-48">
+              <div>
+                <p>Mengetahui :</p>
+                <p className="font-bold">Kabid Tata Lingkungan</p>
+                <p>Dinas Lingkungan Hidup</p>
+                <p>Kota Medan</p>
+              </div>
+              <div>
+                <p className="font-bold underline">Heni Rustati, ST, M.Si</p>
+                <p>NIP. 19720223 200604 2 002</p>
+              </div>
+            </div>
 
-          {/* Penandatangan 2: Ketua Tim (Selalu Muncul) */}
-          <div className="text-center flex flex-col justify-between h-48">
-            <div>
-              <p>Diketahui :</p>
-              <p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p>
-              <p>Dinas Lingkungan Hidup</p>
-              <p>Kota Medan</p>
+            {/* Penandatangan 2: Ketua Tim (Selalu Muncul) */}
+            <div className="text-center flex flex-col justify-between h-48">
+              <div>
+                <p>Diketahui :</p>
+                <p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p>
+                <p>Dinas Lingkungan Hidup</p>
+                <p>Kota Medan</p>
+              </div>
+              <div>
+                <p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p>
+                <p>NIP. 19811128 201001 2 011</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p>
-              <p>NIP. 19811128 201001 2 011</p>
-            </div>
-          </div>
 
-          {/* Penandatangan 3: Pengawas (Selalu Muncul) */}
-          <div className="text-center flex flex-col justify-between h-48">
-            <div>
-              <p>Diketahui :</p>
-              <p className="font-bold">Pengawas Taman Penghijauan</p>
-              <p>Dinas Lingkungan Hidup</p>
-              <p>Kota Medan</p>
+            {/* Penandatangan 3: Pengawas (Selalu Muncul) */}
+            <div className="text-center flex flex-col justify-between h-48">
+              <div>
+                <p>Diketahui :</p>
+                <p className="font-bold">Pengawas Taman Penghijauan</p>
+                <p>Dinas Lingkungan Hidup</p>
+                <p>Kota Medan</p>
+              </div>
+              <div>
+                <p className="font-bold underline">Jhosua Sibarani, S.T</p>
+                <p>NIP. 19740907 200903 1 002</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold underline">Jhosua Sibarani, S.T</p>
-              <p>NIP. 19740907 200903 1 002</p>
-            </div>
-          </div>
 
-          {/* Penandatangan 4 atau 5 (Dinamis) */}
-          <div className="text-center flex flex-col justify-between h-48">
-            <div>
-              <p>Diketahui :</p>
-              {showSignatory4 && !showSignatory5 && (
-                <>
-                  <p className="font-bold">Kepala Koordinator Taman</p>
-                  <p>Dinas Lingkungan Hidup</p>
-                  <p>Kota Medan</p>
-                </>
-              )}
-              {showSignatory5 && !showSignatory4 && (
-                <>
-                  <p className="font-bold">Kepala Koordinator Tim Pohon</p>
-                  <p>Dinas Lingkungan Hidup</p>
-                  <p>Kota Medan</p>
-                </>
-              )}
-              {showSignatory4 && showSignatory5 && (
-                <>
-                  <p className="font-bold">Koordinator Taman & Tim Pohon</p>
-                  <p>Dinas Lingkungan Hidup</p>
-                  <p>Kota Medan</p>
-                </>
-              )}
-            </div>
-            <div>
-              {showSignatory4 && !showSignatory5 && (
-                <>
-                  <p className="font-bold underline">Tiurmaida Silitonga</p>
-                  <p>NIP. 19690507 200701 2 042</p>
-                </>
-              )}
-              {showSignatory5 && !showSignatory4 && (
-                <>
-                  <p className="font-bold underline">Ardiansyah Siregar</p>
-                  <p>NIP. 19860404 201001 1 015</p>
-                </>
-              )}
-              {showSignatory4 && showSignatory5 && (
-                <div className="flex justify-around gap-2">
-                  <div>
+            {/* Penandatangan 4 atau 5 (Dinamis) */}
+            <div className="text-center flex flex-col justify-between h-48">
+              <div>
+                <p>Diketahui :</p>
+                {showSignatory4 && !showSignatory5 && (
+                  <>
+                    <p className="font-bold">Kepala Koordinator Taman</p>
+                    <p>Dinas Lingkungan Hidup</p>
+                    <p>Kota Medan</p>
+                  </>
+                )}
+                {showSignatory5 && !showSignatory4 && (
+                  <>
+                    <p className="font-bold">Kepala Koordinator Tim Pohon</p>
+                    <p>Dinas Lingkungan Hidup</p>
+                    <p>Kota Medan</p>
+                  </>
+                )}
+                {showSignatory4 && showSignatory5 && (
+                  <>
+                    <p className="font-bold">Koordinator Taman & Tim Pohon</p>
+                    <p>Dinas Lingkungan Hidup</p>
+                    <p>Kota Medan</p>
+                  </>
+                )}
+              </div>
+              <div>
+                {showSignatory4 && !showSignatory5 && (
+                  <>
                     <p className="font-bold underline">Tiurmaida Silitonga</p>
-                    <p className="text-[9px]">NIP. 19690507 200701 2 042</p>
-                  </div>
-                  <div>
+                    <p>NIP. 19690507 200701 2 042</p>
+                  </>
+                )}
+                {showSignatory5 && !showSignatory4 && (
+                  <>
                     <p className="font-bold underline">Ardiansyah Siregar</p>
-                    <p className="text-[9px]">NIP. 19860404 201001 1 015</p>
+                    <p>NIP. 19860404 201001 1 015</p>
+                  </>
+                )}
+                {showSignatory4 && showSignatory5 && (
+                  <div className="flex justify-around gap-2">
+                    <div>
+                      <p className="font-bold underline">Tiurmaida Silitonga</p>
+                      <p className="text-[9px]">NIP. 19690507 200701 2 042</p>
+                    </div>
+                    <div>
+                      <p className="font-bold underline">Ardiansyah Siregar</p>
+                      <p className="text-[9px]">NIP. 19860404 201001 1 015</p>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           </div>
         </div>
