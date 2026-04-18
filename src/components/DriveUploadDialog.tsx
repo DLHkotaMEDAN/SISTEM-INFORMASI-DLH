@@ -107,15 +107,18 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
 
     try {
-      // Gunakan DocsView khusus untuk folder agar lebih akurat
+      // Gunakan DocsView khusus untuk folder
       const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
         .setSelectFolderEnabled(true)
         .setIncludeFolders(true);
+
+      const origin = window.location.protocol + '//' + window.location.host;
 
       const picker = new google.picker.PickerBuilder()
         .addView(view)
         .setOAuthToken(accessToken)
         .setDeveloperKey(API_KEY)
+        .setOrigin(origin) // Sangat penting untuk keamanan domain
         .setCallback((data: any) => {
           if (data.action === google.picker.Action.PICKED) {
             const doc = data.docs[0];
