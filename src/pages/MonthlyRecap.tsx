@@ -91,49 +91,83 @@ const MonthlyRecap = () => {
     }
   };
 
+  const flatTasks = reports.flatMap((report, reportIdx) => 
+    report.tasks.map((task, taskIdx) => ({
+      ...task,
+      reportId: report.id,
+      reportDate: report.date,
+      reportCategory: report.category,
+      reportRemarks: report.remarks,
+      isFirstInReport: taskIdx === 0,
+      taskCount: report.tasks.length,
+      displayIdx: reportIdx + 1
+    }))
+  );
+
   const handleExportExcel = () => {
-    if (reports.length === 0) {
+    if (flatTasks.length === 0) {
       showError("Tidak ada data untuk diekspor");
       return;
     }
 
-    const data = reports.map((r, index) => {
-      const lokasiJalan = r.category === "Tim Siram" && r.tasks 
-        ? r.tasks.map(t => t.location.street).join(", ")
-        : r.location.street;
+    const data = flatTasks.map((task) => {
+      const villages = Array.isArray(task.location.village) 
+        ? task.location.village.join(", ") 
+        : task.location.village;
 
-      return {
-        "No": index + 1,
-        "Tanggal": r.date,
-        "Kategori / Tim": r.category,
-        "Uraian Kegiatan": r.description,
-        "Lokasi (Jalan)": lokasiJalan,
-        "Kelurahan": Array.isArray(r.location.village) ? r.location.village.join(", ") : r.location.village,
-        "Kecamatan": r.location.subDistrict,
-        "Volume": r.volume,
-        "Satuan": getUnitByCategory(r.category),
-        "Koordinator": r.personnel.coordinator,
-        "Jumlah Anggota": r.personnel.members,
-        "BBM Pertamax (L)": r.fuel?.pertamax || 0,
-        "BBM Dexlite (L)": r.fuel?.dexlite || 0,
-        "BBM Solar (L)": r.fuel?.solar || 0,
-        "Keterangan": r.remarks || "-"
+      const row: any = {
+        "No": task.displayIdx,
+        "Hari / Tgl": new Date(task.reportDate).toLocaleDateString('id-ID', { 
+          weekday: 'short', 
+          day: '2-digit', 
+          month: 'short', 
+          year: 'numeric' 
+        }),
+        "Uraian Kegiatan": task.description,
+        "Lokasi": `${task.location.street}, ${villages}, ${task.location.subDistrict}`,
+        "Foto 0%": task.photos?.zero || "-",
+        "Foto 50%": task.photos?.fifty || "-",
+        "Foto 100%": task.photos?.hundred || "-",
+        "Volume": `${task.volume} ${getUnitByCategory(task.reportCategory)}`,
+        "Peralatan": task.equipment?.map(e => `${e.type} (${e.quantity})`).join(", ") || "-",
+        "Alat Berat": task.heavyEquipment?.map(he => `${he.type} ${he.vehicle || ""}`).join(", ") || "-",
       };
+
+      if (recapMode === "with-fuel") {
+        row["BBM Pertamax (L)"] = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.pertamax || 0), 0) || 0;
+        row["BBM Dexlite (L)"] = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.dexlite || 0), 0) || 0;
+        row["BBM Solar (L)"] = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.solar || 0), 0) || 0;
+      }
+
+      row["Koordinator"] = task.personnel.coordinator;
+      row["Keterangan"] = [
+        task.remarks, 
+        task.isFirstInReport ? task.reportRemarks : ""
+      ].filter(Boolean).join(" | ") || "-";
+
+      return row;
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
+    
+    // Atur lebar kolom agar rapi
     const wscols = [
-      {wch: 5}, {wch: 12}, {wch: 15}, {wch: 30}, {wch: 30}, 
-      {wch: 15}, {wch: 15}, {wch: 10}, {wch: 10}, {wch: 20}, 
-      {wch: 15}, {wch: 15}, {wch: 15}, {wch: 15}, {wch: 30}
+      {wch: 5}, {wch: 15}, {wch: 30}, {wch: 40}, {wch: 20}, 
+      {wch: 20}, {wch: 20}, {wch: 12}, {wch: 25}, {wch: 25}
     ];
+    
+    if (recapMode === "with-fuel") {
+      wscols.push({wch: 15}, {wch: 15}, {wch: 15});
+    }
+    
+    wscols.push({wch: 20}, {wch: 35});
     ws['!cols'] = wscols;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Rekap Laporan");
-    const fileName = `Rekap_Laporan_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`;
+    const fileName = `Rekap_A3_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`;
     XLSX.writeFile(wb, fileName);
-    showSuccess("Rekap Excel berhasil diunduh");
+    showSuccess("Rekap Excel (Format A3) berhasil diunduh");
   };
 
   const toggleCategory = (category: string) => {
@@ -155,19 +189,6 @@ const MonthlyRecap = () => {
       setSelectedCategories(newSelected);
     }
   };
-
-  const flatTasks = reports.flatMap((report, reportIdx) => 
-    report.tasks.map((task, taskIdx) => ({
-      ...task,
-      reportId: report.id,
-      reportDate: report.date,
-      reportCategory: report.category,
-      reportRemarks: report.remarks,
-      isFirstInReport: taskIdx === 0,
-      taskCount: report.tasks.length,
-      displayIdx: reportIdx + 1
-    }))
-  );
 
   const isUserRestricted = profile?.role !== 'admin';
 
