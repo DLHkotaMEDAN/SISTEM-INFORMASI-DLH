@@ -71,10 +71,13 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
 
   const handleAuth = () => {
     try {
+      const origin = window.location.protocol + '//' + window.location.host;
+      
       const client = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
         ux_mode: 'popup',
+        origin: origin, // Tambahkan origin di sini
         callback: (response: any) => {
           if (response.access_token) {
             setAccessToken(response.access_token);
@@ -107,7 +110,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
 
     try {
-      // Gunakan DocsView khusus untuk folder
       const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
         .setSelectFolderEnabled(true)
         .setIncludeFolders(true);
@@ -118,7 +120,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
         .addView(view)
         .setOAuthToken(accessToken)
         .setDeveloperKey(API_KEY)
-        .setOrigin(origin) // Sangat penting untuk keamanan domain
+        .setOrigin(origin)
         .setCallback((data: any) => {
           if (data.action === google.picker.Action.PICKED) {
             const doc = data.docs[0];
