@@ -16,9 +16,9 @@ import { Folder, User, FileText, Loader2, CloudUpload, AlertCircle } from 'lucid
 import { showSuccess, showError } from '@/utils/toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-// Menggunakan variabel lingkungan atau placeholder
-const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID"; 
-const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "YOUR_GOOGLE_API_KEY";
+// GANTI "YOUR_..." DENGAN KUNCI ASLI DARI GOOGLE CLOUD CONSOLE
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "MASUKKAN_CLIENT_ID_ANDA_DI_SINI"; 
+const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "MASUKKAN_API_KEY_ANDA_DI_SINI";
 const SCOPES = "https://www.googleapis.com/auth/drive.file";
 
 interface DriveUploadDialogProps {
@@ -36,7 +36,8 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const isConfigMissing = CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID" || API_KEY === "YOUR_GOOGLE_API_KEY";
+  // Cek apakah user sudah mengganti placeholder
+  const isConfigMissing = CLIENT_ID.includes("MASUKKAN") || API_KEY.includes("MASUKKAN");
 
   useEffect(() => {
     if (!isOpen) return;
@@ -52,15 +53,11 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     gapiScript.async = true;
     gapiScript.defer = true;
     document.body.appendChild(gapiScript);
-
-    return () => {
-      // Cleanup jika diperlukan
-    };
   }, [isOpen]);
 
   const handleAuth = () => {
     if (isConfigMissing) {
-      showError("Kredensial Google belum dikonfigurasi di kode.");
+      showError("Kredensial Google belum diisi di kode.");
       return;
     }
 
@@ -147,7 +144,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Konfigurasi Diperlukan</AlertTitle>
             <AlertDescription className="text-[10px]">
-              Anda harus memasukkan Client ID dan API Key dari Google Cloud Console ke dalam file DriveUploadDialog.tsx.
+              Silakan masukkan Client ID dan API Key yang Anda dapatkan dari Google Cloud Console ke dalam file DriveUploadDialog.tsx.
             </AlertDescription>
           </Alert>
         )}
