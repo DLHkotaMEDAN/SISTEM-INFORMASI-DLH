@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown, Table } from 'lucide-react';
+import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown, Table, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
+import { supabase } from '@/lib/supabase';
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -27,9 +28,14 @@ const allCategories = [
   "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
 ];
 
-// Menggunakan URL yang lebih stabil
-const LOGO_MEDAN_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/b/bb/Logo_Kota_Medan.png/200px-Logo_Kota_Medan.png";
-const LOGO_DLH_URL = "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a1/Logo_Kementerian_Lingkungan_Hidup_dan_Kehutanan.png/200px-Logo_Kementerian_Lingkungan_Hidup_dan_Kehutanan.png";
+// Mengambil URL dari Supabase Storage (Bucket: assets)
+const getLogoUrl = (fileName: string) => {
+  const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
+  return data.publicUrl;
+};
+
+const LOGO_MEDAN_URL = getLogoUrl('logo-medan.png');
+const LOGO_DLH_URL = getLogoUrl('logo-dlh.png');
 
 type RecapMode = "with-fuel" | "without-fuel";
 
@@ -247,6 +253,7 @@ const MonthlyRecap = () => {
       const addLogoToExcel = async (url: string, col: number, row: number) => {
         try {
           const response = await fetch(url);
+          if (!response.ok) return;
           const blob = await response.blob();
           const arrayBuffer = await blob.arrayBuffer();
           const imageId = workbook.addImage({
@@ -413,12 +420,15 @@ const MonthlyRecap = () => {
 
       <div className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
         <div className="flex items-center justify-between border-b-4 border-double border-black pb-4 mb-6">
-          <div className="w-24 h-24 flex items-center justify-center">
+          <div className="w-24 h-24 flex items-center justify-center bg-slate-50 rounded border border-dashed border-slate-200 overflow-hidden">
             <img 
               src={LOGO_MEDAN_URL} 
               className="max-h-full max-w-full object-contain" 
               alt="Logo Medan" 
-              crossOrigin="anonymous"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<div class="text-[8px] text-slate-400 text-center p-1">Logo Medan Belum Diupload</div>';
+              }}
             />
           </div>
           <div className="text-center flex-1 px-4">
@@ -426,12 +436,15 @@ const MonthlyRecap = () => {
             <h2 className="text-3xl font-black uppercase">Dinas Lingkungan Hidup</h2>
             <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
           </div>
-          <div className="w-24 h-24 flex items-center justify-center">
+          <div className="w-24 h-24 flex items-center justify-center bg-slate-50 rounded border border-dashed border-slate-200 overflow-hidden">
             <img 
               src={LOGO_DLH_URL} 
               className="max-h-full max-w-full object-contain" 
               alt="Logo DLH" 
-              crossOrigin="anonymous"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.innerHTML = '<div class="text-[8px] text-slate-400 text-center p-1">Logo DLH Belum Diupload</div>';
+              }}
             />
           </div>
         </div>
