@@ -117,27 +117,39 @@ const MonthlyRecap = () => {
   const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
     if (!printRef.current) return;
     
-    const toastId = showLoading("Sedang memproses PDF...");
+    const toastId = showLoading("Sedang memproses PDF kualitas tinggi...");
     
     try {
+      // Pastikan posisi scroll di paling atas agar tidak terpotong
+      window.scrollTo(0, 0);
+      
+      // Tunggu sebentar agar rendering stabil
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       const canvas = await html2canvas(printRef.current, {
-        scale: 2,
+        scale: 3, // Tingkatkan skala untuk ketajaman teks
         useCORS: true,
         logging: false,
+        backgroundColor: "#ffffff",
+        windowWidth: 1600, // Paksa lebar window saat capture
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a3'
       });
       
-      const imgProps = pdf.getImageProperties(imgData);
       const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      const pdfHeight = pdf.internal.pageSize.getHeight();
       
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight);
+      // Hitung rasio agar pas di satu halaman A3
+      const canvasRatio = canvas.height / canvas.width;
+      const targetHeight = pdfWidth * canvasRatio;
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, targetHeight > pdfHeight ? pdfHeight : targetHeight);
+      
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
       
       const { error } = await supabase.functions.invoke('upload-to-drive', {
