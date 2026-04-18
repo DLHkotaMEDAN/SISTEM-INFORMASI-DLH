@@ -35,7 +35,6 @@ const MonthlyRecap = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
   
-  // State untuk multi-select kategori
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -67,7 +66,6 @@ const MonthlyRecap = () => {
         const matchMonth = m === selectedMonth;
         const matchYear = y === selectedYear;
         
-        // Logika Filter Kategori Multi-select:
         let matchCategory = false;
         if (profile?.role === 'admin') {
           if (selectedCategories.includes('semua')) {
@@ -145,7 +143,6 @@ const MonthlyRecap = () => {
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
 
-            {/* Multi-select Kategori */}
             <div className="relative">
               <Popover>
                 <PopoverTrigger asChild>
@@ -270,7 +267,7 @@ const MonthlyRecap = () => {
                   : task.location.village;
                 
                 return (
-                  <tr key={`${task.reportId}-${idx}`}>
+                  <tr key={`${task.reportId}-${idx}`} className="page-break-avoid">
                     {task.isFirstInReport ? (
                       <>
                         <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={task.taskCount}>{task.displayIdx}</td>
@@ -365,10 +362,19 @@ const MonthlyRecap = () => {
                 </tr>
               )}
             </tbody>
+            {/* Footer Tabel untuk Keterangan Bersambung */}
+            <tfoot className="continuation-footer">
+              <tr>
+                <td colSpan={recapMode === "with-fuel" ? 15 : 12} className="border-none p-2 text-right italic text-[10px] font-bold text-slate-500">
+                  Bersambung ke halaman berikutnya...
+                </td>
+              </tr>
+            </tfoot>
           </table>
         </div>
 
-        <div className="mt-16 grid grid-cols-2 gap-20 text-base">
+        {/* Bagian Tanda Tangan - Diberi background putih dan z-index agar menutupi footer tfoot di halaman terakhir */}
+        <div className="signature-section mt-16 grid grid-cols-2 gap-20 text-base relative bg-white z-10">
           <div className="text-center">
             <p>Mengetahui,</p>
             <p className="font-bold">Kepala Bidang / Kasi</p>
@@ -406,12 +412,23 @@ const MonthlyRecap = () => {
             page-break-inside: auto; 
             width: 100% !important;
           }
-          tr { 
-            page-break-inside: avoid; 
-            page-break-after: auto; 
+          .page-break-avoid { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important;
           }
           thead { display: table-header-group; }
-          tfoot { display: table-footer-group; }
+          
+          /* Menampilkan tfoot di setiap akhir halaman cetak */
+          tfoot.continuation-footer { 
+            display: table-footer-group; 
+          }
+          
+          /* Trik untuk menyembunyikan tfoot di halaman terakhir: 
+             Bagian tanda tangan akan menutupi area footer karena z-index dan background putih */
+          .signature-section {
+            page-break-inside: avoid;
+            margin-top: 2cm;
+          }
         }
       `}} />
     </div>
