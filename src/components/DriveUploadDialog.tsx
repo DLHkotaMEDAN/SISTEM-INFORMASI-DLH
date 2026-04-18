@@ -17,9 +17,9 @@ import { showSuccess, showError } from '@/utils/toast';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 /**
- * INSTRUKSI:
- * 1. Ganti CLIENT_ID dengan Client ID dari Google Cloud (OAuth 2.0 Client IDs)
- * 2. Ganti API_KEY dengan API Key dari Google Cloud (API Keys)
+ * PANDUAN PENGISIAN:
+ * 1. CLIENT_ID: Ambil dari 'OAuth 2.0 Client IDs' di Google Cloud.
+ * 2. API_KEY: Ambil dari 'API Keys' di Google Cloud.
  */
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "MASUKKAN_CLIENT_ID_ANDA_DI_SINI"; 
 const API_KEY = import.meta.env.VITE_GOOGLE_API_KEY || "MASUKKAN_API_KEY_ANDA_DI_SINI";
