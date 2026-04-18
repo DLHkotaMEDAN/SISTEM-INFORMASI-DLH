@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, Lock, Fuel, FileText, Check, ChevronsUpDown } from 'lucide-react';
+import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
@@ -35,7 +35,6 @@ const MonthlyRecap = () => {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
   
-  // State untuk multi-select kategori
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   useEffect(() => {
@@ -67,7 +66,6 @@ const MonthlyRecap = () => {
         const matchMonth = m === selectedMonth;
         const matchYear = y === selectedYear;
         
-        // Logika Filter Kategori Multi-select:
         let matchCategory = false;
         if (profile?.role === 'admin') {
           if (selectedCategories.includes('semua')) {
@@ -126,6 +124,13 @@ const MonthlyRecap = () => {
 
   const isUserRestricted = profile?.role !== 'admin';
 
+  // Logika Penandatangan
+  const showSignatory4 = selectedCategories.includes('semua') || 
+    selectedCategories.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
+  
+  const showSignatory5 = selectedCategories.includes('semua') || 
+    selectedCategories.includes("Tim Pohon");
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1400px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
@@ -145,7 +150,6 @@ const MonthlyRecap = () => {
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
 
-            {/* Multi-select Kategori */}
             <div className="relative">
               <Popover>
                 <PopoverTrigger asChild>
@@ -368,20 +372,102 @@ const MonthlyRecap = () => {
           </table>
         </div>
 
-        <div className="mt-16 grid grid-cols-2 gap-20 text-base">
-          <div className="text-center">
-            <p>Mengetahui,</p>
-            <p className="font-bold">Kepala Bidang / Kasi</p>
-            <div className="h-32"></div>
-            <p className="font-bold underline text-lg">( ............................................ )</p>
-            <p>NIP. ............................................</p>
+        {/* Bagian Tanda Tangan Dinamis */}
+        <div className="mt-16 grid grid-cols-4 gap-4 text-[11px] leading-tight">
+          {/* Penandatangan 1: Kabid (Selalu Muncul) */}
+          <div className="text-center flex flex-col justify-between h-48">
+            <div>
+              <p>Mengetahui :</p>
+              <p className="font-bold">Kabid Tata Lingkungan</p>
+              <p>Dinas Lingkungan Hidup</p>
+              <p>Kota Medan</p>
+            </div>
+            <div>
+              <p className="font-bold underline">Heni Rustati, ST, M.Si</p>
+              <p>NIP. 19720223 200604 2 002</p>
+            </div>
           </div>
-          <div className="text-center">
-            <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p className="font-bold">Dibuat Oleh,</p>
-            <div className="h-32"></div>
-            <p className="font-bold underline text-lg">( ............................................ )</p>
-            <p>Koordinator Lapangan</p>
+
+          {/* Penandatangan 2: Ketua Tim (Selalu Muncul) */}
+          <div className="text-center flex flex-col justify-between h-48">
+            <div>
+              <p>Diketahui :</p>
+              <p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p>
+              <p>Dinas Lingkungan Hidup</p>
+              <p>Kota Medan</p>
+            </div>
+            <div>
+              <p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p>
+              <p>NIP. 19811128 201001 2 011</p>
+            </div>
+          </div>
+
+          {/* Penandatangan 3: Pengawas (Selalu Muncul) */}
+          <div className="text-center flex flex-col justify-between h-48">
+            <div>
+              <p>Diketahui :</p>
+              <p className="font-bold">Pengawas Taman Penghijauan</p>
+              <p>Dinas Lingkungan Hidup</p>
+              <p>Kota Medan</p>
+            </div>
+            <div>
+              <p className="font-bold underline">Jhosua Sibarani, S.T</p>
+              <p>NIP. 19740907 200903 1 002</p>
+            </div>
+          </div>
+
+          {/* Penandatangan 4 atau 5 (Dinamis) */}
+          <div className="text-center flex flex-col justify-between h-48">
+            <div>
+              <p>Diketahui :</p>
+              {showSignatory4 && !showSignatory5 && (
+                <>
+                  <p className="font-bold">Kepala Koordinator Taman</p>
+                  <p>Dinas Lingkungan Hidup</p>
+                  <p>Kota Medan</p>
+                </>
+              )}
+              {showSignatory5 && !showSignatory4 && (
+                <>
+                  <p className="font-bold">Kepala Koordinator Tim Pohon</p>
+                  <p>Dinas Lingkungan Hidup</p>
+                  <p>Kota Medan</p>
+                </>
+              )}
+              {showSignatory4 && showSignatory5 && (
+                <>
+                  <p className="font-bold">Koordinator Taman & Tim Pohon</p>
+                  <p>Dinas Lingkungan Hidup</p>
+                  <p>Kota Medan</p>
+                </>
+              )}
+            </div>
+            <div>
+              {showSignatory4 && !showSignatory5 && (
+                <>
+                  <p className="font-bold underline">Tiurmaida Silitonga</p>
+                  <p>NIP. 19690507 200701 2 042</p>
+                </>
+              )}
+              {showSignatory5 && !showSignatory4 && (
+                <>
+                  <p className="font-bold underline">Ardiansyah Siregar</p>
+                  <p>NIP. 19860404 201001 1 015</p>
+                </>
+              )}
+              {showSignatory4 && showSignatory5 && (
+                <div className="flex justify-around gap-2">
+                  <div>
+                    <p className="font-bold underline">Tiurmaida Silitonga</p>
+                    <p className="text-[9px]">NIP. 19690507 200701 2 042</p>
+                  </div>
+                  <div>
+                    <p className="font-bold underline">Ardiansyah Siregar</p>
+                    <p className="text-[9px]">NIP. 19860404 201001 1 015</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
