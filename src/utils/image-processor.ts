@@ -1,10 +1,9 @@
 /**
  * Mengompres dan meresize gambar sebelum diunggah
  * Target: Width 2.26" dan Height 2.95"
- * Konversi ke Piksel (asumsi 96 DPI): 217px x 283px
  * 
- * UPDATE: Logika cropping diubah dari 'center' ke 'bottom-right' 
- * agar timestamp di pojok kanan bawah tidak terpotong.
+ * UPDATE: Logika diubah agar gambar tidak di-crop. 
+ * Gambar akan disesuaikan ukurannya (fit) agar seluruh sisinya terlihat.
  */
 export const compressImage = (
   base64: string, 
@@ -18,7 +17,7 @@ export const compressImage = (
     img.onload = () => {
       const canvas = document.createElement('canvas');
       
-      // Konversi Inci ke Piksel (96 DPI adalah standar web)
+      // Konversi Inci ke Piksel (96 DPI)
       const width = Math.round(targetWidthInches * 96);
       const height = Math.round(targetHeightInches * 96);
 
@@ -31,31 +30,31 @@ export const compressImage = (
         return;
       }
 
-      // Menggunakan logika 'cover' tapi disejajarkan ke kanan bawah (bottom-right)
+      // Latar belakang putih untuk area kosong (letterboxing)
+      ctx.fillStyle = "white";
+      ctx.fillRect(0, 0, width, height);
+
       const imgRatio = img.width / img.height;
       const targetRatio = width / height;
       
       let drawWidth, drawHeight, offsetX, offsetY;
 
+      // Logika 'Contain': Menyesuaikan gambar agar seluruhnya masuk ke bingkai
       if (imgRatio > targetRatio) {
-        // Gambar lebih lebar dari target: Tinggi disesuaikan, lebar dipotong
-        drawHeight = height;
-        drawWidth = img.width * (height / img.height);
-        // Geser ke kanan agar bagian kanan tetap terlihat
-        offsetX = width - drawWidth; 
-        offsetY = 0;
-      } else {
-        // Gambar lebih tinggi dari target: Lebar disesuaikan, tinggi dipotong
+        // Gambar lebih lebar: Lebar mengikuti bingkai, tinggi menyesuaikan
         drawWidth = width;
-        drawHeight = img.height * (width / img.width);
+        drawHeight = width / imgRatio;
         offsetX = 0;
-        // Geser ke bawah agar bagian bawah tetap terlihat
-        offsetY = height - drawHeight;
+        offsetY = (height - drawHeight) / 2; // Tengah secara vertikal
+      } else {
+        // Gambar lebih tinggi: Tinggi mengikuti bingkai, lebar menyesuaikan
+        drawHeight = height;
+        drawWidth = height * imgRatio;
+        offsetX = (width - drawWidth) / 2; // Tengah secara horizontal
+        offsetY = 0;
       }
 
-      // Gambar ulang ke canvas dengan dimensi baru dan perataan kanan bawah
-      ctx.fillStyle = "white";
-      ctx.fillRect(0, 0, width, height);
+      // Gambar seluruh foto tanpa pemotongan
       ctx.drawImage(img, offsetX, offsetY, drawWidth, drawHeight);
 
       // Ekspor sebagai JPG
