@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Tag, Printer, FileBarChart,
-  LogOut, User, Lock
+  LogOut, LogIn, User, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -38,7 +38,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import {
   Tooltip,
@@ -53,33 +52,33 @@ const categories: string[] = [
 
 const Index = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { session, profile, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
-  const isUserRestricted = profile?.role !== 'admin';
+  const isLoggedIn = !!session;
+  const isUserRestricted = isLoggedIn && profile?.role !== 'admin';
 
   useEffect(() => {
-    if (profile) {
-      loadReports();
-      if (isUserRestricted && profile.category) {
-        setSelectedPrintCategory(profile.category);
-      }
+    loadReports();
+    if (isUserRestricted && profile?.category) {
+      setSelectedPrintCategory(profile.category);
     }
   }, [profile, isUserRestricted]);
 
   const loadReports = async () => {
     try {
       setLoading(true);
-      const categoryFilter = profile?.role === 'admin' ? null : profile?.category;
+      // Jika admin atau tamu, ambil semua. Jika user biasa, ambil sesuai kategori.
+      const categoryFilter = (isLoggedIn && profile?.role !== 'admin') ? profile?.category : null;
       const data = await reportService.getAllReports(categoryFilter);
       setReports(data);
     } catch (error) {
       console.error(error);
-      showError("Gagal memuat data dari database");
+      showError("Gagal memuat data");
     } finally {
       setLoading(false);
     }
@@ -98,33 +97,23 @@ const Index = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (window.confirm("Hapus laporan ini secara permanen dari database?")) {
+    if (window.confirm("Hapus laporan ini?")) {
       try {
         await reportService.deleteReport(id);
         setReports(reports.filter(r => r.id !== id));
-        showSuccess("Laporan berhasil dihapus");
+        showSuccess("Laporan dihapus");
       } catch (error) {
-        showError("Gagal menghapus laporan");
+        showError("Gagal menghapus");
       }
     }
   };
 
-  const handlePrintAction = () => {
-    setIsPrintDialogOpen(false);
-    navigate(`/print-rekap?category=${selectedPrintCategory}`);
-  };
-
   const filteredReports = reports.filter(report => {
     const search = searchQuery.toLowerCase();
-    const inTasks = report.tasks?.some(t => 
-      t.description.toLowerCase().includes(search) || 
-      t.location.street.toLowerCase().includes(search)
-    );
     return (
       report.description.toLowerCase().includes(search) ||
       report.location.street.toLowerCase().includes(search) ||
-      report.category?.toLowerCase().includes(search) ||
-      inTasks
+      report.category?.toLowerCase().includes(search)
     );
   });
 
@@ -140,11 +129,11 @@ const Index = () => {
               <h1 className="text-sm md:text-lg font-bold text-slate-900 leading-tight">Sistem Laporan</h1>
               <div className="flex items-center gap-2">
                 <Badge variant="outline" className="w-fit text-[8px] md:text-[10px] py-0 h-4 bg-green-50 text-green-600 border-green-200">
-                  <Cloud className="h-2 w-2 mr-1" /> Cloud
+                  <Cloud className="h-2 w-2 mr-1" /> Publik
                 </Badge>
-                {profile && (
+                {isLoggedIn && profile && (
                   <Badge variant="secondary" className="text-[8px] md:text-[10px] py-0 h-4 bg-blue-50 text-blue-600 border-blue-100">
-                    {profile.role === 'admin' ? 'Administrator' : profile.category}
+                    {profile.role === 'admin' ? 'Admin' : profile.category}
                   </Badge>
                 )}
               </div>
@@ -152,138 +141,82 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Desktop Buttons */}
-            <div className="hidden lg:flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
-                <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
-              </Button>
+            {/* Tombol Rekap & Cetak hanya untuk User Login */}
+            {isLoggedIn && (
+              <div className="hidden lg:flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
+                  <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
+                </Button>
 
-              <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
-                    <Printer className="h-4 w-4 mr-2" /> Cetak Harian
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
-                  <DialogHeader>
-                    <DialogTitle>Cetak Rekap Laporan</DialogTitle>
-                    <DialogDescription>
-                      {isUserRestricted 
-                        ? `Mencetak laporan untuk kategori: ${profile?.category}`
-                        : "Pilih kategori laporan yang ingin dicetak."}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="py-4">
-                    <div className="relative">
-                      <Select 
-                        onValueChange={setSelectedPrintCategory} 
-                        value={selectedPrintCategory}
-                        disabled={isUserRestricted}
-                      >
-                        <SelectTrigger className={isUserRestricted ? "bg-slate-50 text-slate-500" : ""}>
-                          <SelectValue placeholder="Pilih Kategori" />
-                        </SelectTrigger>
+                <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
+                      <Printer className="h-4 w-4 mr-2" /> Cetak
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Cetak Rekap</DialogTitle>
+                    </DialogHeader>
+                    <div className="py-4">
+                      <Select onValueChange={setSelectedPrintCategory} value={selectedPrintCategory} disabled={isUserRestricted}>
+                        <SelectTrigger><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
                         <SelectContent>
-                          {categories.map(cat => (
-                            <SelectItem key={cat} value={cat}>
-                              {cat === 'semua' ? 'Semua Kategori' : cat}
-                            </SelectItem>
-                          ))}
+                          {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'semua' ? 'Semua' : cat}</SelectItem>)}
                         </SelectContent>
                       </Select>
-                      {isUserRestricted && (
-                        <div className="absolute -top-2 -right-2 bg-amber-100 text-amber-700 p-1 rounded-full border border-amber-200 shadow-sm">
-                          <Lock size={10} />
-                        </div>
-                      )}
                     </div>
-                  </div>
-                  <DialogFooter>
-                    <Button onClick={handlePrintAction} className="w-full bg-blue-600">Buka Preview Cetak</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {/* Mobile Print Icon Button */}
-            <div className="lg:hidden">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="icon" className="h-9 w-9 border-slate-200 bg-slate-50 text-slate-600">
-                    <Printer className="h-5 w-5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
-                  <DropdownMenuItem onClick={() => navigate('/monthly-rekap')}>
-                    <FileBarChart className="h-4 w-4 mr-2 text-purple-600" /> Rekap Bulanan
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsPrintDialogOpen(true)}>
-                    <Printer className="h-4 w-4 mr-2 text-slate-600" /> Cetak Harian
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-
-            {/* User Info & Logout */}
-            <div className="flex items-center gap-1 border-l pl-2 ml-1">
-              <div className="hidden sm:flex flex-col items-end mr-2">
-                <p className="text-[10px] font-bold text-slate-900 leading-none">{profile?.role === 'admin' ? 'Admin' : 'User'}</p>
-                <p className="text-[8px] text-slate-500 truncate max-w-[80px]">{profile?.category || 'Semua'}</p>
+                    <DialogFooter>
+                      <Button onClick={() => navigate(`/print-rekap?category=${selectedPrintCategory}`)} className="w-full bg-blue-600">Buka Preview</Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={handleLogout}
-                      className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"
-                    >
-                      <LogOut className="h-5 w-5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Keluar Sistem</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            )}
+
+            {/* User Info / Login Button */}
+            <div className="flex items-center gap-1 border-l pl-2 ml-1">
+              {isLoggedIn ? (
+                <>
+                  <div className="hidden sm:flex flex-col items-end mr-2">
+                    <p className="text-[10px] font-bold text-slate-900 leading-none">{profile?.role === 'admin' ? 'Admin' : 'User'}</p>
+                    <p className="text-[8px] text-slate-500 truncate max-w-[80px]">{profile?.category || 'Semua'}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full">
+                    <LogOut className="h-5 w-5" />
+                  </Button>
+                </>
+              ) : (
+                <Button variant="outline" size="sm" onClick={() => navigate('/login')} className="h-9 border-blue-200 text-blue-600 hover:bg-blue-50">
+                  <LogIn className="h-4 w-4 mr-2" /> Masuk
+                </Button>
+              )}
             </div>
 
-            <Button onClick={() => navigate('/create')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4 ml-1">
-              <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
-            </Button>
+            {isLoggedIn && (
+              <Button onClick={() => navigate('/create')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4 ml-1">
+                <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="mb-6">
-          <Card className="bg-white border-none shadow-sm max-w-xs">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="bg-blue-100 p-2 rounded-full text-blue-600"><FileText className="h-5 w-5" /></div>
-              <div><p className="text-[10px] uppercase font-bold text-slate-400">Total Laporan</p><p className="text-lg font-bold">{reports.length}</p></div>
-            </CardContent>
-          </Card>
-        </div>
-
         <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
           <div className="relative w-full md:w-96">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input placeholder="Cari uraian, lokasi, atau kategori..." className="pl-10 bg-white h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+            <Input placeholder="Cari laporan..." className="pl-10 bg-white h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <p className="text-xs text-slate-500 self-start md:self-center">{filteredReports.length} Laporan ditemukan</p>
+          {!isLoggedIn && <p className="text-xs text-amber-600 font-medium bg-amber-50 px-3 py-1 rounded-full border border-amber-100">Mode Lihat Saja (Tamu)</p>}
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-slate-500">Memuat data dari cloud...</div>
+          <div className="text-center py-20 text-slate-500">Memuat data...</div>
         ) : filteredReports.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-xl border-2 border-dashed border-slate-200">
             <FileText className="mx-auto h-12 w-12 text-slate-300 mb-4" />
             <h3 className="text-lg font-medium text-slate-900">Tidak ada laporan</h3>
-            <p className="text-sm text-slate-500 mt-1">
-              {profile?.role === 'user' ? `Menampilkan laporan untuk kategori: ${profile.category}` : 'Belum ada data laporan.'}
-            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -300,27 +233,25 @@ const Index = () => {
                         <Tag className="h-2 w-2 mr-1" /> {report.category}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}>
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                    {isLoggedIn && (
+                      <div className="flex items-center gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                   <CardTitle className="text-base line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">
-                    {report.category === "Tim Siram" && report.tasks ? `${report.tasks.length} Lokasi Penyiraman` : report.description}
+                    {report.description}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   <div className="flex items-start gap-2 text-xs text-slate-600">
                     <MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" />
-                    <span className="line-clamp-2">
-                      {report.category === "Tim Siram" && report.tasks?.[0] 
-                        ? `${report.tasks[0].location.street} (+${report.tasks.length - 1} lainnya)` 
-                        : `${report.location.street}, ${report.location.village}`}
-                    </span>
+                    <span className="line-clamp-2">{report.location.street}</span>
                   </div>
                   <div className="pt-3 flex justify-between items-center border-t text-[10px]">
                     <span className="text-slate-400 font-medium">Vol: {report.volume} {getUnitByCategory(report.category)}</span>

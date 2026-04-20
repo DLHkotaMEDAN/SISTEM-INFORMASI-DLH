@@ -8,12 +8,16 @@ import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
 import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
+import { useAuth } from '@/context/AuthContext';
 
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isLoggedIn = !!session;
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
 
@@ -42,10 +46,13 @@ const ReportDetail = () => {
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center justify-between no-print">
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
-            <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
-          </div>
+          
+          {isLoggedIn && (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
+              <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
+            </div>
+          )}
         </div>
 
         <div id="report-content" className="bg-white border shadow-lg p-8 space-y-8">
