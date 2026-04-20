@@ -176,9 +176,31 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     for (let i = 0; i < updatedTasks.length; i++) {
       const task = updatedTasks[i];
       setUploadProgress(`Mengunggah foto kegiatan #${i + 1}...`);
-      if (task.photos.zero?.startsWith('data:image')) task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
-      if (task.photos.fifty?.startsWith('data:image')) task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
-      if (task.photos.hundred?.startsWith('data:image')) task.photos.hundred = await storageService.uploadPhoto(task.photos.hundred, `task_${i}_100`);
+      
+      // Cek foto 0%
+      if (task.photos.zero?.startsWith('data:image')) {
+        // Jika sedang edit dan ada foto lama, hapus foto lama
+        if (isEditing && initialData?.tasks[i]?.photos.zero) {
+          await storageService.deletePhotoByUrl(initialData.tasks[i].photos.zero);
+        }
+        task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
+      }
+      
+      // Cek foto 50%
+      if (task.photos.fifty?.startsWith('data:image')) {
+        if (isEditing && initialData?.tasks[i]?.photos.fifty) {
+          await storageService.deletePhotoByUrl(initialData.tasks[i].photos.fifty);
+        }
+        task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
+      }
+      
+      // Cek foto 100%
+      if (task.photos.hundred?.startsWith('data:image')) {
+        if (isEditing && initialData?.tasks[i]?.photos.hundred) {
+          await storageService.deletePhotoByUrl(initialData.tasks[i].photos.hundred);
+        }
+        task.photos.hundred = await storageService.uploadPhoto(task.photos.hundred, `task_${i}_100`);
+      }
     }
     return updatedTasks;
   };
@@ -186,6 +208,22 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
+      // Jika sedang edit, cek apakah ada task yang dihapus seluruhnya
+      if (isEditing && initialData) {
+        const currentTaskCount = values.tasks.length;
+        const oldTaskCount = initialData.tasks.length;
+        
+        // Jika jumlah task berkurang, hapus foto dari task yang hilang
+        if (currentTaskCount < oldTaskCount) {
+          for (let i = currentTaskCount; i < oldTaskCount; i++) {
+            const oldTask = initialData.tasks[i];
+            if (oldTask.photos.zero) await storageService.deletePhotoByUrl(oldTask.photos.zero);
+            if (oldTask.photos.fifty) await storageService.deletePhotoByUrl(oldTask.photos.fifty);
+            if (oldTask.photos.hundred) await storageService.deletePhotoByUrl(oldTask.photos.hundred);
+          }
+        }
+      }
+
       const processedTasksWithUrls = await uploadTaskPhotos(values.tasks);
       let totalVolume = 0;
       let totalFuel: FuelUsage = { pertamax: 0, dexlite: 0, solar: 0 };

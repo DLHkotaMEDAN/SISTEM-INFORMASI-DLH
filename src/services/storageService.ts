@@ -32,5 +32,30 @@ export const storageService = {
       .getPublicUrl(filePath);
 
     return publicUrl;
+  },
+
+  async deletePhotoByUrl(url: string): Promise<void> {
+    if (!url || !url.includes('report-photos')) return;
+
+    try {
+      // Ekstrak nama file dari URL
+      // URL format: .../storage/v1/object/public/report-photos/filename.jpg
+      const parts = url.split('/');
+      const fileName = parts[parts.length - 1];
+
+      if (fileName) {
+        const { error } = await supabase.storage
+          .from('report-photos')
+          .remove([fileName]);
+        
+        if (error) {
+          console.error("Gagal menghapus file dari storage:", error);
+        } else {
+          console.log(`[storage] Berhasil menghapus foto lama: ${fileName}`);
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing URL untuk penghapusan:", e);
+    }
   }
 };
