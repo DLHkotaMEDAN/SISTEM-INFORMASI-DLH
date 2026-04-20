@@ -132,7 +132,7 @@ const MonthlyRecap = () => {
   const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
     if (!printRef.current) return;
     
-    const toastId = showLoading("Menyiapkan PDF A3 (Per Tanggal)...");
+    const toastId = showLoading("Menyiapkan PDF A3 (Anti-Yatim)...");
     
     try {
       window.scrollTo(0, 0);
@@ -151,19 +151,22 @@ const MonthlyRecap = () => {
       
       let currentY = margin;
 
+      // 1. Capture Header
       const headerEl = document.querySelector('.pdf-header') as HTMLElement;
+      let headerImg = "";
+      let headerHeight = 0;
       if (headerEl) {
         const canvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
-        currentY += imgHeight + 5;
+        headerImg = canvas.toDataURL('image/jpeg', 0.95);
+        headerHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(headerImg, 'JPEG', margin, currentY, contentWidth, headerHeight);
+        currentY += headerHeight + 5;
       }
 
+      // 2. Capture Table Header
       const tableHeaderEl = document.querySelector('.pdf-table-header') as HTMLElement;
-      let tableHeaderImg: string | null = null;
+      let tableHeaderImg = "";
       let tableHeaderHeight = 0;
-      
       if (tableHeaderEl) {
         const canvas = await html2canvas(tableHeaderEl, { scale: 2, useCORS: true });
         tableHeaderImg = canvas.toDataURL('image/jpeg', 0.95);
@@ -172,6 +175,17 @@ const MonthlyRecap = () => {
         currentY += tableHeaderHeight;
       }
 
+      // 3. Capture Footer (untuk hitung tinggi)
+      const footerEl = document.querySelector('.pdf-footer') as HTMLElement;
+      let footerImg = "";
+      let footerHeight = 0;
+      if (footerEl) {
+        const canvas = await html2canvas(footerEl, { scale: 2, useCORS: true });
+        footerImg = canvas.toDataURL('image/jpeg', 0.95);
+        footerHeight = (canvas.height * contentWidth) / canvas.width;
+      }
+
+      // 4. Capture Report Blocks
       const reportBlocks = document.querySelectorAll('.pdf-report-block');
       for (let i = 0; i < reportBlocks.length; i++) {
         const block = reportBlocks[i] as HTMLElement;
@@ -179,13 +193,29 @@ const MonthlyRecap = () => {
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-        if (currentY + imgHeight > pdfHeight - margin - 40) {
-          pdf.addPage('a3', 'landscape');
-          currentY = margin;
-          
-          if (tableHeaderImg) {
-            pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
-            currentY += tableHeaderHeight;
+        const isLastBlock = i === reportBlocks.length - 1;
+        
+        // Logika Anti-Yatim:
+        // Jika ini blok terakhir, cek apakah blok ini + footer muat di halaman sekarang.
+        // Jika tidak muat, pindah halaman SEKARANG agar blok terakhir dan footer menyatu di halaman baru.
+        if (isLastBlock) {
+          if (currentY + imgHeight + footerHeight > pdfHeight - margin) {
+            pdf.addPage('a3', 'landscape');
+            currentY = margin;
+            if (tableHeaderImg) {
+              pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
+              currentY += tableHeaderHeight;
+            }
+          }
+        } else {
+          // Jika bukan blok terakhir, cek standar (apakah blok ini muat)
+          if (currentY + imgHeight > pdfHeight - margin - 20) {
+            pdf.addPage('a3', 'landscape');
+            currentY = margin;
+            if (tableHeaderImg) {
+              pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
+              currentY += tableHeaderHeight;
+            }
           }
         }
 
@@ -193,18 +223,14 @@ const MonthlyRecap = () => {
         currentY += imgHeight;
       }
 
-      const footerEl = document.querySelector('.pdf-footer') as HTMLElement;
-      if (footerEl) {
-        const canvas = await html2canvas(footerEl, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-
-        if (currentY + imgHeight > pdfHeight - margin) {
+      // 5. Tambahkan Footer
+      if (footerImg) {
+        // Cek lagi (safety check)
+        if (currentY + footerHeight > pdfHeight - margin) {
           pdf.addPage('a3', 'landscape');
           currentY = margin;
         }
-
-        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
+        pdf.addImage(footerImg, 'JPEG', margin, currentY, contentWidth, footerHeight);
       }
       
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
