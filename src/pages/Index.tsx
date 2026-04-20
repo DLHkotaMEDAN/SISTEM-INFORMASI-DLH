@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, 
-  Trash2, Eye, Search, Edit, Cloud, Tag, Printer, FileBarChart,
-  LogOut, User, Lock, LogIn
+  Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
+  LogOut, LogIn, FilterX
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -33,22 +33,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 const categories: string[] = [
   "semua", "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
 ];
+
+const months = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 const Index = () => {
   const navigate = useNavigate();
@@ -56,6 +51,12 @@ const Index = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter States
+  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedCategory, setSelectedCategory] = useState("semua");
+  
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
@@ -65,16 +66,16 @@ const Index = () => {
   useEffect(() => {
     loadReports();
     if (isUserRestricted && profile?.category) {
+      setSelectedCategory(profile.category);
       setSelectedPrintCategory(profile.category);
     }
-  }, [profile, isUserRestricted]);
+  }, [profile, isLoggedIn]);
 
   const loadReports = async () => {
     try {
       setLoading(true);
-      // Jika belum login, tampilkan semua laporan (null filter)
-      const categoryFilter = (!isLoggedIn || profile?.role === 'admin') ? null : profile?.category;
-      const data = await reportService.getAllReports(categoryFilter);
+      // Ambil semua data, filter dilakukan di client-side untuk fleksibilitas
+      const data = await reportService.getAllReports();
       setReports(data);
     } catch (error) {
       console.error(error);
@@ -108,13 +109,30 @@ const Index = () => {
     }
   };
 
+  const resetFilters = () => {
+    setSelectedMonth((new Date().getMonth() + 1).toString());
+    setSelectedYear(new Date().getFullYear().toString());
+    setSelectedCategory(isUserRestricted ? (profile?.category || "semua") : "semua");
+    setSearchQuery("");
+  };
+
   const filteredReports = reports.filter(report => {
     const search = searchQuery.toLowerCase();
-    return (
-      report.description.toLowerCase().includes(search) ||
-      report.location.street.toLowerCase().includes(search) ||
-      report.category?.toLowerCase().includes(search)
-    );
+    const reportDate = new Date(report.date);
+    const m = (reportDate.getMonth() + 1).toString();
+    const y = reportDate.getFullYear().toString();
+
+    const matchSearch = report.description.toLowerCase().includes(search) ||
+                       report.location.street.toLowerCase().includes(search);
+    
+    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+    const matchYear = selectedYear === "semua" || y === selectedYear;
+    const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
+
+    // Jika user terbatas, hanya boleh lihat kategorinya sendiri
+    const restrictionMatch = !isUserRestricted || report.category === profile?.category;
+
+    return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
 
   return (
@@ -136,7 +154,6 @@ const Index = () => {
           <div className="flex items-center gap-2">
             {isLoggedIn ? (
               <>
-                {/* Tombol Rekap & Cetak (Hanya User Login) */}
                 <div className="hidden lg:flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
                     <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
@@ -190,16 +207,69 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input placeholder="Cari laporan..." className="pl-10 bg-white h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        {/* Filter Bar */}
+        <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4 items-end">
+            <div className="flex-1 w-full space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Uraian / Lokasi</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Ketik kata kunci..." 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10" 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="w-full md:w-48 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Kategori</label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUserRestricted}>
+                <SelectTrigger className="bg-slate-50 border-slate-200 h-10">
+                  <SelectValue placeholder="Pilih Kategori" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'semua' ? 'Semua Kategori' : cat}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-40 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                <SelectTrigger className="bg-slate-50 border-slate-200 h-10">
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Bulan</SelectItem>
+                  {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="w-full md:w-32 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="bg-slate-50 border-slate-200 h-10">
+                  <SelectValue placeholder="Pilih Tahun" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Tahun</SelectItem>
+                  {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0">
+              <FilterX className="h-5 w-5" />
+            </Button>
           </div>
         </div>
 
         {loading ? (
           <div className="text-center py-20 text-slate-500">Memuat data...</div>
-        ) : (
+        ) : filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map((report) => (
               <Card key={report.id} className="group hover:shadow-md transition-all cursor-pointer overflow-hidden border-l-4 border-l-blue-500 relative" onClick={() => navigate(`/report/${report.id}`)}>
@@ -213,7 +283,6 @@ const Index = () => {
                       <Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge>
                     </div>
                     
-                    {/* Tombol Edit/Hapus (Hanya User Login) */}
                     {isLoggedIn && (
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}>
@@ -230,7 +299,7 @@ const Index = () => {
                 <CardContent className="p-4 pt-0 space-y-3">
                   <div className="flex items-start gap-2 text-xs text-slate-600">
                     <MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" />
-                    <span className="line-clamp-2">{report.location.street}, {report.location.village}</span>
+                    <span className="line-clamp-2">{report.location.street}, {Array.isArray(report.location.village) ? report.location.village.join(", ") : report.location.village}</span>
                   </div>
                   <div className="pt-3 flex justify-between items-center border-t text-[10px]">
                     <span className="text-slate-400 font-medium">Vol: {report.volume} {getUnitByCategory(report.category)}</span>
@@ -239,6 +308,15 @@ const Index = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+            <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+              <Search className="text-slate-300 h-6 w-6" />
+            </div>
+            <p className="text-slate-500 font-medium">Tidak ada laporan ditemukan</p>
+            <p className="text-slate-400 text-xs mt-1">Coba ubah filter atau kata kunci pencarian Anda</p>
+            <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Semua Filter</Button>
           </div>
         )}
       </main>
