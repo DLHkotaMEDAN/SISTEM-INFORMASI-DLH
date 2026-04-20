@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory } from '@/utils/report-helpers';
-import { ArrowLeft, Printer, Lock, Fuel, FileText, ChevronsUpDown, Table, Image as ImageIcon, LogOut, CloudUpload, Loader2 } from 'lucide-react';
+import { ArrowLeft, Printer, Fuel, FileText, ChevronsUpDown, Table, Image as ImageIcon, LogOut, LogIn, CloudUpload, Loader2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
@@ -49,7 +49,7 @@ type RecapMode = "with-fuel" | "without-fuel";
 
 const MonthlyRecap = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { session, profile, signOut } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
@@ -59,22 +59,26 @@ const MonthlyRecap = () => {
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   const printRef = useRef<HTMLDivElement>(null);
+  const isLoggedIn = !!session;
 
   useEffect(() => {
-    if (profile) {
+    if (isLoggedIn && profile) {
       if (profile.role !== 'admin' && profile.category) {
         setSelectedCategories([profile.category]);
       } else {
         setSelectedCategories(['semua']);
       }
+    } else {
+      // Default untuk publik: Semua Kategori
+      setSelectedCategories(['semua']);
     }
-  }, [profile]);
+  }, [profile, isLoggedIn]);
 
   useEffect(() => {
-    if (profile && selectedCategories.length > 0) {
+    if (selectedCategories.length > 0) {
       loadData();
     }
-  }, [selectedMonth, selectedYear, selectedCategories, profile]);
+  }, [selectedMonth, selectedYear, selectedCategories]);
 
   const loadData = async () => {
     try {
@@ -86,12 +90,14 @@ const MonthlyRecap = () => {
         const y = reportDate.getFullYear().toString();
         const matchMonth = m === selectedMonth;
         const matchYear = y === selectedYear;
+        
         let matchCategory = false;
-        if (profile?.role === 'admin') {
+        if (!isLoggedIn || profile?.role === 'admin') {
           matchCategory = selectedCategories.includes('semua') || selectedCategories.includes(r.category);
         } else {
           matchCategory = r.category === profile?.category;
         }
+        
         return matchMonth && matchYear && matchCategory;
       });
       data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
@@ -322,7 +328,7 @@ const MonthlyRecap = () => {
     else { setSelectedCategories(newSelected); }
   };
 
-  const isUserRestricted = profile?.role !== 'admin';
+  const isUserRestricted = isLoggedIn && profile?.role !== 'admin';
   const showSignatory4 = selectedCategories.includes('semua') || selectedCategories.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
   const showSignatory5 = selectedCategories.includes('semua') || selectedCategories.includes("Tim Pohon");
 
@@ -335,14 +341,20 @@ const MonthlyRecap = () => {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"><LogOut className="h-5 w-5" /></Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Keluar Sistem</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+            {isLoggedIn ? (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"><LogOut className="h-5 w-5" /></Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Keluar Sistem</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600">
+                <LogIn className="mr-2 h-4 w-4" /> Masuk
+              </Button>
+            )}
           </div>
           
           <div className="flex flex-wrap items-center gap-3">
@@ -379,9 +391,11 @@ const MonthlyRecap = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <Button onClick={() => setIsDriveDialogOpen(true)} disabled={reports.length === 0} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-              <CloudUpload className="mr-2 h-4 w-4" /> Simpan ke Drive
-            </Button>
+            {isLoggedIn && (
+              <Button onClick={() => setIsDriveDialogOpen(true)} disabled={reports.length === 0} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                <CloudUpload className="mr-2 h-4 w-4" /> Simpan ke Drive
+              </Button>
+            )}
             <Button onClick={handleExportExcel} variant="outline" className="bg-green-50 text-green-700 border-green-200"><Table className="mr-2 h-4 w-4" /> Rekap Excel</Button>
             <Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak Rekap A3</Button>
           </div>
@@ -400,7 +414,7 @@ const MonthlyRecap = () => {
           <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
           <div className="text-center px-4">
             <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
-            <h2 className="text-3xl font-black uppercase">Dinas Lingkungan Hidup</h2>
+            <h2 className="text-3xl font-black uppercase">Dinas LIngkungan Hidup</h2>
             <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
           </div>
           <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_DLH_URL} className="max-h-full max-w-full object-contain" alt="Logo DLH" /></div>

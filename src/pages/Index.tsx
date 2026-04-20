@@ -74,7 +74,6 @@ const Index = () => {
   const loadReports = async () => {
     try {
       setLoading(true);
-      // Ambil semua data, filter dilakukan di client-side untuk fleksibilitas
       const data = await reportService.getAllReports();
       setReports(data);
     } catch (error) {
@@ -129,7 +128,6 @@ const Index = () => {
     const matchYear = selectedYear === "semua" || y === selectedYear;
     const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
 
-    // Jika user terbatas, hanya boleh lihat kategorinya sendiri
     const restrictionMatch = !isUserRestricted || report.category === profile?.category;
 
     return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
@@ -152,13 +150,14 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Tombol Rekap Bulanan (Sekarang Publik) */}
+            <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
+              <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
+            </Button>
+
             {isLoggedIn ? (
               <>
                 <div className="hidden lg:flex items-center gap-2">
-                  <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
-                    <FileBarChart className="h-4 w-4 mr-2" /> Rekap Bulanan
-                  </Button>
-
                   <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
                     <DialogTrigger asChild>
                       <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
