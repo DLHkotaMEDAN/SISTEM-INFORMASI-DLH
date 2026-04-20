@@ -53,9 +53,8 @@ const months = [
   { value: "12", label: "Desember" },
 ];
 
+// Generate daftar tahun (5 tahun terakhir)
 const currentYear = new Date().getFullYear();
-const currentMonth = (new Date().getMonth() + 1).toString();
-
 const years = [
   { value: "semua", label: "Semua Tahun" },
   ...Array.from({ length: 5 }, (_, i) => ({
@@ -71,8 +70,8 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("semua");
-  const [filterMonth, setFilterMonth] = useState(currentMonth);
-  const [filterYear, setFilterYear] = useState(currentYear.toString());
+  const [filterMonth, setFilterMonth] = useState("semua");
+  const [filterYear, setFilterYear] = useState("semua");
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
@@ -128,8 +127,8 @@ const Index = () => {
   const resetFilters = () => {
     setSearchQuery("");
     setFilterCategory(isUserRestricted ? (profile?.category || "semua") : "semua");
-    setFilterMonth(currentMonth);
-    setFilterYear(currentYear.toString());
+    setFilterMonth("semua");
+    setFilterYear("semua");
   };
 
   const filteredReports = reports.filter(report => {
