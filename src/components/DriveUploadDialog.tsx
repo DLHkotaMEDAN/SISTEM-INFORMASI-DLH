@@ -17,7 +17,8 @@ import { showSuccess, showError } from '@/utils/toast';
 
 const CLIENT_ID = "323264526689-91gea696tm6ftv49jt4lb4tqjo5a1947.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyDzRtvJVVWSYJ1e9VGKBhA1CxRYtlda1PY";
-const SCOPES = "https://www.googleapis.com/auth/drive.file";
+// Menambahkan scope userinfo.email untuk mendapatkan alamat email user
+const SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
 
 interface DriveUploadDialogProps {
   isOpen: boolean;
@@ -77,13 +78,20 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
         client_id: CLIENT_ID,
         scope: SCOPES,
         ux_mode: 'popup',
-        origin: origin, // Tambahkan origin di sini
+        origin: origin,
         callback: (response: any) => {
           if (response.access_token) {
             setAccessToken(response.access_token);
+            // Mengambil informasi user termasuk email
             fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${response.access_token}`)
               .then(res => res.json())
-              .then(data => setUserEmail(data.email))
+              .then(data => {
+                if (data.email) {
+                  setUserEmail(data.email);
+                } else {
+                  setUserEmail("Akun Terhubung");
+                }
+              })
               .catch(() => setUserEmail("Akun Terhubung"));
           }
         },
@@ -188,10 +196,10 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
               variant="outline" 
               onClick={handleAuth}
               disabled={isUploading}
-              className="justify-start font-normal h-10 border-slate-200"
+              className="justify-start font-normal h-10 border-slate-200 overflow-hidden"
             >
               {userEmail ? (
-                <span className="text-blue-600 font-medium truncate">{userEmail}</span>
+                <span className="text-blue-600 font-bold truncate">{userEmail}</span>
               ) : (
                 <span className="text-slate-500">Klik untuk pilih akun...</span>
               )}
