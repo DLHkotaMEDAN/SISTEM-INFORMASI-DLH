@@ -12,7 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Folder, User, FileText, Loader2, CloudUpload } from 'lucide-react';
+import { Folder, User, FileText, Loader2, CloudUpload, FolderPlus, Check, X } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 const CLIENT_ID = "323264526689-91gea696tm6ftv49jt4lb4tqjo5a1947.apps.googleusercontent.com"; 
@@ -34,11 +34,15 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPickerApiLoaded, setIsPickerApiLoaded] = useState(false);
+  
+  // State untuk folder baru
+  const [showNewFolderInput, setShowNewFolderInput] = useState(false);
+  const [newFolderName, setNewFolderName] = useState("");
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
-    // Load Google Identity Services
     if (!document.getElementById('google-gis')) {
       const script = document.createElement("script");
       script.id = 'google-gis';
@@ -48,7 +52,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
       document.body.appendChild(script);
     }
 
-    // Load GAPI for Picker
     const loadGapi = () => {
       const gapi = (window as any).gapi;
       if (gapi) {
@@ -109,9 +112,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
 
     try {
-      // Menggunakan origin yang lebih akurat
       const origin = window.location.origin;
-
       const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
         .setSelectFolderEnabled(true)
         .setIncludeFolders(true);
@@ -136,6 +137,42 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
   };
 
+  const handleCreateFolder = async () => {
+    if (!newFolderName.trim()) {
+      showError("Nama folder tidak boleh kosong");
+      return;
+    }
+
+    setIsCreatingFolder(true);
+    try {
+      const response = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newFolderName,
+          mimeType: 'application/vnd.google-apps.folder',
+          parents: [folderId], // Membuat folder di dalam folder yang sedang dipilih
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error?.message || "Gagal membuat folder");
+
+      setFolderName(data.name);
+      setFolderId(data.id);
+      setShowNewFolderInput(false);
+      setNewFolderName("");
+      showSuccess(`Folder "${data.name}" berhasil dibuat`);
+    } catch (error: any) {
+      showError(error.message);
+    } finally {
+      setIsCreatingFolder(false);
+    }
+  };
+
   const handleFinalUpload = async () => {
     if (!accessToken) {
       showError("Akun belum terhubung");
@@ -144,7 +181,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     setIsUploading(true);
     try {
       await onUpload({ fileName, folderId, accessToken });
-      showSuccess("Berhasil diunggah ke Google Drive");
       onClose();
     } catch (error) {
       console.error("Upload error:", error);
@@ -156,12 +192,10 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open && !isUploading) onClose();
+      if (!open && !isUploading && !isCreatingFolder) onClose();
     }}>
       <DialogContent 
         className="sm:max-w-[425px]"
-        // Menghapus preventDefault pada pointerDownOutside karena bisa memblokir klik
-        // Kita mengandalkan onOpenChange untuk menjaga dialog tetap terbuka
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
@@ -183,7 +217,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
               value={fileName}
               onChange={(e) => setFileName(e.target.value)}
               placeholder="Masukkan nama file..."
-              disabled={isUploading}
+              disabled={isUploading || isCreatingFolder}
             />
           </div>
 
@@ -194,7 +228,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
             <Button 
               variant="outline" 
               onClick={handleAuth}
-              disabled={isUploading}
+              disabled={isUploading || isCreatingFolder}
               className="justify-start font-normal h-10 border-slate-200 overflow-hidden"
             >
               {userEmail ? (
@@ -206,27 +240,71 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
           </div>
 
           <div className="grid gap-2">
-            <Label className="flex items-center gap-2">
-              <Folder size={14} /> Lokasi Penyimpanan
-            </Label>
-            <Button 
-              variant="outline" 
-              onClick={openPicker}
-              disabled={!accessToken || isUploading}
-              className="justify-start font-normal h-10 border-slate-200"
-            >
-              <span className="truncate">{folderName}</span>
-              {!isPickerApiLoaded && accessToken && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
-            </Button>
-            {!accessToken && <p className="text-[10px] text-amber-600 italic">* Pilih akun dulu untuk memilih folder</p>}
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Folder size={14} /> Lokasi Penyimpanan
+              </Label>
+              {accessToken && !showNewFolderInput && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-[10px] text-blue-600 hover:text-blue-700 p-0"
+                  onClick={() => setShowNewFolderInput(true)}
+                  disabled={isUploading || isCreatingFolder}
+                >
+                  <FolderPlus size={12} className="mr-1" /> Buat Folder Baru
+                </Button>
+              )}
+            </div>
+
+            {showNewFolderInput ? (
+              <div className="flex gap-2 items-center animate-in fade-in slide-in-from-top-1">
+                <Input 
+                  placeholder="Nama folder baru..." 
+                  className="h-9 text-xs"
+                  value={newFolderName}
+                  onChange={(e) => setNewFolderName(e.target.value)}
+                  autoFocus
+                  disabled={isCreatingFolder}
+                />
+                <Button 
+                  size="icon" 
+                  className="h-9 w-9 bg-green-600 hover:bg-green-700 shrink-0"
+                  onClick={handleCreateFolder}
+                  disabled={isCreatingFolder}
+                >
+                  {isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check size={16} />}
+                </Button>
+                <Button 
+                  size="icon" 
+                  variant="ghost" 
+                  className="h-9 w-9 text-slate-400 shrink-0"
+                  onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}
+                  disabled={isCreatingFolder}
+                >
+                  <X size={16} />
+                </Button>
+              </div>
+            ) : (
+              <Button 
+                variant="outline" 
+                onClick={openPicker}
+                disabled={!accessToken || isUploading || isCreatingFolder}
+                className="justify-start font-normal h-10 border-slate-200"
+              >
+                <span className="truncate">{folderName}</span>
+                {!isPickerApiLoaded && accessToken && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
+              </Button>
+            )}
+            {!accessToken && <p className="text-[10px] text-amber-600 italic">* Pilih akun dulu untuk memilih/membuat folder</p>}
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} disabled={isUploading}>Batal</Button>
+          <Button variant="ghost" onClick={onClose} disabled={isUploading || isCreatingFolder}>Batal</Button>
           <Button 
             onClick={handleFinalUpload} 
-            disabled={isUploading || !accessToken}
+            disabled={isUploading || isCreatingFolder || !accessToken || showNewFolderInput}
             className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
           >
             {isUploading ? <Loader2 className="animate-spin h-4 w-4" /> : "Upload"}
