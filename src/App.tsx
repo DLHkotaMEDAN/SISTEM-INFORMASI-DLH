@@ -33,12 +33,16 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            {/* Halaman Utama & Detail sekarang Publik */}
+            <Route path="/" element={<Index />} />
+            <Route path="/report/:id" element={<ReportDetail />} />
+            
+            {/* Route Administratif tetap Terproteksi */}
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />
-            <Route path="/report/:id" element={<ProtectedRoute><ReportDetail /></ProtectedRoute>} />
             <Route path="/print-rekap" element={<ProtectedRoute><PrintRekap /></ProtectedRoute>} />
             <Route path="/monthly-rekap" element={<ProtectedRoute><MonthlyRecap /></ProtectedRoute>} />
+            
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

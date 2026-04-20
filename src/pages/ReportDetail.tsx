@@ -3,17 +3,21 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck, LogIn } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
 import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
+import { useAuth } from '@/context/AuthContext';
 
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isLoggedIn = !!session;
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
 
@@ -42,13 +46,21 @@ const ReportDetail = () => {
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center justify-between no-print">
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
-            <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
-          </div>
+          
+          {isLoggedIn ? (
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
+              <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
+            </div>
+          ) : (
+            <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600">
+              <LogIn className="mr-2 h-4 w-4" /> Masuk untuk Edit
+            </Button>
+          )}
         </div>
 
         <div id="report-content" className="bg-white border shadow-lg p-8 space-y-8">
+          {/* Header Laporan */}
           <div className="border-b-2 border-black pb-4 flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">PEMERINTAH KOTA MEDAN</h1>
@@ -60,6 +72,7 @@ const ReportDetail = () => {
             </div>
           </div>
 
+          {/* Konten Laporan tetap sama seperti sebelumnya */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div><p className="text-slate-500">Tanggal</p><p className="font-bold">{report.date}</p></div>
             <div><p className="text-slate-500">Total Volume</p><p className="font-bold">{report.volume} {getUnitByCategory(report.category)}</p></div>
