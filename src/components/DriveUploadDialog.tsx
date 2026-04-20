@@ -38,6 +38,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   useEffect(() => {
     if (!isOpen) return;
 
+    // Load Google Identity Services
     if (!document.getElementById('google-gis')) {
       const script = document.createElement("script");
       script.id = 'google-gis';
@@ -47,34 +48,34 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
       document.body.appendChild(script);
     }
 
-    if (!document.getElementById('google-gapi')) {
-      const gapiScript = document.createElement("script");
-      gapiScript.id = 'google-gapi';
-      gapiScript.src = "https://apis.google.com/js/api.js";
-      gapiScript.onload = () => {
-        (window as any).gapi.load('picker', {
+    // Load GAPI for Picker
+    const loadGapi = () => {
+      const gapi = (window as any).gapi;
+      if (gapi) {
+        gapi.load('picker', {
           callback: () => {
             setIsPickerApiLoaded(true);
           }
         });
-      };
+      }
+    };
+
+    if (!document.getElementById('google-gapi')) {
+      const gapiScript = document.createElement("script");
+      gapiScript.id = 'google-gapi';
+      gapiScript.src = "https://apis.google.com/js/api.js";
+      gapiScript.onload = loadGapi;
       document.body.appendChild(gapiScript);
-    } else if ((window as any).gapi) {
-      (window as any).gapi.load('picker', {
-        callback: () => setIsPickerApiLoaded(true)
-      });
+    } else {
+      loadGapi();
     }
   }, [isOpen]);
 
   const handleAuth = () => {
     try {
-      const origin = window.location.protocol + '//' + window.location.host;
-      
-      const client = (window as any).google.accounts.oauth2.initTokenClient({
+      const tokenClient = (window as any).google.accounts.oauth2.initTokenClient({
         client_id: CLIENT_ID,
         scope: SCOPES,
-        ux_mode: 'popup',
-        origin: origin,
         callback: (response: any) => {
           if (response.access_token) {
             setAccessToken(response.access_token);
@@ -88,7 +89,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
           }
         },
       });
-      client.requestAccessToken();
+      tokenClient.requestAccessToken({ prompt: 'consent' });
     } catch (err) {
       console.error("Auth error:", err);
       showError("Gagal memulai autentikasi Google");
@@ -108,11 +109,12 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     }
 
     try {
+      // Menggunakan origin yang lebih akurat
+      const origin = window.location.origin;
+
       const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
         .setSelectFolderEnabled(true)
         .setIncludeFolders(true);
-
-      const origin = window.location.protocol + '//' + window.location.host;
 
       const picker = new google.picker.PickerBuilder()
         .addView(view)
@@ -130,7 +132,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
       picker.setVisible(true);
     } catch (err: any) {
       console.error("Picker error:", err);
-      showError(`Gagal membuka pemilih: ${err.message || "Cek izin API Key"}`);
+      showError(`Gagal membuka pemilih: ${err.message}`);
     }
   };
 
@@ -154,14 +156,12 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      // Hanya izinkan menutup jika open adalah false (diklik tombol Batal/X)
-      // Tapi kita cegah penutupan otomatis dari klik luar di DialogContent
-      if (!open) onClose();
+      if (!open && !isUploading) onClose();
     }}>
       <DialogContent 
         className="sm:max-w-[425px]"
-        // Mencegah dialog menutup saat klik di luar (penting untuk Google Picker)
-        onPointerDownOutside={(e) => e.preventDefault()}
+        // Menghapus preventDefault pada pointerDownOutside karena bisa memblokir klik
+        // Kita mengandalkan onOpenChange untuk menjaga dialog tetap terbuka
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader>
