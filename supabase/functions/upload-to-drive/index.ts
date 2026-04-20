@@ -54,39 +54,51 @@ Deno.serve(async (req) => {
 
     const fileId = uploadResult.id;
 
-    // 2. Atur Izin (Permissions) menjadi "Anyone with the link"
+    // 2. Atur Izin File menjadi "Anyone with the link"
     console.log(`[upload-to-drive] Mengatur izin publik untuk file ${fileId}`);
-    const permissionResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
+    await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}/permissions`, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${userAccessToken}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        'role': 'reader',
-        'type': 'anyone'
-      }),
+      body: JSON.stringify({ 'role': 'reader', 'type': 'anyone' }),
     });
 
-    if (!permissionResponse.ok) {
-      const permError = await permissionResponse.json();
-      console.warn("[upload-to-drive] Gagal mengatur izin publik:", permError.error?.message);
+    // 3. Atur Izin Folder menjadi "Anyone with the link" (jika bukan root)
+    if (folderId !== 'root') {
+      console.log(`[upload-to-drive] Mengatur izin publik untuk folder ${folderId}`);
+      await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}/permissions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userAccessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 'role': 'reader', 'type': 'anyone' }),
+      });
     }
 
-    // 3. Ambil Link File (webViewLink)
+    // 4. Ambil Link File & Link Folder
     const getFileResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?fields=webViewLink`, {
-      headers: {
-        'Authorization': `Bearer ${userAccessToken}`,
-      },
+      headers: { 'Authorization': `Bearer ${userAccessToken}` },
     });
-    
     const fileData = await getFileResponse.json();
+
+    let folderLink = "";
+    if (folderId !== 'root') {
+      const getFolderResponse = await fetch(`https://www.googleapis.com/drive/v3/files/${folderId}?fields=webViewLink`, {
+        headers: { 'Authorization': `Bearer ${userAccessToken}` },
+      });
+      const folderData = await getFolderResponse.json();
+      folderLink = folderData.webViewLink;
+    }
 
     return new Response(
       JSON.stringify({ 
-        message: "Berhasil diunggah dan diatur publik", 
+        message: "Berhasil diunggah", 
         fileId: fileId,
-        webViewLink: fileData.webViewLink 
+        webViewLink: fileData.webViewLink,
+        folderLink: folderLink
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
