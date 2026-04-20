@@ -12,8 +12,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Folder, User, FileText, Loader2, CloudUpload, FolderPlus, Check, X } from 'lucide-react';
+import { Folder, User, FileText, Loader2, CloudUpload, FolderPlus, Check, X, Search } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
+import { cn } from "@/lib/utils";
 
 const CLIENT_ID = "323264526689-91gea696tm6ftv49jt4lb4tqjo5a1947.apps.googleusercontent.com"; 
 const API_KEY = "AIzaSyDzRtvJVVWSYJ1e9VGKBhA1CxRYtlda1PY";
@@ -35,7 +36,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   const [isUploading, setIsUploading] = useState(false);
   const [isPickerApiLoaded, setIsPickerApiLoaded] = useState(false);
   
-  // State untuk folder baru
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
@@ -154,7 +154,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
         body: JSON.stringify({
           name: newFolderName,
           mimeType: 'application/vnd.google-apps.folder',
-          parents: [folderId], // Membuat folder di dalam folder yang sedang dipilih
+          parents: [folderId],
         }),
       });
 
@@ -194,120 +194,135 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     <Dialog open={isOpen} onOpenChange={(open) => {
       if (!open && !isUploading && !isCreatingFolder) onClose();
     }}>
-      <DialogContent 
-        className="sm:max-w-[425px]"
-        onEscapeKeyDown={(e) => e.preventDefault()}
-      >
+      <DialogContent className="sm:max-w-[450px]">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <CloudUpload className="text-blue-600" /> Simpan ke Drive
+          <DialogTitle className="flex items-center gap-2 text-xl">
+            <CloudUpload className="text-blue-600 h-6 w-6" /> Simpan ke Drive
           </DialogTitle>
           <DialogDescription>
-            Atur lokasi dan nama file untuk laporan PDF Anda.
+            Pilih akun Google dan tentukan lokasi penyimpanan PDF.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-5 py-4">
+          {/* Nama File */}
           <div className="grid gap-2">
-            <Label htmlFor="filename" className="flex items-center gap-2">
-              <FileText size={14} /> Nama File
-            </Label>
-            <Input
-              id="filename"
-              value={fileName}
-              onChange={(e) => setFileName(e.target.value)}
-              placeholder="Masukkan nama file..."
-              disabled={isUploading || isCreatingFolder}
-            />
+            <Label htmlFor="filename" className="text-xs font-bold uppercase text-slate-500">Nama File PDF</Label>
+            <div className="relative">
+              <FileText className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Input
+                id="filename"
+                value={fileName}
+                onChange={(e) => setFileName(e.target.value)}
+                className="pl-10 h-11"
+                placeholder="Contoh: Rekap_Januari_2024"
+                disabled={isUploading || isCreatingFolder}
+              />
+            </div>
           </div>
 
+          {/* Akun Google */}
           <div className="grid gap-2">
-            <Label className="flex items-center gap-2">
-              <User size={14} /> Akun Google
-            </Label>
+            <Label className="text-xs font-bold uppercase text-slate-500">Akun Google</Label>
             <Button 
               variant="outline" 
               onClick={handleAuth}
               disabled={isUploading || isCreatingFolder}
-              className="justify-start font-normal h-10 border-slate-200 overflow-hidden"
+              className={cn(
+                "justify-start h-11 border-slate-200 relative px-10",
+                userEmail ? "border-blue-200 bg-blue-50" : ""
+              )}
             >
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               {userEmail ? (
-                <span className="text-blue-600 font-bold truncate">{userEmail}</span>
+                <span className="text-blue-700 font-bold truncate">{userEmail}</span>
               ) : (
-                <span className="text-slate-500">Klik untuk pilih akun...</span>
+                <span className="text-slate-500">Hubungkan Akun Google...</span>
               )}
             </Button>
           </div>
 
+          {/* Lokasi Penyimpanan */}
           <div className="grid gap-2">
             <div className="flex items-center justify-between">
-              <Label className="flex items-center gap-2">
-                <Folder size={14} /> Lokasi Penyimpanan
-              </Label>
+              <Label className="text-xs font-bold uppercase text-slate-500">Lokasi Penyimpanan</Label>
               {accessToken && !showNewFolderInput && (
                 <Button 
-                  variant="ghost" 
+                  variant="link" 
                   size="sm" 
-                  className="h-6 text-[10px] text-blue-600 hover:text-blue-700 p-0"
+                  className="h-auto p-0 text-blue-600 text-xs font-bold"
                   onClick={() => setShowNewFolderInput(true)}
                   disabled={isUploading || isCreatingFolder}
                 >
-                  <FolderPlus size={12} className="mr-1" /> Buat Folder Baru
+                  <FolderPlus size={14} className="mr-1" /> Tambah Folder
                 </Button>
               )}
             </div>
 
             {showNewFolderInput ? (
-              <div className="flex gap-2 items-center animate-in fade-in slide-in-from-top-1">
+              <div className="flex gap-2 items-center p-2 bg-slate-50 rounded-lg border border-dashed border-blue-300 animate-in zoom-in-95">
                 <Input 
                   placeholder="Nama folder baru..." 
-                  className="h-9 text-xs"
+                  className="h-9 text-sm bg-white"
                   value={newFolderName}
                   onChange={(e) => setNewFolderName(e.target.value)}
                   autoFocus
                   disabled={isCreatingFolder}
                 />
-                <Button 
-                  size="icon" 
-                  className="h-9 w-9 bg-green-600 hover:bg-green-700 shrink-0"
-                  onClick={handleCreateFolder}
-                  disabled={isCreatingFolder}
-                >
-                  {isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check size={16} />}
-                </Button>
-                <Button 
-                  size="icon" 
-                  variant="ghost" 
-                  className="h-9 w-9 text-slate-400 shrink-0"
-                  onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}
-                  disabled={isCreatingFolder}
-                >
-                  <X size={16} />
-                </Button>
+                <div className="flex gap-1">
+                  <Button 
+                    size="icon" 
+                    className="h-9 w-9 bg-green-600 hover:bg-green-700"
+                    onClick={handleCreateFolder}
+                    disabled={isCreatingFolder}
+                  >
+                    {isCreatingFolder ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check size={18} />}
+                  </Button>
+                  <Button 
+                    size="icon" 
+                    variant="ghost" 
+                    className="h-9 w-9 text-slate-400"
+                    onClick={() => { setShowNewFolderInput(false); setNewFolderName(""); }}
+                    disabled={isCreatingFolder}
+                  >
+                    <X size={18} />
+                  </Button>
+                </div>
               </div>
             ) : (
-              <Button 
-                variant="outline" 
-                onClick={openPicker}
-                disabled={!accessToken || isUploading || isCreatingFolder}
-                className="justify-start font-normal h-10 border-slate-200"
-              >
-                <span className="truncate">{folderName}</span>
-                {!isPickerApiLoaded && accessToken && <Loader2 className="ml-2 h-3 w-3 animate-spin" />}
-              </Button>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <Folder className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-amber-500" />
+                  <div className="h-11 w-full border border-slate-200 rounded-md flex items-center pl-10 pr-3 text-sm bg-slate-50 text-slate-600 truncate">
+                    {folderName}
+                  </div>
+                </div>
+                <Button 
+                  variant="secondary" 
+                  onClick={openPicker}
+                  disabled={!accessToken || isUploading || isCreatingFolder}
+                  className="h-11 px-4 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold"
+                >
+                  <Search size={16} className="mr-2" /> Pilih
+                </Button>
+              </div>
             )}
-            {!accessToken && <p className="text-[10px] text-amber-600 italic">* Pilih akun dulu untuk memilih/membuat folder</p>}
+            {!accessToken && <p className="text-[10px] text-amber-600 italic font-medium"> Hubungkan akun terlebih dahulu untuk memilih lokasi.</p>}
           </div>
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="ghost" onClick={onClose} disabled={isUploading || isCreatingFolder}>Batal</Button>
           <Button 
             onClick={handleFinalUpload} 
             disabled={isUploading || isCreatingFolder || !accessToken || showNewFolderInput}
-            className="bg-blue-600 hover:bg-blue-700 min-w-[100px]"
+            className="bg-blue-600 hover:bg-blue-700 min-w-[120px] h-11 font-bold"
           >
-            {isUploading ? <Loader2 className="animate-spin h-4 w-4" /> : "Upload"}
+            {isUploading ? (
+              <><Loader2 className="animate-spin h-4 w-4 mr-2" /> Mengunggah...</>
+            ) : (
+              "Mulai Unggah"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>
