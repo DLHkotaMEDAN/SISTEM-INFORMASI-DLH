@@ -35,7 +35,7 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isPickerApiLoaded, setIsPickerApiLoaded] = useState(false);
-  const [isPickerOpen, setIsPickerOpen] = useState(false); // State baru untuk melacak Picker
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
   
   const [showNewFolderInput, setShowNewFolderInput] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
@@ -104,8 +104,13 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     if (!isPickerApiLoaded || !google || !google.picker) { showError("Modul pemilih belum siap"); return; }
 
     try {
-      setIsPickerOpen(true); // Tandai bahwa picker sedang dibuka
-      const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS).setSelectFolderEnabled(true).setIncludeFolders(true);
+      setIsPickerOpen(true);
+      // Menggunakan DocsView yang lebih spesifik untuk folder
+      const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+        .setSelectFolderEnabled(true)
+        .setIncludeFolders(true)
+        .setMimeTypes('application/vnd.google-apps.folder');
+
       const picker = new google.picker.PickerBuilder()
         .addView(view)
         .setOAuthToken(accessToken)
@@ -116,9 +121,9 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
             const doc = data.docs[0];
             setFolderName(doc.name);
             setFolderId(doc.id);
-            setIsPickerOpen(false); // Tutup status picker setelah memilih
+            setIsPickerOpen(false);
           } else if (data.action === google.picker.Action.CANCEL) {
-            setIsPickerOpen(false); // Tutup status picker jika dibatalkan
+            setIsPickerOpen(false);
           }
         })
         .build();
@@ -179,7 +184,6 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     <Dialog 
       open={isOpen} 
       onOpenChange={(open) => { 
-        // Hanya tutup jika bukan karena interaksi dengan Picker atau proses penting lainnya
         if (!open && !isUploading && !isCreatingFolder && !isPickerOpen) {
           onClose(); 
         }
@@ -187,14 +191,18 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
     >
       <DialogContent 
         className="sm:max-w-[450px]"
+        onInteractOutside={(e) => {
+          // Sangat penting: Izinkan interaksi dengan elemen di luar dialog (Picker)
+          if (isPickerOpen) {
+            e.preventDefault();
+          }
+        }}
         onPointerDownOutside={(e) => {
-          // Mencegah dialog tertutup jika klik di luar (terutama saat Picker aktif)
           if (isPickerOpen || isUploading || isCreatingFolder) {
             e.preventDefault();
           }
         }}
         onEscapeKeyDown={(e) => {
-          // Mencegah Escape menutup dialog saat proses berjalan
           if (isUploading || isCreatingFolder || isPickerOpen) {
             e.preventDefault();
           }
