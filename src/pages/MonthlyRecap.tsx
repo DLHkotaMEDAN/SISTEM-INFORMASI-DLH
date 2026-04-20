@@ -132,46 +132,79 @@ const MonthlyRecap = () => {
   const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
     if (!printRef.current) return;
     
-    const toastId = showLoading("Menyiapkan PDF Multi-Halaman A3...");
+    const toastId = showLoading("Menyiapkan PDF A3 (Per Tanggal)...");
     
     try {
       window.scrollTo(0, 0);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      const element = printRef.current;
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: "#ffffff",
-        windowWidth: 1600,
-      });
-      
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
-      
       const pdf = new jsPDF({
         orientation: 'landscape',
         unit: 'mm',
         format: 'a3'
       });
-      
+
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
+      const margin = 10;
+      const contentWidth = pdfWidth - (margin * 2);
       
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let currentY = margin;
+
+      const headerEl = document.querySelector('.pdf-header') as HTMLElement;
+      if (headerEl) {
+        const canvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
+        currentY += imgHeight + 5;
+      }
+
+      const tableHeaderEl = document.querySelector('.pdf-table-header') as HTMLElement;
+      let tableHeaderImg: string | null = null;
+      let tableHeaderHeight = 0;
       
-      let heightLeft = imgHeight;
-      let position = 0;
+      if (tableHeaderEl) {
+        const canvas = await html2canvas(tableHeaderEl, { scale: 2, useCORS: true });
+        tableHeaderImg = canvas.toDataURL('image/jpeg', 0.95);
+        tableHeaderHeight = (canvas.height * contentWidth) / canvas.width;
+        pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
+        currentY += tableHeaderHeight;
+      }
 
-      pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
+      const reportBlocks = document.querySelectorAll('.pdf-report-block');
+      for (let i = 0; i < reportBlocks.length; i++) {
+        const block = reportBlocks[i] as HTMLElement;
+        const canvas = await html2canvas(block, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage('a3', 'landscape');
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
+        if (currentY + imgHeight > pdfHeight - margin - 40) {
+          pdf.addPage('a3', 'landscape');
+          currentY = margin;
+          
+          if (tableHeaderImg) {
+            pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
+            currentY += tableHeaderHeight;
+          }
+        }
+
+        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
+        currentY += imgHeight;
+      }
+
+      const footerEl = document.querySelector('.pdf-footer') as HTMLElement;
+      if (footerEl) {
+        const canvas = await html2canvas(footerEl, { scale: 2, useCORS: true });
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const imgHeight = (canvas.height * contentWidth) / canvas.width;
+
+        if (currentY + imgHeight > pdfHeight - margin) {
+          pdf.addPage('a3', 'landscape');
+          currentY = margin;
+        }
+
+        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
       }
       
       const pdfBase64 = pdf.output('datauristring').split(',')[1];
@@ -186,38 +219,25 @@ const MonthlyRecap = () => {
       });
 
       if (error) throw error;
+      showSuccess("Berhasil diunggah ke Google Drive");
     } catch (error: any) {
       console.error(error);
-      throw error;
+      showError("Gagal mengunggah: " + error.message);
     } finally {
       dismissToast(toastId);
     }
   };
 
-  const flatTasks = reports.flatMap((report, reportIdx) => 
-    report.tasks.map((task, taskIdx) => ({
-      ...task,
-      reportId: report.id,
-      reportDate: report.date,
-      reportCategory: report.category,
-      reportRemarks: report.remarks,
-      isFirstInReport: taskIdx === 0,
-      taskCount: report.tasks.length,
-      displayIdx: reportIdx + 1
-    }))
-  );
-
   const handleExportExcel = async () => {
-    if (flatTasks.length === 0) {
+    if (reports.length === 0) {
       showError("Tidak ada data untuk diekspor");
       return;
     }
-    const toastId = showLoading("Sedang menyiapkan file Excel dengan foto...");
+    const toastId = showLoading("Menyiapkan file Excel...");
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Rekap Laporan');
       
-      // Setup Columns
       const columns = [
         { header: 'No', key: 'no', width: 5 },
         { header: 'Hari / Tgl', key: 'date', width: 15 },
@@ -237,37 +257,19 @@ const MonthlyRecap = () => {
       columns.push({ header: 'Koordinator', key: 'coord', width: 20 }, { header: 'Keterangan', key: 'rem', width: 35 });
       worksheet.columns = columns;
 
-      // Header Titles
       const lastColLetter = String.fromCharCode(64 + columns.length);
-      
       worksheet.mergeCells(`A1:${lastColLetter}1`);
-      const title1 = worksheet.getCell('A1');
-      title1.value = 'PEMERINTAH KOTA MEDAN';
-      title1.font = { bold: true, size: 14 };
-      title1.alignment = { horizontal: 'center' };
+      worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN';
+      worksheet.getCell('A1').font = { bold: true, size: 14 };
+      worksheet.getCell('A1').alignment = { horizontal: 'center' };
       
       worksheet.mergeCells(`A2:${lastColLetter}2`);
-      const title2 = worksheet.getCell('A2');
-      title2.value = 'DINAS LINGKUNGAN HIDUP';
-      title2.font = { bold: true, size: 16 };
-      title2.alignment = { horizontal: 'center' };
-      
-      worksheet.mergeCells(`A3:${lastColLetter}3`);
-      const title3 = worksheet.getCell('A3');
-      title3.value = 'LAPORAN BULANAN PEKERJAAN TAMAN, PENGHIJAUAN, POHON DAN PEMBABATAN';
-      title3.font = { bold: true, underline: true };
-      title3.alignment = { horizontal: 'center' };
-      
-      worksheet.mergeCells(`A4:${lastColLetter}4`);
-      const title4 = worksheet.getCell('A4');
-      title4.value = `BULAN: ${months[parseInt(selectedMonth)-1].toUpperCase()} ${selectedYear}`;
-      title4.font = { bold: true };
-      title4.alignment = { horizontal: 'center' };
+      worksheet.getCell('A2').value = 'DINAS LINGKUNGAN HIDUP';
+      worksheet.getCell('A2').font = { bold: true, size: 16 };
+      worksheet.getCell('A2').alignment = { horizontal: 'center' };
 
       worksheet.addRow([]);
-      worksheet.addRow([]);
-
-      // Table Header
+      
       const headerRow = worksheet.addRow(columns.map(c => c.header));
       headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
@@ -276,177 +278,61 @@ const MonthlyRecap = () => {
         cell.font = { bold: true };
       });
 
-      // Data Rows
-      for (const task of flatTasks) {
-        const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
-        const rowData: any = {
-          no: task.isFirstInReport ? task.displayIdx : '',
-          date: task.isFirstInReport ? new Date(task.reportDate).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) : '',
-          desc: task.description,
-          loc: `${task.location.street}, ${villages}`,
-          vol: `${task.volume} ${getUnitByCategory(task.reportCategory)}`,
-          eq: task.equipment?.map(e => `${e.type} (${e.quantity})`).join("\n"),
-          he: task.heavyEquipment?.map(he => `${he.type} ${he.vehicle || ""}`).join("\n"),
-          coord: task.personnel.coordinator,
-          rem: [task.remarks, task.isFirstInReport ? task.reportRemarks : ""].filter(Boolean).join(" | ")
-        };
-        
-        if (recapMode === "with-fuel") {
-          rowData.fp = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.pertamax || 0), 0) || 0;
-          rowData.fd = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.dexlite || 0), 0) || 0;
-          rowData.fs = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.solar || 0), 0) || 0;
+      let displayIdx = 1;
+      for (const report of reports) {
+        for (let i = 0; i < report.tasks.length; i++) {
+          const task = report.tasks[i];
+          const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
+          
+          const rowData: any = {
+            no: i === 0 ? displayIdx : '',
+            date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) : '',
+            desc: task.description,
+            loc: `${task.location.street}, ${villages}`,
+            vol: `${task.volume} ${getUnitByCategory(report.category)}`,
+            eq: task.equipment?.map(e => `${e.type} (${e.quantity})`).join("\n"),
+            he: task.heavyEquipment?.map(he => `${he.type} ${he.vehicle || ""}`).join("\n"),
+            coord: task.personnel.coordinator,
+            rem: [task.remarks, i === 0 ? report.remarks : ""].filter(Boolean).join(" | ")
+          };
+          
+          if (recapMode === "with-fuel") {
+            rowData.fp = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.pertamax || 0), 0) || 0;
+            rowData.fd = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.dexlite || 0), 0) || 0;
+            rowData.fs = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.solar || 0), 0) || 0;
+          }
+          
+          const row = worksheet.addRow(rowData);
+          row.height = 100;
+          row.eachCell(cell => {
+            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+            cell.alignment = { vertical: 'middle', wrapText: true };
+          });
+
+          const addImageToCell = async (url: string, colIndex: number) => {
+            if (!url) return;
+            try {
+              const response = await fetch(url);
+              const blob = await response.blob();
+              const arrayBuffer = await blob.arrayBuffer();
+              const imageId = workbook.addImage({ buffer: arrayBuffer, extension: 'jpeg' });
+              worksheet.addImage(imageId, { 
+                tl: { col: colIndex - 1, row: row.number - 1 }, 
+                ext: { width: 140, height: 130 }, 
+                editAs: 'oneCell' 
+              });
+            } catch (e) { console.error(e); }
+          };
+          
+          await addImageToCell(task.photos.zero, 5);
+          await addImageToCell(task.photos.fifty, 6);
+          await addImageToCell(task.photos.hundred, 7);
         }
-        
-        const row = worksheet.addRow(rowData);
-        row.height = 120;
-        row.eachCell(cell => {
-          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-          cell.alignment = { vertical: 'middle', wrapText: true };
-        });
-
-        // Add Images
-        const addImageToCell = async (url: string, colIndex: number) => {
-          if (!url) return;
-          try {
-            const response = await fetch(url);
-            const blob = await response.blob();
-            const arrayBuffer = await blob.arrayBuffer();
-            const imageId = workbook.addImage({ buffer: arrayBuffer, extension: 'jpeg' });
-            worksheet.addImage(imageId, { 
-              tl: { col: colIndex - 1, row: row.number - 1 }, 
-              ext: { width: 150, height: 150 }, 
-              editAs: 'oneCell' 
-            });
-          } catch (e) { console.error(e); }
-        };
-        
-        await addImageToCell(task.photos.zero, 5);
-        await addImageToCell(task.photos.fifty, 6);
-        await addImageToCell(task.photos.hundred, 7);
+        displayIdx++;
       }
-
-      // Add Logos
-      const addLogoToExcel = async (url: string, col: number, row: number) => {
-        try {
-          const response = await fetch(url);
-          if (!response.ok) return;
-          const blob = await response.blob();
-          const arrayBuffer = await blob.arrayBuffer();
-          const imageId = workbook.addImage({ buffer: arrayBuffer, extension: 'jpeg' });
-          worksheet.addImage(imageId, { tl: { col: col, row: row }, ext: { width: 60, height: 60 }, editAs: 'oneCell' });
-        } catch (e) { console.error(e); }
-      };
-      await addLogoToExcel(LOGO_MEDAN_URL, 0, 0);
-      await addLogoToExcel(LOGO_DLH_URL, columns.length - 1, 0);
-
-      // Signatories Section
-      worksheet.addRow([]);
-      worksheet.addRow([]);
-      
-      const dateRow = worksheet.addRow([]);
-      const dateCell = dateRow.getCell(columns.length - 2);
-      dateCell.value = `Medan, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`;
-      dateCell.alignment = { horizontal: 'center' };
-      worksheet.mergeCells(dateRow.number, columns.length - 2, dateRow.number, columns.length);
-
-      const signHeaderRow = worksheet.addRow([]);
-      signHeaderRow.height = 30;
-      
-      // Column indices for 4 signatories
-      const col1 = 2; // Kabid
-      const col2 = 5; // Ketua Tim
-      const col3 = 8; // Pengawas
-      const col4 = 11; // Koordinator
-
-      // Titles
-      worksheet.getCell(signHeaderRow.number, col1).value = 'Mengetahui :';
-      worksheet.getCell(signHeaderRow.number, col2).value = 'Diketahui :';
-      worksheet.getCell(signHeaderRow.number, col3).value = 'Diketahui :';
-      worksheet.getCell(signHeaderRow.number, col4).value = 'Diketahui :';
-
-      const signRoleRow1 = worksheet.addRow([]);
-      worksheet.getCell(signRoleRow1.number, col1).value = 'Kabid Tata Lingkungan';
-      worksheet.getCell(signRoleRow1.number, col2).value = 'Ketua Tim Pemeliharaan Lingkungan';
-      worksheet.getCell(signRoleRow1.number, col3).value = 'Pengawas Taman Penghijauan';
-      
-      const showSignatory4 = selectedCategories.includes('semua') || selectedCategories.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
-      const showSignatory5 = selectedCategories.includes('semua') || selectedCategories.includes("Tim Pohon");
-      
-      if (showSignatory4 && !showSignatory5) {
-        worksheet.getCell(signRoleRow1.number, col4).value = 'Kepala Koordinator Taman';
-      } else if (showSignatory5 && !showSignatory4) {
-        worksheet.getCell(signRoleRow1.number, col4).value = 'Kepala Koordinator Tim Pohon';
-      } else {
-        worksheet.getCell(signRoleRow1.number, col4).value = 'Koordinator Taman & Tim Pohon';
-      }
-
-      const signRoleRow2 = worksheet.addRow([]);
-      worksheet.getCell(signRoleRow2.number, col1).value = 'Dinas Lingkungan Hidup';
-      worksheet.getCell(signRoleRow2.number, col2).value = 'Dinas Lingkungan Hidup';
-      worksheet.getCell(signRoleRow2.number, col3).value = 'Dinas Lingkungan Hidup';
-      worksheet.getCell(signRoleRow2.number, col4).value = 'Dinas Lingkungan Hidup';
-
-      const signRoleRow3 = worksheet.addRow([]);
-      worksheet.getCell(signRoleRow3.number, col1).value = 'Kota Medan';
-      worksheet.getCell(signRoleRow3.number, col2).value = 'Kota Medan';
-      worksheet.getCell(signRoleRow3.number, col3).value = 'Kota Medan';
-      worksheet.getCell(signRoleRow3.number, col4).value = 'Kota Medan';
-
-      // Spacer for signature
-      worksheet.addRow([]);
-      worksheet.addRow([]);
-      worksheet.addRow([]);
-      worksheet.addRow([]);
-
-      // Names and NIP
-      const signNameRow = worksheet.addRow([]);
-      const kabidCell = worksheet.getCell(signNameRow.number, col1);
-      kabidCell.value = 'Heni Rustati, ST, M.Si';
-      kabidCell.font = { bold: true, underline: true };
-      
-      const ketuaCell = worksheet.getCell(signNameRow.number, col2);
-      ketuaCell.value = 'Anitha Florida Ginting, ST, M. Si';
-      ketuaCell.font = { bold: true, underline: true };
-      
-      const pengawasCell = worksheet.getCell(signNameRow.number, col3);
-      pengawasCell.value = 'Jhosua Sibarani, S.T';
-      pengawasCell.font = { bold: true, underline: true };
-
-      if (showSignatory4 && !showSignatory5) {
-        const coordCell = worksheet.getCell(signNameRow.number, col4);
-        coordCell.value = 'Tiurmaida Silitonga';
-        coordCell.font = { bold: true, underline: true };
-      } else if (showSignatory5 && !showSignatory4) {
-        const coordCell = worksheet.getCell(signNameRow.number, col4);
-        coordCell.value = 'Ardiansyah Siregar';
-        coordCell.font = { bold: true, underline: true };
-      } else {
-        const coordCell = worksheet.getCell(signNameRow.number, col4);
-        coordCell.value = 'Tiurmaida Silitonga / Ardiansyah Siregar';
-        coordCell.font = { bold: true, underline: true };
-      }
-
-      const signNipRow = worksheet.addRow([]);
-      worksheet.getCell(signNipRow.number, col1).value = 'NIP. 19720223 200604 2 002';
-      worksheet.getCell(signNipRow.number, col2).value = 'NIP. 19811128 201001 2 011';
-      worksheet.getCell(signNipRow.number, col3).value = 'NIP. 19740907 200903 1 002';
-      
-      if (showSignatory4 && !showSignatory5) {
-        worksheet.getCell(signNipRow.number, col4).value = 'NIP. 19690507 200701 2 042';
-      } else if (showSignatory5 && !showSignatory4) {
-        worksheet.getCell(signNipRow.number, col4).value = 'NIP. 19860404 201001 1 015';
-      }
-
-      // Center all signature cells
-      [signHeaderRow, signRoleRow1, signRoleRow2, signRoleRow3, signNameRow, signNipRow].forEach(row => {
-        [col1, col2, col3, col4].forEach(col => {
-          const cell = worksheet.getCell(row.number, col);
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        });
-      });
 
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Rekap_A3_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`);
+      saveAs(new Blob([buffer]), `Rekap_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`);
       dismissToast(toastId);
       showSuccess("Rekap Excel berhasil diunduh");
     } catch (error) {
@@ -563,25 +449,27 @@ const MonthlyRecap = () => {
       />
 
       <div ref={printRef} className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
-        <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
-          <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
-          <div className="text-center px-4">
-            <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
-            <h2 className="text-3xl font-black uppercase">Dinas LIngkungan Hidup</h2>
-            <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
+        <div className="pdf-header">
+          <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
+            <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
+            <div className="text-center px-4">
+              <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
+              <h2 className="text-3xl font-black uppercase">Dinas LIngkungan Hidup</h2>
+              <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
+            </div>
+            <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_DLH_URL} className="max-h-full max-w-full object-contain" alt="Logo DLH" /></div>
           </div>
-          <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_DLH_URL} className="max-h-full max-w-full object-contain" alt="Logo DLH" /></div>
-        </div>
 
-        <div className="text-center mb-8 space-y-1">
-          <h3 className="text-xl font-bold underline uppercase">LAPORAN BULANAN PEKERJAAN TAMAN, PENGHIJAUAN, POHON DAN PEMBABATAN</h3>
-          <p className="text-xl font-bold uppercase">WILAYAH 4 MEDAN KOTA</p>
-          <p className="text-xl font-bold uppercase">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+          <div className="text-center mb-8 space-y-1">
+            <h3 className="text-xl font-bold underline uppercase">LAPORAN BULANAN PEKERJAAN TAMAN, PENGHIJAUAN, POHON DAN PEMBABATAN</h3>
+            <p className="text-xl font-bold uppercase">WILAYAH 4 MEDAN KOTA</p>
+            <p className="text-xl font-bold uppercase">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+          </div>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
-            <thead>
+            <thead className="pdf-table-header">
               <tr style={{ height: '40px' }}>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[35px]" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[70px]" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
@@ -602,31 +490,54 @@ const MonthlyRecap = () => {
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
               </tr>
             </thead>
-            <tbody>
-              {flatTasks.length > 0 ? flatTasks.map((task, idx) => {
-                const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
-                return (
-                  <tr key={`${task.reportId}-${idx}`}>
-                    {task.isFirstInReport ? (<><td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={task.taskCount}>{task.displayIdx}</td><td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={task.taskCount}>{new Date(task.reportDate).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</td></>) : null}
-                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{task.description}</td>
-                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
-                    <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
-                    <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
-                    <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
-                    <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(task.reportCategory)}</td>
-                    <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type} ({e.quantity})</div>))}</td>
-                    <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
-                    {recapMode === "with-fuel" && (<><td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td><td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td><td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td></>)}
-                    <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
-                    <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic">{task.remarks && <div className="mb-1 text-slate-700">{task.remarks}</div>}{task.isFirstInReport && task.reportRemarks && (<div className="text-blue-700 font-medium border-t border-slate-200 mt-1 pt-1">Catatan: {task.reportRemarks}</div>)}{!task.remarks && (!task.isFirstInReport || !task.reportRemarks) && "-"}</td>
-                  </tr>
-                );
-              }) : (<tr><td colSpan={recapMode === "with-fuel" ? 15 : 12} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>)}
-            </tbody>
+            
+            {reports.length > 0 ? reports.map((report, reportIdx) => (
+              <tbody key={report.id} className="pdf-report-block border-b-2 border-black">
+                {report.tasks.map((task, taskIdx) => {
+                  const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
+                  return (
+                    <tr key={`${report.id}-${taskIdx}`}>
+                      {taskIdx === 0 ? (
+                        <>
+                          <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={report.tasks.length}>{reportIdx + 1}</td>
+                          <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={report.tasks.length}>
+                            {new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                          </td>
+                        </>
+                      ) : null}
+                      <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{task.description}</td>
+                      <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
+                      <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
+                      <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
+                      <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
+                      <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
+                      <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type} ({e.quantity})</div>))}</td>
+                      <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
+                      {recapMode === "with-fuel" && (
+                        <>
+                          <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
+                        </>
+                      )}
+                      <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
+                      <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic">
+                        {taskIdx === 0 && report.remarks && (<div className="text-blue-700 font-medium border-t border-slate-200 mt-1 pt-1">Catatan: {report.remarks}</div>)}
+                        {!task.remarks && (taskIdx !== 0 || !report.remarks) && "-"}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            )) : (
+              <tbody>
+                <tr><td colSpan={recapMode === "with-fuel" ? 15 : 12} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>
+              </tbody>
+            )}
           </table>
         </div>
 
-        <div className="mt-12">
+        <div className="pdf-footer mt-12">
           <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
           <div className="grid grid-cols-4 gap-4 text-[11px] leading-tight">
             <div className="text-center flex flex-col justify-between h-48"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
@@ -647,6 +558,7 @@ const MonthlyRecap = () => {
           tr { page-break-inside: avoid; page-break-after: auto; }
           thead { display: table-header-group; }
           tfoot { display: table-footer-group; }
+          .pdf-report-block { page-break-inside: avoid; }
         }
       `}} />
     </div>
