@@ -92,7 +92,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   const selectedDistrict = form.watch("sub_district");
   const selectedDate = form.watch("date");
 
-  // Load rekap harian untuk tanggal yang dipilih
   const loadDailyPlans = async (date: string) => {
     if (!date) return;
     try {
@@ -129,7 +128,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         showSuccess("Rencana kerja berhasil disimpan");
         
         if (shouldAddAnother) {
-          // Reset form kecuali tanggal
           const currentDate = values.date;
           form.reset({
             date: currentDate,
@@ -172,17 +170,17 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                   type="button" 
                   variant="outline"
                   disabled={isSubmitting} 
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
                   onClick={form.handleSubmit((data) => onSubmit(data, true))}
                 >
                   {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
-                  Simpan & Tambah Lagi
+                  Simpan & Tambah Kategori Lain
                 </Button>
               )}
               <Button 
                 type="button"
                 disabled={isSubmitting} 
-                className="bg-blue-600"
+                className="bg-blue-600 font-bold"
                 onClick={form.handleSubmit((data) => onSubmit(data, false))}
               >
                 {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="mr-2 h-4 w-4" />}
@@ -191,11 +189,8 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </div>
           </div>
 
-          <Card className="border-t-4 border-t-blue-500">
-            <CardHeader><CardTitle className="text-lg flex items-center gap-2">
-              <RefreshCw className={cn("h-5 w-5 text-green-600", loadingDaily && "animate-spin")} /> 
-              Informasi Utama
-            </CardTitle></CardHeader>
+          <Card className="border-t-4 border-t-blue-500 shadow-sm">
+            <CardHeader><CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5 text-blue-600" /> Informasi Utama</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="date" render={({ field }) => (
                 <FormItem><FormLabel>Tanggal Rencana</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
@@ -217,7 +212,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5 text-red-500" /> Lokasi Pengerjaan</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <FormField control={form.control} name="street" render={({ field }) => (
@@ -258,7 +253,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Wrench className="h-5 w-5 text-orange-500" /> Alat Operasional</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {equipmentFields.length === 0 && (
@@ -287,7 +282,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-green-600" /> Sumber Daya Manusia</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormField control={form.control} name="coordinator" render={({ field }) => (
@@ -299,7 +294,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="shadow-sm">
             <CardHeader><CardTitle className="text-lg">Lain-lain</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <FormField control={form.control} name="basis" render={({ field }) => (
@@ -313,7 +308,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         </form>
       </Form>
 
-      {/* Tabel Rekap Harian */}
       <Card className="border-t-4 border-t-green-500 shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
