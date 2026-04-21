@@ -35,7 +35,6 @@ const PrintWorkPlanRekap = () => {
       setLoading(true);
       const allPlans = await workPlanService.getAllWorkPlans();
       const filtered = allPlans.filter(p => p.date === date);
-      // Urutkan berdasarkan kategori agar rapi
       filtered.sort((a, b) => a.category.localeCompare(b.category));
       setPlans(filtered);
     } catch (error) {
@@ -62,7 +61,7 @@ const PrintWorkPlanRekap = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
           <div className="text-center">
-            <h1 className="font-bold">Preview Cetak Rencana Kerja (Mode Baris Tunggal)</h1>
+            <h1 className="font-bold">Preview Cetak Rencana Kerja</h1>
             <p className="text-xs text-slate-500">Tanggal: {date ? new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
           </div>
           <div className="flex gap-2">
@@ -77,7 +76,6 @@ const PrintWorkPlanRekap = () => {
       </div>
 
       <div className="print-area bg-white p-10 mx-auto shadow-none border-none w-full max-w-[1400px]">
-        {/* Header Kop Surat */}
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
           <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
           <div className="text-center px-4">
@@ -111,87 +109,68 @@ const PrintWorkPlanRekap = () => {
           </thead>
           <tbody>
             {plans.length > 0 ? plans.map((plan, idx) => {
-              // Konsolidasi data dari semua lokasi dalam satu plan
-              const allDescriptions = plan.locations?.map(l => l.description).filter(Boolean) || [];
-              const allStreets = plan.locations?.map(l => `${l.street} (${l.sub_district})`).filter(Boolean) || [];
-              
-              // Konsolidasi Alat
-              const allEquipment: {name: string, qty: number, purpose: string}[] = [];
-              plan.locations?.forEach(loc => {
-                loc.equipment?.forEach(eq => {
-                  const nameWithVehicle = eq.vehicle ? `${eq.name} (${eq.vehicle})` : eq.name;
-                  allEquipment.push({ name: nameWithVehicle, qty: eq.quantity, purpose: eq.purpose || "" });
-                });
-              });
-
-              // Konsolidasi SDM
               const isGlobalSDM = ["Tim Pohon", "Tim Babat"].includes(plan.category);
-              let displayCoordinator = plan.coordinator;
-              let displayPersonnel = plan.personnel;
-
-              if (!isGlobalSDM) {
-                // Jika per lokasi, gabungkan nama koordinator dan jumlahkan personil
-                const coordinators = Array.from(new Set(plan.locations?.map(l => l.coordinator).filter(Boolean)));
-                displayCoordinator = coordinators.join(", ");
-                displayPersonnel = plan.locations?.reduce((acc, l) => acc + (l.personnel || 0), 0) || 0;
-              }
-
+              const totalRows = plan.locations?.reduce((acc, loc) => acc + Math.max(1, loc.equipment?.length || 0), 0) || 1;
+              
               return (
-                <tr key={plan.id}>
-                  <td className="border-2 border-black p-2 text-center align-top">{idx + 1}</td>
-                  <td className="border-2 border-black p-2 text-center align-top font-bold">{plan.category}</td>
-                  
-                  {/* Detail Kegiatan */}
-                  <td className="border-2 border-black p-2 align-top">
-                    {allDescriptions.map((desc, i) => (
-                      <div key={i} className={cn(i > 0 && "mt-2 pt-2 border-t border-slate-100")}>
-                        {allDescriptions.length > 1 ? `${i+1}. ${desc}` : desc}
-                      </div>
-                    ))}
-                  </td>
+                <React.Fragment key={plan.id}>
+                  {plan.locations?.map((loc, locIdx) => {
+                    const locRows = Math.max(1, loc.equipment?.length || 0);
+                    
+                    return (
+                      <React.Fragment key={`${plan.id}-loc-${locIdx}`}>
+                        <tr>
+                          {locIdx === 0 && (
+                            <>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{idx + 1}</td>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{plan.category}</td>
+                            </>
+                          )}
+                          <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.description}</td>
+                          <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.street} ({loc.sub_district})</td>
+                          
+                          <td className="border-2 border-black p-2 text-center align-middle">
+                            {loc.equipment?.[0]?.name || "-"} {loc.equipment?.[0]?.vehicle ? `(${loc.equipment[0].vehicle})` : ""}
+                          </td>
+                          <td className="border-2 border-black p-2 text-center align-middle">{loc.equipment?.[0]?.quantity || "-"}</td>
+                          <td className="border-2 border-black p-2 align-middle">{loc.equipment?.[0]?.purpose || "-"}</td>
 
-                  {/* Lokasi */}
-                  <td className="border-2 border-black p-2 align-top">
-                    {allStreets.map((street, i) => (
-                      <div key={i} className={cn(i > 0 && "mt-2 pt-2 border-t border-slate-100")}>
-                        {allStreets.length > 1 ? `${i+1}. ${street}` : street}
-                      </div>
-                    ))}
-                  </td>
+                          {/* Koordinator & Personil: Global vs Per Lokasi */}
+                          { isGlobalSDM ? (
+                            locIdx === 0 ? (
+                              <>
+                                <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{plan.coordinator}</td>
+                                <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{plan.personnel}</td>
+                              </>
+                            ) : null
+                          ) : (
+                            <>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={locRows}>{loc.coordinator}</td>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={locRows}>{loc.personnel}</td>
+                            </>
+                          )}
 
-                  {/* Alat Operasional */}
-                  <td className="border-2 border-black p-2 text-center align-top">
-                    {allEquipment.length > 0 ? allEquipment.map((eq, i) => (
-                      <div key={i} className={cn(i > 0 && "mt-1")}>{eq.name}</div>
-                    )) : "-"}
-                  </td>
+                          {locIdx === 0 && (
+                            <>
+                              <td className="border-2 border-black p-2 align-middle whitespace-pre-wrap" rowSpan={totalRows}>{plan.basis}</td>
+                              <td className="border-2 border-black p-2 align-middle" rowSpan={totalRows}>{plan.remarks || ""}</td>
+                            </>
+                          )}
+                        </tr>
 
-                  {/* Unit */}
-                  <td className="border-2 border-black p-2 text-center align-top">
-                    {allEquipment.length > 0 ? allEquipment.map((eq, i) => (
-                      <div key={i} className={cn(i > 0 && "mt-1")}>{eq.qty}</div>
-                    )) : "-"}
-                  </td>
-
-                  {/* Kegunaan */}
-                  <td className="border-2 border-black p-2 align-top">
-                    {allEquipment.length > 0 ? allEquipment.map((eq, i) => (
-                      <div key={i} className={cn(i > 0 && "mt-1")}>{eq.purpose || "-"}</div>
-                    )) : "-"}
-                  </td>
-
-                  {/* Koordinator */}
-                  <td className="border-2 border-black p-2 text-center align-top">{displayCoordinator || "-"}</td>
-
-                  {/* Personil */}
-                  <td className="border-2 border-black p-2 text-center align-top font-bold">{displayPersonnel || 0}</td>
-
-                  {/* Dasar Pengerjaan */}
-                  <td className="border-2 border-black p-2 align-top whitespace-pre-wrap">{plan.basis}</td>
-
-                  {/* Keterangan */}
-                  <td className="border-2 border-black p-2 align-top">{plan.remarks || "-"}</td>
-                </tr>
+                        {loc.equipment?.slice(1).map((eq, eqIdx) => (
+                          <tr key={`${plan.id}-loc-${locIdx}-eq-${eqIdx}`}>
+                            <td className="border-2 border-black p-2 text-center align-middle">
+                              {eq.name} {eq.vehicle ? `(${eq.vehicle})` : ""}
+                            </td>
+                            <td className="border-2 border-black p-2 text-center align-middle">{eq.quantity}</td>
+                            <td className="border-2 border-black p-2 align-middle">{eq.purpose}</td>
+                          </tr>
+                        ))}
+                      </React.Fragment>
+                    );
+                  })}
+                </React.Fragment>
               );
             }) : (
               <tr><td colSpan={11} className="border-2 border-black p-10 text-center italic text-slate-400">Tidak ada data rencana kerja untuk tanggal ini</td></tr>
@@ -199,7 +178,6 @@ const PrintWorkPlanRekap = () => {
           </tbody>
         </table>
 
-        {/* Tanda Tangan */}
         <div className={cn("mt-12 grid grid-cols-3 gap-4 text-[11px]", !showSignatures && "hidden")}>
           <div className="text-center space-y-16">
             <div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p></div>
