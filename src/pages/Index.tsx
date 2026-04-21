@@ -52,7 +52,6 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter States - Diubah ke "semua" agar langsung tampil semua
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
   const [selectedCategory, setSelectedCategory] = useState("semua");
@@ -200,7 +199,6 @@ const Index = () => {
                   onClick={() => navigate('/create')} 
                   size="sm" 
                   className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4 ml-1"
-                  disabled={isPimpinan}
                 >
                   <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
                 </Button>
@@ -305,7 +303,6 @@ const Index = () => {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-slate-400 hover:text-blue-600" 
-                          disabled={isPimpinan}
                           onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}
                         >
                           <Edit className="h-4 w-4" />
@@ -314,7 +311,6 @@ const Index = () => {
                           variant="ghost" 
                           size="icon" 
                           className="h-8 w-8 text-slate-400 hover:text-red-500" 
-                          disabled={isPimpinan}
                           onClick={(e) => handleDelete(e, report.id)}
                         >
                           <Trash2 className="h-4 w-4" />

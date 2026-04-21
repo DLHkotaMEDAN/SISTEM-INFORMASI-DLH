@@ -179,16 +179,13 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       const task = updatedTasks[i];
       setUploadProgress(`Mengunggah foto kegiatan #${i + 1}...`);
       
-      // Cek foto 0%
       if (task.photos.zero?.startsWith('data:image')) {
-        // Jika sedang edit dan ada foto lama, hapus foto lama
         if (isEditing && initialData?.tasks[i]?.photos.zero) {
           await storageService.deletePhotoByUrl(initialData.tasks[i].photos.zero);
         }
         task.photos.zero = await storageService.uploadPhoto(task.photos.zero, `task_${i}_0`);
       }
       
-      // Cek foto 50%
       if (task.photos.fifty?.startsWith('data:image')) {
         if (isEditing && initialData?.tasks[i]?.photos.fifty) {
           await storageService.deletePhotoByUrl(initialData.tasks[i].photos.fifty);
@@ -196,7 +193,6 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         task.photos.fifty = await storageService.uploadPhoto(task.photos.fifty, `task_${i}_50`);
       }
       
-      // Cek foto 100%
       if (task.photos.hundred?.startsWith('data:image')) {
         if (isEditing && initialData?.tasks[i]?.photos.hundred) {
           await storageService.deletePhotoByUrl(initialData.tasks[i].photos.hundred);
@@ -214,12 +210,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     }
     setIsSubmitting(true);
     try {
-      // Jika sedang edit, cek apakah ada task yang dihapus seluruhnya
       if (isEditing && initialData) {
         const currentTaskCount = values.tasks.length;
         const oldTaskCount = initialData.tasks.length;
-        
-        // Jika jumlah task berkurang, hapus foto dari task yang hilang
         if (currentTaskCount < oldTaskCount) {
           for (let i = currentTaskCount; i < oldTaskCount; i++) {
             const oldTask = initialData.tasks[i];
