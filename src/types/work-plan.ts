@@ -9,7 +9,8 @@ export interface WorkPlanLocation {
 export interface WorkPlanEquipment {
   name: string;
   quantity: number;
-  purpose?: string; // Menambahkan kegunaan alat
+  purpose?: string;
+  vehicle?: string; // Menambahkan properti Plat Nomor
 }
 
 export interface WorkPlan {

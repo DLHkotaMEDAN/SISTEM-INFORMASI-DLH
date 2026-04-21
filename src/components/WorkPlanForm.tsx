@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer, MapPinned, ClipboardCheck } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer, MapPinned, ClipboardCheck, Truck } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { medanDistricts } from '@/data/medan-districts';
@@ -30,10 +30,8 @@ const coordinatorMapping: Record<string, string> = {
   "Tim Pohon": "Ardiansyah Siregar"
 };
 
-/**
- * Fungsi untuk mendeteksi kegunaan alat secara otomatis.
- * Menggunakan .includes() agar tetap terdeteksi meskipun ada tambahan Plat BK atau teks lain.
- */
+const vehicleKeywords = ["mobil", "motor", "truck", "truk", "pick up", "pickup"];
+
 const getAutoPurpose = (name: string): string => {
   const lowerName = name.toLowerCase();
   if (lowerName.includes("chainsaw")) return "Alat Pemotong Pohon dan Ranting.";
@@ -58,6 +56,7 @@ const formSchema = z.object({
     name: z.string().min(1, "Nama alat wajib diisi"),
     quantity: z.coerce.number().min(1, "Minimal 1 unit"),
     purpose: z.string().optional().default(""),
+    vehicle: z.string().optional().default(""),
   })).default([]),
   coordinator: z.string().min(1, "Koordinator wajib diisi"),
   personnel: z.coerce.number().min(0),
@@ -78,6 +77,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dailyPlans, setDailyPlans] = useState<WorkPlan[]>([]);
   const [loadingDaily, setLoadingDaily] = useState(false);
+  const [existingVehicles, setExistingVehicles] = useState<string[]>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]);
 
   const processInitialBasis = (basisStr: string) => {
     if (!basisStr) return [{ value: "Laporan Masyarakat / Rutin" }];
@@ -199,6 +199,10 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     <div className="space-y-10 pb-20">
       <Form {...form}>
         <form className="space-y-6">
+          <datalist id="vehicle-list">
+            {existingVehicles.map(v => <option key={v} value={v} />)}
+          </datalist>
+
           <div className="flex items-center justify-between">
             <Button type="button" variant="ghost" onClick={() => navigate('/work-plans')}>
               <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -283,40 +287,59 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Wrench className="h-5 w-5 text-orange-500" /> Alat Operasional</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               {equipmentFields.length === 0 && (<div className="text-center py-4 text-slate-400 text-sm italic border rounded-lg border-dashed">Tidak ada alat operasional yang ditambahkan</div>)}
-              {equipmentFields.map((field, index) => (
-                <div key={field.id} className="p-4 border rounded-lg bg-slate-50 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                    <div className="md:col-span-7">
-                      <FormField control={form.control} name={`equipment.${index}.name`} render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Nama Alat</FormLabel>
-                          <FormControl>
-                            <Input 
-                              placeholder="Contoh: Chainsaw BK 1234 AB" 
-                              {...field} 
-                              onChange={(e) => {
-                                field.onChange(e);
-                                const autoPurpose = getAutoPurpose(e.target.value);
-                                if (autoPurpose) {
-                                  form.setValue(`equipment.${index}.purpose`, autoPurpose);
-                                }
-                              }}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )} />
+              {equipmentFields.map((field, index) => {
+                const nameValue = form.watch(`equipment.${index}.name`) || "";
+                const isVehicle = vehicleKeywords.some(k => nameValue.toLowerCase().includes(k));
+                
+                return (
+                  <div key={field.id} className="p-4 border rounded-lg bg-slate-50 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                      <div className={cn("md:col-span-7", isVehicle ? "md:col-span-4" : "md:col-span-7")}>
+                        <FormField control={form.control} name={`equipment.${index}.name`} render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nama Alat</FormLabel>
+                            <FormControl>
+                              <Input 
+                                placeholder="Contoh: Chainsaw" 
+                                {...field} 
+                                onChange={(e) => {
+                                  field.onChange(e);
+                                  const autoPurpose = getAutoPurpose(e.target.value);
+                                  if (autoPurpose) {
+                                    form.setValue(`equipment.${index}.purpose`, autoPurpose);
+                                  }
+                                }}
+                              />
+                            </FormControl>
+                          </FormItem>
+                        )} />
+                      </div>
+                      
+                      {isVehicle && (
+                        <div className="md:col-span-3">
+                          <FormField control={form.control} name={`equipment.${index}.vehicle`} render={({ field }) => (
+                            <FormItem>
+                              <FormLabel className="flex items-center gap-1"><Truck size={12} className="text-blue-600" /> Plat Nomor</FormLabel>
+                              <FormControl>
+                                <Input placeholder="BK 1234 XX" list="vehicle-list" {...field} />
+                              </FormControl>
+                            </FormItem>
+                          )} />
+                        </div>
+                      )}
+
+                      <div className="md:col-span-3">
+                        <FormField control={form.control} name={`equipment.${index}.quantity`} render={({ field }) => (<FormItem><FormLabel>Unit</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                      </div>
+                      <div className="md:col-span-2">
+                        <Button type="button" variant="ghost" size="icon" onClick={() => removeEquipment(index)} className="text-red-500"><Trash2 size={18} /></Button>
+                      </div>
                     </div>
-                    <div className="md:col-span-3">
-                      <FormField control={form.control} name={`equipment.${index}.quantity`} render={({ field }) => (<FormItem><FormLabel>Unit</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                    </div>
-                    <div className="md:col-span-2">
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeEquipment(index)} className="text-red-500"><Trash2 size={18} /></Button>
-                    </div>
+                    <FormField control={form.control} name={`equipment.${index}.purpose`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Kegunaan Alat</FormLabel><FormControl><Input placeholder="Contoh: Alat Pemotong Pohon dan Ranting" {...field} /></FormControl></FormItem>)} />
                   </div>
-                  <FormField control={form.control} name={`equipment.${index}.purpose`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Kegunaan Alat</FormLabel><FormControl><Input placeholder="Contoh: Alat Pemotong Pohon dan Ranting" {...field} /></FormControl></FormItem>)} />
-                </div>
-              ))}
-              <Button type="button" variant="outline" size="sm" onClick={() => appendEquipment({ name: "", quantity: 1, purpose: "" })} className="w-full border-dashed"><Plus size={14} className="mr-2" /> Tambah Alat</Button>
+                );
+              })}
+              <Button type="button" variant="outline" size="sm" onClick={() => appendEquipment({ name: "", quantity: 1, purpose: "", vehicle: "" })} className="w-full border-dashed"><Plus size={14} className="mr-2" /> Tambah Alat</Button>
             </CardContent>
           </Card>
 

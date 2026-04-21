@@ -121,7 +121,9 @@ const PrintWorkPlanRekap = () => {
                     </td>
                     
                     {/* Kolom Alat Operasional (Baris Pertama) */}
-                    <td className="border-2 border-black p-2 text-center align-middle">{plan.equipment?.[0]?.name || "-"}</td>
+                    <td className="border-2 border-black p-2 text-center align-middle">
+                      {plan.equipment?.[0]?.name || "-"} {plan.equipment?.[0]?.vehicle ? `(${plan.equipment[0].vehicle})` : ""}
+                    </td>
                     <td className="border-2 border-black p-2 text-center align-middle">{plan.equipment?.[0]?.quantity || "-"}</td>
                     <td className="border-2 border-black p-2 align-middle">{plan.equipment?.[0]?.purpose || "-"}</td>
 
@@ -134,7 +136,9 @@ const PrintWorkPlanRekap = () => {
                   {/* Baris Tambahan jika ada lebih dari 1 alat */}
                   {plan.equipment?.slice(1).map((eq, eqIdx) => (
                     <tr key={`${plan.id}-eq-${eqIdx}`}>
-                      <td className="border-2 border-black p-2 text-center align-middle">{eq.name}</td>
+                      <td className="border-2 border-black p-2 text-center align-middle">
+                        {eq.name} {eq.vehicle ? `(${eq.vehicle})` : ""}
+                      </td>
                       <td className="border-2 border-black p-2 text-center align-middle">{eq.quantity}</td>
                       <td className="border-2 border-black p-2 align-middle">{eq.purpose}</td>
                     </tr>
