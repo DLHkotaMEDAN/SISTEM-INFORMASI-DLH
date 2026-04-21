@@ -12,7 +12,9 @@ export interface WorkPlanLocation {
   street: string;
   sub_district: string;
   villages: string[];
-  equipment: WorkPlanEquipment[]; // Alat sekarang spesifik per lokasi
+  equipment: WorkPlanEquipment[];
+  coordinator: string; // Sekarang per lokasi
+  personnel: number;   // Sekarang per lokasi
 }
 
 export interface WorkPlan {
@@ -27,7 +29,7 @@ export interface WorkPlan {
   remarks: string;
   created_at?: string;
   user_id?: string;
-  // Legacy fields (untuk kompatibilitas data lama jika ada)
+  // Legacy fields
   street?: string;
   sub_district?: string;
   villages?: string[];

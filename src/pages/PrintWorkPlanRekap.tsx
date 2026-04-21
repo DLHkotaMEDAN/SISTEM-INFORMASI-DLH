@@ -110,7 +110,6 @@ const PrintWorkPlanRekap = () => {
           <tbody>
             {plans.length > 0 ? plans.map((plan, idx) => {
               // Hitung total baris yang dibutuhkan untuk plan ini
-              // Berdasarkan jumlah alat di semua lokasi
               const totalRows = plan.locations?.reduce((acc, loc) => acc + Math.max(1, loc.equipment?.length || 0), 0) || 1;
               
               return (
@@ -120,7 +119,6 @@ const PrintWorkPlanRekap = () => {
                     
                     return (
                       <React.Fragment key={`${plan.id}-loc-${locIdx}`}>
-                        {/* Baris Pertama untuk setiap lokasi */}
                         <tr>
                           {locIdx === 0 && (
                             <>
@@ -131,24 +129,23 @@ const PrintWorkPlanRekap = () => {
                           <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.description}</td>
                           <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.street} ({loc.sub_district})</td>
                           
-                          {/* Alat Pertama di Lokasi ini */}
                           <td className="border-2 border-black p-2 text-center align-middle">
                             {loc.equipment?.[0]?.name || "-"} {loc.equipment?.[0]?.vehicle ? `(${loc.equipment[0].vehicle})` : ""}
                           </td>
                           <td className="border-2 border-black p-2 text-center align-middle">{loc.equipment?.[0]?.quantity || "-"}</td>
                           <td className="border-2 border-black p-2 align-middle">{loc.equipment?.[0]?.purpose || "-"}</td>
 
+                          <td className="border-2 border-black p-2 text-center align-middle" rowSpan={locRows}>{loc.coordinator}</td>
+                          <td className="border-2 border-black p-2 text-center align-middle" rowSpan={locRows}>{loc.personnel}</td>
+
                           {locIdx === 0 && (
                             <>
-                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{plan.coordinator}</td>
-                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows}>{plan.personnel}</td>
                               <td className="border-2 border-black p-2 align-middle whitespace-pre-wrap" rowSpan={totalRows}>{plan.basis}</td>
                               <td className="border-2 border-black p-2 align-middle" rowSpan={totalRows}>{plan.remarks || ""}</td>
                             </>
                           )}
                         </tr>
 
-                        {/* Baris Tambahan untuk alat lain di lokasi yang sama */}
                         {loc.equipment?.slice(1).map((eq, eqIdx) => (
                           <tr key={`${plan.id}-loc-${locIdx}-eq-${eqIdx}`}>
                             <td className="border-2 border-black p-2 text-center align-middle">
