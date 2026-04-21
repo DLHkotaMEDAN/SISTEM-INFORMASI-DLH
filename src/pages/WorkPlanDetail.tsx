@@ -75,27 +75,25 @@ const WorkPlanDetail = () => {
               <span className="font-bold flex items-center gap-2"><Calendar size={14} /> Tanggal</span>
               <span className="col-span-2">: {new Date(data.date).toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}</span>
             </div>
-            <div className="grid grid-cols-3 border-b pb-2">
-              <span className="font-bold flex items-center gap-2"><FileText size={14} /> Uraian Kegiatan</span>
-              <span className="col-span-2">: {data.description}</span>
-            </div>
             
             <div className="grid grid-cols-3 border-b pb-2">
-              <span className="font-bold flex items-center gap-2"><MapPin size={14} /> Lokasi Pengerjaan</span>
-              <div className="col-span-2 space-y-3">
+              <span className="font-bold flex items-center gap-2"><MapPin size={14} /> Lokasi & Kegiatan</span>
+              <div className="col-span-2 space-y-4">
                 {data.locations?.length > 0 ? data.locations.map((loc, i) => (
                   <div key={i} className="flex gap-2">
                     <span>:</span>
-                    <div>
-                      <p className="font-bold">{loc.street}</p>
+                    <div className="space-y-1">
+                      <p className="font-bold text-blue-700">{loc.description}</p>
+                      <p className="font-medium">{loc.street}</p>
                       <p className="text-xs text-slate-500">Kel. {loc.villages.join(", ")}, Kec. {loc.sub_district}</p>
                     </div>
                   </div>
                 )) : (
                   <div className="flex gap-2">
                     <span>:</span>
-                    <div>
-                      <p className="font-bold">{data.street}</p>
+                    <div className="space-y-1">
+                      <p className="font-bold text-blue-700">{data.description}</p>
+                      <p className="font-medium">{data.street}</p>
                       <p className="text-xs text-slate-500">Kel. {data.villages?.join(", ")}, Kec. {data.sub_district}</p>
                     </div>
                   </div>
@@ -107,7 +105,7 @@ const WorkPlanDetail = () => {
               <span className="font-bold flex items-center gap-2"><Wrench size={14} /> Alat Operasional</span>
               <div className="col-span-2 flex flex-col gap-1">
                 {data.equipment.map((eq, i) => (
-                  <span key={i}>: {eq.name} ({eq.quantity} Unit)</span>
+                  <span key={i}>: {eq.name} ({eq.quantity} Unit) {eq.vehicle ? `- ${eq.vehicle}` : ""}</span>
                 ))}
               </div>
             </div>

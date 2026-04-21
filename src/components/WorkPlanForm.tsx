@@ -42,6 +42,7 @@ const getAutoPurpose = (name: string): string => {
 };
 
 const locationSchema = z.object({
+  description: z.string().min(1, "Uraian kegiatan wajib diisi"),
   street: z.string().min(1, "Nama jalan wajib diisi"),
   sub_district: z.string().min(1, "Kecamatan wajib diisi"),
   villages: z.array(z.string().min(1, "Kelurahan wajib diisi")).min(1),
@@ -50,7 +51,6 @@ const locationSchema = z.object({
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
-  description: z.string().min(1, "Uraian wajib diisi"),
   locations: z.array(locationSchema).min(1, "Minimal satu lokasi"),
   equipment: z.array(z.object({
     name: z.string().min(1, "Nama alat wajib diisi"),
@@ -92,8 +92,8 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     defaultValues: initialData ? {
       date: initialData.date,
       category: initialData.category,
-      description: initialData.description,
       locations: initialData.locations || [{ 
+        description: initialData.description || "",
         street: initialData.street || "", 
         sub_district: initialData.sub_district || "", 
         villages: Array.isArray(initialData.villages) ? initialData.villages : [""] 
@@ -106,8 +106,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     } : {
       date: urlDate || new Date().toISOString().split('T')[0],
       category: "",
-      description: "",
-      locations: [{ street: "", sub_district: "", villages: [""] }],
+      locations: [{ description: "", street: "", sub_district: "", villages: [""] }],
       equipment: [],
       coordinator: "",
       personnel: 0,
@@ -152,7 +151,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
       const payload = {
         date: values.date,
         category: values.category,
-        description: values.description,
+        description: firstLoc.description, // Gunakan deskripsi lokasi pertama sebagai deskripsi utama
         street: firstLoc.street,
         sub_district: firstLoc.sub_district,
         villages: firstLoc.villages,
@@ -177,8 +176,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
           form.reset({
             date: currentDate,
             category: "",
-            description: "",
-            locations: [{ street: "", sub_district: "", villages: [""] }],
+            locations: [{ description: "", street: "", sub_district: "", villages: [""] }],
             equipment: [],
             coordinator: "",
             personnel: 0,
@@ -231,16 +229,13 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                   <FormMessage />
                 </FormItem>
               )} />
-              <div className="md:col-span-2">
-                <FormField control={form.control} name="description" render={({ field }) => (<FormItem><FormLabel>Uraian Kegiatan</FormLabel><FormControl><Input placeholder="Contoh: Pemangkasan pohon rawan tumbang" {...field} /></FormControl><FormMessage /></FormItem>)} />
-              </div>
             </CardContent>
           </Card>
 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2"><MapPinned className="text-red-500" /> Lokasi Pengerjaan</h2>
-              <Button type="button" variant="outline" size="sm" onClick={() => appendLocation({ street: "", sub_district: "", villages: [""] })} className="border-dashed border-red-200 text-red-600 hover:bg-red-50"><Plus className="h-4 w-4 mr-2" /> Tambah Lokasi Lain</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendLocation({ description: "", street: "", sub_district: "", villages: [""] })} className="border-dashed border-red-200 text-red-600 hover:bg-red-50"><Plus className="h-4 w-4 mr-2" /> Tambah Lokasi Lain</Button>
             </div>
             {locationFields.map((locField, locIndex) => (
               <Card key={locField.id} className="shadow-sm border-l-4 border-l-red-400">
@@ -249,6 +244,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                   {locationFields.length > 1 && (<Button type="button" variant="ghost" size="sm" onClick={() => removeLocation(locIndex)} className="text-red-500 h-8 hover:bg-red-50"><Trash2 size={14} className="mr-1" /> Hapus Lokasi</Button>)}
                 </CardHeader>
                 <CardContent className="p-4 space-y-4">
+                  <FormField control={form.control} name={`locations.${locIndex}.description`} render={({ field }) => (<FormItem><FormLabel className="font-bold">Uraian Kegiatan</FormLabel><FormControl><Input placeholder="Contoh: Pemangkasan pohon rawan tumbang" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <FormField control={form.control} name={`locations.${locIndex}.street`} render={({ field }) => (<FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input placeholder="Jl. Contoh No. 123" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name={`locations.${locIndex}.sub_district`} render={({ field }) => (
@@ -390,7 +386,17 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                   <TableRow key={plan.id}>
                     <TableCell className="text-center font-medium">{idx + 1}</TableCell>
                     <TableCell><Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge></TableCell>
-                    <TableCell className="max-w-[200px] truncate">{plan.description}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      <div className="space-y-1">
+                        {plan.locations?.length > 0 ? (
+                          plan.locations.map((loc, i) => (
+                            <div key={i} className="text-[10px] leading-tight">• {loc.description}</div>
+                          ))
+                        ) : (
+                          <span className="truncate">{plan.description}</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell className="max-w-[200px]">
                       {plan.locations?.length > 0 ? (
                         <div className="space-y-1">

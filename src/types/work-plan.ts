@@ -1,6 +1,7 @@
 "use client";
 
 export interface WorkPlanLocation {
+  description: string; // Menambahkan uraian kegiatan per lokasi
   street: string;
   sub_district: string;
   villages: string[];
@@ -10,7 +11,7 @@ export interface WorkPlanEquipment {
   name: string;
   quantity: number;
   purpose?: string;
-  vehicle?: string; // Menambahkan properti Plat Nomor
+  vehicle?: string;
 }
 
 export interface WorkPlan {

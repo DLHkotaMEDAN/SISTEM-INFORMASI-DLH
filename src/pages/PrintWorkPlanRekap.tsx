@@ -107,7 +107,17 @@ const PrintWorkPlanRekap = () => {
                   <tr>
                     <td className="border-2 border-black p-2 text-center align-middle" rowSpan={eqCount}>{idx + 1}</td>
                     <td className="border-2 border-black p-2 text-center align-middle" rowSpan={eqCount}>{plan.category}</td>
-                    <td className="border-2 border-black p-2 align-middle" rowSpan={eqCount}>{plan.description}</td>
+                    <td className="border-2 border-black p-2 align-middle" rowSpan={eqCount}>
+                      {plan.locations?.length > 0 ? (
+                        <div className="space-y-1">
+                          {plan.locations.map((loc, i) => (
+                            <div key={i}>{i + 1}. {loc.description}</div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div>1. {plan.description}</div>
+                      )}
+                    </td>
                     <td className="border-2 border-black p-2 align-middle" rowSpan={eqCount}>
                       {plan.locations?.length > 0 ? (
                         <div className="space-y-1">
