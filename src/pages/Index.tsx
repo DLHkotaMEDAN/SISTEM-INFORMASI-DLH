@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
-  LogOut, LogIn, FilterX, ShieldCheck
+  LogOut, LogIn, FilterX, ShieldCheck, ClipboardList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -155,6 +155,12 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <Button variant="outline" size="sm" onClick={() => navigate('/work-plans')} className="bg-blue-50 text-blue-700 border-blue-200">
+                <ClipboardList className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rencana Kerja</span>
+              </Button>
+            )}
+            
             <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
               <FileBarChart className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rekap Bulanan</span>
             </Button>

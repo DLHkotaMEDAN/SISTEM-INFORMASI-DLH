@@ -13,6 +13,12 @@ import MonthlyRecap from "./pages/MonthlyRecap";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+// Rencana Kerja Pages
+import WorkPlans from "./pages/WorkPlans";
+import CreateWorkPlan from "./pages/CreateWorkPlan";
+import EditWorkPlan from "./pages/EditWorkPlan";
+import WorkPlanDetail from "./pages/WorkPlanDetail";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -33,12 +39,16 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
-            {/* Halaman Publik */}
             <Route path="/" element={<Index />} />
             <Route path="/report/:id" element={<ReportDetail />} />
             <Route path="/monthly-rekap" element={<MonthlyRecap />} />
             
-            {/* Route Administratif Terproteksi */}
+            {/* Rencana Kerja Routes */}
+            <Route path="/work-plans" element={<ProtectedRoute><WorkPlans /></ProtectedRoute>} />
+            <Route path="/work-plans/create" element={<ProtectedRoute><CreateWorkPlan /></ProtectedRoute>} />
+            <Route path="/work-plans/edit/:id" element={<ProtectedRoute><EditWorkPlan /></ProtectedRoute>} />
+            <Route path="/work-plans/:id" element={<ProtectedRoute><WorkPlanDetail /></ProtectedRoute>} />
+            
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />
             <Route path="/print-rekap" element={<ProtectedRoute><PrintRekap /></ProtectedRoute>} />
