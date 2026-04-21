@@ -63,8 +63,10 @@ const MonthlyRecap = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
-  const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  
+  // Filter States - Diubah ke "semua" agar langsung tampil semua
+  const [selectedMonth, setSelectedMonth] = useState("semua");
+  const [selectedYear, setSelectedYear] = useState("semua");
   const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
@@ -98,8 +100,9 @@ const MonthlyRecap = () => {
         const reportDate = new Date(r.date);
         const m = (reportDate.getMonth() + 1).toString();
         const y = reportDate.getFullYear().toString();
-        const matchMonth = m === selectedMonth;
-        const matchYear = y === selectedYear;
+        
+        const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+        const matchYear = selectedYear === "semua" || y === selectedYear;
         
         let matchCategory = false;
         // Admin dan Pimpinan bisa filter semua atau kategori tertentu
@@ -141,7 +144,7 @@ const MonthlyRecap = () => {
   const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
     if (!printRef.current) return;
     
-    const toastId = showLoading("Menyiapkan PDF A3 (Anti-Yatim)...");
+    const toastId = showLoading("Menyiapkan PDF A3...");
     
     try {
       window.scrollTo(0, 0);
@@ -358,7 +361,7 @@ const MonthlyRecap = () => {
       }
 
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Rekap_DLH_${months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`);
+      saveAs(new Blob([buffer]), `Rekap_DLH_${selectedMonth === 'semua' ? 'Semua' : months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`);
       dismissToast(toastId);
       showSuccess("Rekap Excel berhasil diunduh");
     } catch (error) {
@@ -411,11 +414,17 @@ const MonthlyRecap = () => {
           <div className="flex flex-wrap items-center gap-3">
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
               <SelectTrigger className="w-[140px]"><SelectValue placeholder="Bulan" /></SelectTrigger>
-              <SelectContent>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="semua">Semua Bulan</SelectItem>
+                {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+              </SelectContent>
             </Select>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
-              <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="semua">Semua Tahun</SelectItem>
+                {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+              </SelectContent>
             </Select>
             <div className="relative">
               <Popover>
@@ -473,7 +482,7 @@ const MonthlyRecap = () => {
         isOpen={isDriveDialogOpen}
         onClose={() => setIsDriveDialogOpen(false)}
         onUpload={handleDriveUpload}
-        defaultFileName={`Rekap_${months[parseInt(selectedMonth)-1]}_${selectedYear}`}
+        defaultFileName={`Rekap_${selectedMonth === 'semua' ? 'Semua' : months[parseInt(selectedMonth)-1]}_${selectedYear}`}
       />
 
       <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
@@ -491,7 +500,7 @@ const MonthlyRecap = () => {
           <div className="text-center mb-8 space-y-1">
             <h3 className="text-xl font-bold underline uppercase">LAPORAN BULANAN PEKERJAAN TAMAN, PENGHIJAUAN, POHON DAN PEMBABATAN</h3>
             <p className="text-xl font-bold uppercase">WILAYAH 4 MEDAN KOTA</p>
-            <p className="text-xl font-bold uppercase">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+            <p className="text-xl font-bold uppercase">Bulan: {selectedMonth === 'semua' ? 'Semua Bulan' : months[parseInt(selectedMonth)-1]} {selectedYear === 'semua' ? 'Semua Tahun' : selectedYear}</p>
           </div>
         </div>
 
