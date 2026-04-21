@@ -37,7 +37,7 @@ const formSchema = z.object({
   equipment: z.array(z.object({
     name: z.string().min(1, "Nama alat wajib diisi"),
     quantity: z.coerce.number().min(1, "Minimal 1 unit")
-  })).min(1),
+  })).default([]), // Diubah agar boleh kosong
   coordinator: z.string().min(1, "Koordinator wajib diisi"),
   personnel: z.coerce.number().min(0),
   basis: z.string().min(1, "Dasar pengerjaan wajib diisi"),
@@ -65,7 +65,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
       street: "",
       sub_district: "",
       villages: [""],
-      equipment: [{ name: "", quantity: 1 }],
+      equipment: [], // Default kosong untuk rencana baru
       coordinator: "",
       personnel: 0,
       basis: "Laporan Masyarakat / Rutin",
@@ -89,6 +89,9 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   useEffect(() => {
     if (selectedCategory && !isEditing) {
       form.setValue("coordinator", coordinatorMapping[selectedCategory] || "");
+      
+      // Jika kategori adalah taman, pastikan equipment bisa kosong (sudah dihandle default [])
+      // Jika kategori lain mungkin ingin default 1 baris, tapi user minta fleksibel
     }
   }, [selectedCategory, form, isEditing]);
 
@@ -191,6 +194,11 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         <Card>
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Wrench className="h-5 w-5 text-orange-500" /> Alat Operasional</CardTitle></CardHeader>
           <CardContent className="space-y-4">
+            {equipmentFields.length === 0 && (
+              <div className="text-center py-4 text-slate-400 text-sm italic border rounded-lg border-dashed">
+                Tidak ada alat operasional yang ditambahkan
+              </div>
+            )}
             {equipmentFields.map((field, index) => (
               <div key={field.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                 <div className="md:col-span-7">
@@ -204,9 +212,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                   )} />
                 </div>
                 <div className="md:col-span-2">
-                  {equipmentFields.length > 1 && (
-                    <Button type="button" variant="ghost" size="icon" onClick={() => removeEquipment(index)} className="text-red-500"><Trash2 size={18} /></Button>
-                  )}
+                  <Button type="button" variant="ghost" size="icon" onClick={() => removeEquipment(index)} className="text-red-500"><Trash2 size={18} /></Button>
                 </div>
               </div>
             ))}
