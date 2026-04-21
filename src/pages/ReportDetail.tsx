@@ -19,7 +19,9 @@ const ReportDetail = () => {
   const [loading, setLoading] = useState(true);
 
   const isLoggedIn = !!session;
-  const isPimpinan = profile?.role === 'pimpinan';
+  const isPimpinan = profile?.role === 'pimpinan' || 
+                    session?.user?.email === 'pimpinan@gmail.com' || 
+                    session?.user?.email === 'dlh.upt.kota@gmail.com';
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
 
@@ -79,7 +81,6 @@ const ReportDetail = () => {
         </div>
 
         <div id="report-content" className="bg-white border shadow-lg p-8 space-y-8">
-          {/* Header Laporan */}
           <div className="border-b-2 border-black pb-4 flex justify-between items-center">
             <div>
               <h1 className="text-xl font-bold">PEMERINTAH KOTA MEDAN</h1>
@@ -91,7 +92,6 @@ const ReportDetail = () => {
             </div>
           </div>
 
-          {/* Info Dasar */}
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div><p className="text-slate-500">Tanggal</p><p className="font-bold">{report.date}</p></div>
             <div><p className="text-slate-500">Total Volume</p><p className="font-bold">{report.volume} {getUnitByCategory(report.category)}</p></div>

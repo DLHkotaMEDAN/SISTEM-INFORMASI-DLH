@@ -52,7 +52,6 @@ const Index = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter States - Diubah ke "semua" agar langsung tampil semua
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
   const [selectedCategory, setSelectedCategory] = useState("semua");
@@ -61,7 +60,11 @@ const Index = () => {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const isLoggedIn = !!session;
-  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
+  // Deteksi Pimpinan berdasarkan role atau email spesifik
+  const isPimpinan = profile?.role === 'pimpinan' || 
+                    session?.user?.email === 'pimpinan@gmail.com' || 
+                    session?.user?.email === 'dlh.upt.kota@gmail.com';
+                    
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan;
 
   useEffect(() => {
@@ -133,7 +136,8 @@ const Index = () => {
     const matchYear = selectedYear === "semua" || y === selectedYear;
     const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
 
-    const restrictionMatch = !isUserRestricted || report.category === profile?.category;
+    // Pimpinan bisa melihat semua kategori (restrictionMatch selalu true untuk pimpinan)
+    const restrictionMatch = isPimpinan || !isUserRestricted || report.category === profile?.category;
 
     return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
@@ -223,7 +227,6 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Filter Bar */}
         <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
           <div className="flex flex-col md:flex-row gap-4 items-end">
             <div className="flex-1 w-full space-y-1.5">
