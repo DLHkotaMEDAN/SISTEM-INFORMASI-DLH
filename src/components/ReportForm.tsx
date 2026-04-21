@@ -417,9 +417,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 <div className="pt-6 border-t border-slate-100">
                   <div className="flex items-center gap-2 mb-4 text-sm font-bold text-slate-700"><ImageIcon size={16} className="text-blue-500" /> Dokumentasi & Volume</div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.zero`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 0%" value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.fifty`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 50%" value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.hundred`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 100%" value={field.value} onChange={field.onChange} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.zero`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 0%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.fifty`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 50%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.hundred`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 100%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
                   </div>
                   <FormField control={form.control} name={`tasks.${taskIndex}.volume`} render={({ field }) => (
                     <FormItem className="max-w-[200px]"><FormLabel>Volume ({getUnitByCategory(selectedCategory)})</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>
