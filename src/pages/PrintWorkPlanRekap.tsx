@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { WorkPlan } from '@/types/work-plan';
+import { WorkPlan, WorkPlanEquipment } from '@/types/work-plan';
 import { workPlanService } from '@/services/workPlanService';
 import { ArrowLeft, FileCheck, FileX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,9 @@ const getLogoUrl = (fileName: string) => {
 
 const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
+
+// Urutan kategori yang diinginkan
+const CATEGORY_ORDER = ["Tim Pohon", "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"];
 
 const PrintWorkPlanRekap = () => {
   const [searchParams] = useSearchParams();
@@ -35,7 +38,18 @@ const PrintWorkPlanRekap = () => {
       setLoading(true);
       const allPlans = await workPlanService.getAllWorkPlans();
       const filtered = allPlans.filter(p => p.date === date);
-      filtered.sort((a, b) => a.category.localeCompare(b.category));
+      
+      // Urutkan: Tim Pohon pertama, sisanya sesuai CATEGORY_ORDER atau abjad
+      filtered.sort((a, b) => {
+        const indexA = CATEGORY_ORDER.indexOf(a.category);
+        const indexB = CATEGORY_ORDER.indexOf(b.category);
+        
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+        return a.category.localeCompare(b.category);
+      });
+
       setPlans(filtered);
     } catch (error) {
       console.error(error);
@@ -49,6 +63,14 @@ const PrintWorkPlanRekap = () => {
     setTimeout(() => {
       window.print();
     }, 100);
+  };
+
+  // Fungsi untuk mengecek apakah alat di semua lokasi dalam satu tim adalah identik
+  const isEquipmentIdenticalAcrossLocations = (plan: WorkPlan) => {
+    if (!plan.locations || plan.locations.length <= 1) return false;
+    
+    const firstLocEq = JSON.stringify(plan.locations[0].equipment || []);
+    return plan.locations.every(loc => JSON.stringify(loc.equipment || []) === firstLocEq);
   };
 
   if (loading) return <div className="p-20 text-center">Menyiapkan data cetak...</div>;
@@ -112,6 +134,11 @@ const PrintWorkPlanRekap = () => {
               const isGlobalSDM = ["Tim Pohon", "Tim Babat"].includes(plan.category);
               const totalRows = plan.locations?.reduce((acc, loc) => acc + Math.max(1, loc.equipment?.length || 0), 0) || 1;
               
+              // Cek apakah alat sama di semua lokasi untuk menghemat kata
+              const isEqGlobal = isEquipmentIdenticalAcrossLocations(plan);
+              const globalEqList = isEqGlobal ? (plan.locations[0].equipment || []) : [];
+              const globalEqRows = Math.max(1, globalEqList.length);
+
               return (
                 <React.Fragment key={plan.id}>
                   {plan.locations?.map((loc, locIdx) => {
@@ -129,11 +156,30 @@ const PrintWorkPlanRekap = () => {
                           <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.description}</td>
                           <td className="border-2 border-black p-2 align-middle" rowSpan={locRows}>{loc.street} ({loc.sub_district})</td>
                           
-                          <td className="border-2 border-black p-2 text-center align-middle">
-                            {loc.equipment?.[0]?.name || "-"} {loc.equipment?.[0]?.vehicle ? `(${loc.equipment[0].vehicle})` : ""}
-                          </td>
-                          <td className="border-2 border-black p-2 text-center align-middle">{loc.equipment?.[0]?.quantity || "-"}</td>
-                          <td className="border-2 border-black p-2 align-middle">{loc.equipment?.[0]?.purpose || "-"}</td>
+                          {/* Logika Penghematan Kata untuk Alat Operasional */}
+                          {isEqGlobal ? (
+                            locIdx === 0 ? (
+                              <>
+                                <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows / globalEqRows * (globalEqList.length > 0 ? 1 : 1)}>
+                                  {globalEqList[0]?.name || "-"} {globalEqList[0]?.vehicle ? `(${globalEqList[0].vehicle})` : ""}
+                                </td>
+                                <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows / globalEqRows * (globalEqList.length > 0 ? 1 : 1)}>
+                                  {globalEqList[0]?.quantity || "-"}
+                                </td>
+                                <td className="border-2 border-black p-2 align-middle" rowSpan={totalRows / globalEqRows * (globalEqList.length > 0 ? 1 : 1)}>
+                                  {globalEqList[0]?.purpose || "-"}
+                                </td>
+                              </>
+                            ) : null
+                          ) : (
+                            <>
+                              <td className="border-2 border-black p-2 text-center align-middle">
+                                {loc.equipment?.[0]?.name || "-"} {loc.equipment?.[0]?.vehicle ? `(${loc.equipment[0].vehicle})` : ""}
+                              </td>
+                              <td className="border-2 border-black p-2 text-center align-middle">{loc.equipment?.[0]?.quantity || "-"}</td>
+                              <td className="border-2 border-black p-2 align-middle">{loc.equipment?.[0]?.purpose || "-"}</td>
+                            </>
+                          )}
 
                           {/* Koordinator & Personil: Global vs Per Lokasi */}
                           { isGlobalSDM ? (
@@ -157,15 +203,30 @@ const PrintWorkPlanRekap = () => {
                           )}
                         </tr>
 
-                        {loc.equipment?.slice(1).map((eq, eqIdx) => (
-                          <tr key={`${plan.id}-loc-${locIdx}-eq-${eqIdx}`}>
-                            <td className="border-2 border-black p-2 text-center align-middle">
-                              {eq.name} {eq.vehicle ? `(${eq.vehicle})` : ""}
-                            </td>
-                            <td className="border-2 border-black p-2 text-center align-middle">{eq.quantity}</td>
-                            <td className="border-2 border-black p-2 align-middle">{eq.purpose}</td>
-                          </tr>
-                        ))}
+                        {/* Baris tambahan untuk alat operasional (jika lebih dari 1) */}
+                        {isEqGlobal ? (
+                          // Jika alat global, tampilkan sisa alat hanya di lokasi pertama tapi span ke seluruh lokasi
+                          locIdx === 0 && globalEqList.slice(1).map((eq, eqIdx) => (
+                            <tr key={`${plan.id}-global-eq-${eqIdx}`}>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows / globalEqRows}>
+                                {eq.name} {eq.vehicle ? `(${eq.vehicle})` : ""}
+                              </td>
+                              <td className="border-2 border-black p-2 text-center align-middle" rowSpan={totalRows / globalEqRows}>{eq.quantity}</td>
+                              <td className="border-2 border-black p-2 align-middle" rowSpan={totalRows / globalEqRows}>{eq.purpose}</td>
+                            </tr>
+                          ))
+                        ) : (
+                          // Jika alat per lokasi, tampilkan sisa alat di bawah lokasi masing-masing
+                          loc.equipment?.slice(1).map((eq, eqIdx) => (
+                            <tr key={`${plan.id}-loc-${locIdx}-eq-${eqIdx}`}>
+                              <td className="border-2 border-black p-2 text-center align-middle">
+                                {eq.name} {eq.vehicle ? `(${eq.vehicle})` : ""}
+                              </td>
+                              <td className="border-2 border-black p-2 text-center align-middle">{eq.quantity}</td>
+                              <td className="border-2 border-black p-2 align-middle">{eq.purpose}</td>
+                            </tr>
+                          ))
+                        )}
                       </React.Fragment>
                     );
                   })}
