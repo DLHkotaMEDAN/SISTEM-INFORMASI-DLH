@@ -4,9 +4,10 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { WorkPlan } from '@/types/work-plan';
 import { workPlanService } from '@/services/workPlanService';
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, FileCheck, FileX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/lib/supabase';
+import { cn } from "@/lib/utils";
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -21,6 +22,7 @@ const PrintWorkPlanRekap = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<WorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showSignatures, setShowSignatures] = useState(true);
   
   const date = searchParams.get('date');
 
@@ -42,12 +44,20 @@ const PrintWorkPlanRekap = () => {
     }
   };
 
+  const handlePrint = (withSignatures: boolean) => {
+    setShowSignatures(withSignatures);
+    // Berikan sedikit waktu untuk state update sebelum memicu print
+    setTimeout(() => {
+      window.print();
+    }, 100);
+  };
+
   if (loading) return <div className="p-20 text-center">Menyiapkan data cetak...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1400px] mx-auto space-y-6 no-print mb-8 p-4">
-        <div className="flex items-center justify-between bg-white p-4 rounded-lg shadow-sm border">
+        <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-lg shadow-sm border gap-4">
           <Button variant="ghost" onClick={() => navigate(-1)}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
@@ -55,9 +65,21 @@ const PrintWorkPlanRekap = () => {
             <h1 className="font-bold">Preview Cetak Rencana Kerja</h1>
             <p className="text-xs text-slate-500">Tanggal: {date ? new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
           </div>
-          <Button onClick={() => window.print()} className="bg-blue-600">
-            <Printer className="mr-2 h-4 w-4" /> Cetak Sekarang
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={() => handlePrint(false)} 
+              variant="outline"
+              className="border-slate-300 text-slate-700"
+            >
+              <FileX className="mr-2 h-4 w-4" /> Tanpa Tanda Tangan
+            </Button>
+            <Button 
+              onClick={() => handlePrint(true)} 
+              className="bg-blue-600"
+            >
+              <FileCheck className="mr-2 h-4 w-4" /> Dengan Tanda Tangan
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -166,7 +188,7 @@ const PrintWorkPlanRekap = () => {
         </table>
 
         {/* Tanda Tangan */}
-        <div className="mt-12 grid grid-cols-3 gap-4 text-[11px]">
+        <div className={cn("mt-12 grid grid-cols-3 gap-4 text-[11px]", !showSignatures && "hidden")}>
           <div className="text-center space-y-16">
             <div>
               <p>Mengetahui :</p>
