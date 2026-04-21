@@ -17,6 +17,7 @@ import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { useAuth } from '@/context/AuthContext';
 import { getUnitByCategory } from '@/utils/report-helpers';
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -310,7 +311,8 @@ const Index = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-red-500" 
+                          className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")}
+                          disabled={isPimpinan}
                           onClick={(e) => handleDelete(e, report.id)}
                         >
                           <Trash2 className="h-4 w-4" />

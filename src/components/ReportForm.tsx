@@ -297,7 +297,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         {isPimpinan && (
           <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-center gap-3 text-amber-800 mb-6">
             <ShieldAlert className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">Anda masuk sebagai <strong>Pimpinan</strong>. Anda dapat melihat dan mengisi formulir, namun tombol <strong>Simpan</strong> dinonaktifkan.</p>
+            <p className="text-sm font-medium">Anda masuk sebagai <strong>Pimpinan</strong>. Anda dapat mencoba mengisi formulir, namun tombol <strong>Simpan</strong> dinonaktifkan.</p>
           </div>
         )}
 
@@ -482,19 +482,17 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               </CardContent>
             </Card>
           ))}
-          {!isPimpinan && (
-            <Button type="button" variant="outline" className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" onClick={() => appendTask({ 
-              description: "", 
-              location: { street: "", village: [""], subDistrict: "" }, 
-              photos: { zero: "", fifty: "", hundred: "" }, 
-              volume: 0,
-              equipment: [{ type: "", quantity: 1 }],
-              heavyEquipment: [],
-              personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 },
-              vehicle: "",
-              remarks: ""
-            })}><Plus className="mr-2 h-5 w-5" /> Tambah Kegiatan & Lokasi Baru</Button>
-          )}
+          <Button type="button" variant="outline" className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" onClick={() => appendTask({ 
+            description: "", 
+            location: { street: "", village: [""], subDistrict: "" }, 
+            photos: { zero: "", fifty: "", hundred: "" }, 
+            volume: 0,
+            equipment: [{ type: "", quantity: 1 }],
+            heavyEquipment: [],
+            personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 },
+            vehicle: "",
+            remarks: ""
+          })}><Plus className="mr-2 h-5 w-5" /> Tambah Kegiatan & Lokasi Baru</Button>
         </div>
 
         <Card className="border-t-4 border-t-slate-400">

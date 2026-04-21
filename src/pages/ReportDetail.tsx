@@ -10,6 +10,7 @@ import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -58,13 +59,13 @@ const ReportDetail = () => {
               )}
               <Button 
                 variant="outline" 
-                disabled={isPimpinan}
                 onClick={() => navigate(`/edit/${report.id}`)}
               >
                 <Edit className="mr-2 h-4 w-4" /> Edit
               </Button>
               <Button 
                 variant="destructive" 
+                className={cn(isPimpinan && "opacity-50 cursor-not-allowed")}
                 disabled={isPimpinan}
                 onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}
               >
