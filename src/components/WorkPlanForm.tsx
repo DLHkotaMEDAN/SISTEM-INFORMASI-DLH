@@ -30,6 +30,10 @@ const coordinatorMapping: Record<string, string> = {
   "Tim Pohon": "Ardiansyah Siregar"
 };
 
+const basisMapping: Record<string, string> = {
+  "Tim Babat": "Hasil Survey Lapangan",
+};
+
 const vehicleKeywords = ["mobil", "motor", "truck", "truk", "pick up", "pickup"];
 
 const getAutoPurpose = (name: string): string => {
@@ -138,6 +142,10 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   useEffect(() => {
     if (selectedCategory && !isEditing) {
       form.setValue("coordinator", coordinatorMapping[selectedCategory] || "");
+      
+      // Update Basis based on category
+      const defaultBasis = basisMapping[selectedCategory] || "Laporan Masyarakat / Rutin";
+      form.setValue("basis", [{ value: defaultBasis }]);
     }
   }, [selectedCategory, form, isEditing]);
 
