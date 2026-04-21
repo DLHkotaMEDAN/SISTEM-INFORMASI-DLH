@@ -52,7 +52,7 @@ const PrintWorkPlanRekap = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
           <div className="text-center">
-            <h1 className="font-bold">Preview Cetak Rekap Rencana Kerja</h1>
+            <h1 className="font-bold">Preview Cetak Rencana Kerja</h1>
             <p className="text-xs text-slate-500">Tanggal: {date ? new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</p>
           </div>
           <Button onClick={() => window.print()} className="bg-blue-600">
@@ -78,7 +78,7 @@ const PrintWorkPlanRekap = () => {
         </div>
 
         <div className="text-center mb-8 space-y-1">
-          <h3 className="text-lg font-bold underline uppercase">REKAPITULASI RENCANA KERJA HARIAN</h3>
+          <h3 className="text-lg font-bold underline uppercase">RENCANA KERJA WILAYAH 4 DLH MEDAN KOTA</h3>
           <p className="font-bold">TANGGAL: {date ? new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }).toUpperCase() : '-'}</p>
         </div>
 
