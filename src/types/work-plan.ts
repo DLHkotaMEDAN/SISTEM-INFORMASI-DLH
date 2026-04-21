@@ -1,17 +1,18 @@
 "use client";
 
-export interface WorkPlanLocation {
-  description: string; // Menambahkan uraian kegiatan per lokasi
-  street: string;
-  sub_district: string;
-  villages: string[];
-}
-
 export interface WorkPlanEquipment {
   name: string;
   quantity: number;
   purpose?: string;
   vehicle?: string;
+}
+
+export interface WorkPlanLocation {
+  description: string;
+  street: string;
+  sub_district: string;
+  villages: string[];
+  equipment: WorkPlanEquipment[]; // Alat sekarang spesifik per lokasi
 }
 
 export interface WorkPlan {
@@ -20,14 +21,15 @@ export interface WorkPlan {
   category: string;
   description: string;
   locations: WorkPlanLocation[];
-  equipment: WorkPlanEquipment[];
   coordinator: string;
   personnel: number;
   basis: string;
   remarks: string;
   created_at?: string;
   user_id?: string;
+  // Legacy fields (untuk kompatibilitas data lama jika ada)
   street?: string;
   sub_district?: string;
   villages?: string[];
+  equipment?: WorkPlanEquipment[];
 }

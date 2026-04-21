@@ -3,10 +3,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer, Edit, Trash2, MapPin, Calendar, Wrench, Users, FileText, Info } from 'lucide-react';
+import { ArrowLeft, Printer, Edit, MapPin, Calendar, Wrench, Users, FileText, Info, Truck } from 'lucide-react';
 import { workPlanService } from '@/services/workPlanService';
 import { WorkPlan } from '@/types/work-plan';
-import { showError, showSuccess } from '@/utils/toast';
+import { showError } from '@/utils/toast';
 import { supabase } from '@/lib/supabase';
 
 const getLogoUrl = (fileName: string) => {
@@ -54,7 +54,6 @@ const WorkPlanDetail = () => {
         </div>
 
         <div className="bg-white border shadow-lg p-10 space-y-8 print:shadow-none print:border-none">
-          {/* Header Kop Surat */}
           <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
             <div className="w-16 h-16 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
             <div className="text-center px-4">
@@ -78,37 +77,35 @@ const WorkPlanDetail = () => {
             
             <div className="grid grid-cols-3 border-b pb-2">
               <span className="font-bold flex items-center gap-2"><MapPin size={14} /> Lokasi & Kegiatan</span>
-              <div className="col-span-2 space-y-4">
-                {data.locations?.length > 0 ? data.locations.map((loc, i) => (
+              <div className="col-span-2 space-y-6">
+                {data.locations?.map((loc, i) => (
                   <div key={i} className="flex gap-2">
                     <span>:</span>
-                    <div className="space-y-1">
-                      <p className="font-bold text-blue-700">{loc.description}</p>
-                      <p className="font-medium">{loc.street}</p>
-                      <p className="text-xs text-slate-500">Kel. {loc.villages.join(", ")}, Kec. {loc.sub_district}</p>
+                    <div className="space-y-2">
+                      <div>
+                        <p className="font-bold text-blue-700">{loc.description}</p>
+                        <p className="font-medium">{loc.street}</p>
+                        <p className="text-xs text-slate-500">Kel. {loc.villages.join(", ")}, Kec. {loc.sub_district}</p>
+                      </div>
+                      
+                      {loc.equipment?.length > 0 && (
+                        <div className="bg-slate-50 p-2 rounded border border-slate-200">
+                          <p className="text-[10px] font-bold text-orange-600 uppercase mb-1 flex items-center gap-1"><Wrench size={10} /> Alat Operasional Lokasi:</p>
+                          <div className="space-y-1">
+                            {loc.equipment.map((eq, eqIdx) => (
+                              <div key={eqIdx} className="text-[11px] flex items-center gap-2">
+                                • {eq.name} ({eq.quantity} Unit) {eq.vehicle && <span className="text-blue-600 font-bold flex items-center gap-1"><Truck size={10} /> {eq.vehicle}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )) : (
-                  <div className="flex gap-2">
-                    <span>:</span>
-                    <div className="space-y-1">
-                      <p className="font-bold text-blue-700">{data.description}</p>
-                      <p className="font-medium">{data.street}</p>
-                      <p className="text-xs text-slate-500">Kel. {data.villages?.join(", ")}, Kec. {data.sub_district}</p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 border-b pb-2">
-              <span className="font-bold flex items-center gap-2"><Wrench size={14} /> Alat Operasional</span>
-              <div className="col-span-2 flex flex-col gap-1">
-                {data.equipment.map((eq, i) => (
-                  <span key={i}>: {eq.name} ({eq.quantity} Unit) {eq.vehicle ? `- ${eq.vehicle}` : ""}</span>
                 ))}
               </div>
             </div>
+
             <div className="grid grid-cols-3 border-b pb-2">
               <span className="font-bold flex items-center gap-2"><Users size={14} /> Personil</span>
               <span className="col-span-2">: {data.personnel} Orang</span>
@@ -123,7 +120,6 @@ const WorkPlanDetail = () => {
             </div>
           </div>
 
-          {/* Tanda Tangan */}
           <div className="mt-16 space-y-8">
             <div className="flex justify-end text-sm">
               <div className="w-1/3 text-center">
