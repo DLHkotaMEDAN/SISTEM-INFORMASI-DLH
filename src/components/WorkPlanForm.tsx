@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer, MapPinned } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { medanDistricts } from '@/data/medan-districts';
 import { workPlanService } from '@/services/workPlanService';
@@ -58,6 +58,9 @@ interface WorkPlanFormProps {
 
 const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const urlDate = searchParams.get('date');
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [dailyPlans, setDailyPlans] = useState<WorkPlan[]>([]);
   const [loadingDaily, setLoadingDaily] = useState(false);
@@ -79,7 +82,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
       basis: initialData.basis,
       remarks: initialData.remarks || "",
     } : {
-      date: new Date().toISOString().split('T')[0],
+      date: urlDate || new Date().toISOString().split('T')[0],
       category: "",
       description: "",
       locations: [{ street: "", sub_district: "", villages: [""] }],
@@ -133,7 +136,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     try {
       const firstLoc = values.locations[0];
       
-      // Payload yang bersih (hanya kolom yang pasti ada di DB)
       const payload = {
         date: values.date,
         category: values.category,
@@ -141,7 +143,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         street: firstLoc.street,
         sub_district: firstLoc.sub_district,
         villages: firstLoc.villages,
-        locations: values.locations, // Pastikan kolom ini sudah ditambah di Supabase
+        locations: values.locations,
         equipment: values.equipment,
         coordinator: values.coordinator,
         personnel: values.personnel,
@@ -152,7 +154,13 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
       if (isEditing && initialData) {
         await workPlanService.updateWorkPlan(initialData.id, payload as any);
         showSuccess("Rencana kerja diperbarui");
-        navigate('/work-plans');
+        
+        if (shouldAddAnother) {
+          // Jika sedang edit dan ingin tambah lagi, arahkan ke halaman create dengan tanggal yang sama
+          navigate(`/work-plans/create?date=${values.date}`);
+        } else {
+          navigate('/work-plans');
+        }
       } else {
         await workPlanService.createWorkPlan(payload as any);
         showSuccess("Rencana kerja berhasil disimpan");
@@ -178,7 +186,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
       }
     } catch (error: any) {
       console.error("Submit error:", error);
-      showError(error.message || "Gagal menyimpan data. Pastikan kolom 'locations' sudah ditambahkan di database.");
+      showError(error.message || "Gagal menyimpan data.");
     } finally {
       setIsSubmitting(false);
     }
@@ -194,18 +202,16 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </Button>
             <h1 className="text-xl font-bold">{isEditing ? "Edit Rencana Kerja" : "Buat Rencana Kerja"}</h1>
             <div className="flex gap-2">
-              {!isEditing && (
-                <Button 
-                  type="button" 
-                  variant="outline"
-                  disabled={isSubmitting} 
-                  className="border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
-                  onClick={form.handleSubmit((data) => onSubmit(data, true))}
-                >
-                  {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
-                  Simpan & Tambah Kategori Lain
-                </Button>
-              )}
+              <Button 
+                type="button" 
+                variant="outline"
+                disabled={isSubmitting} 
+                className="border-blue-600 text-blue-600 hover:bg-blue-50 font-bold"
+                onClick={form.handleSubmit((data) => onSubmit(data, true))}
+              >
+                {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Plus className="mr-2 h-4 w-4" />}
+                Simpan & Tambah Tim Lain
+              </Button>
               <Button 
                 type="button"
                 disabled={isSubmitting} 
@@ -213,7 +219,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                 onClick={form.handleSubmit((data) => onSubmit(data, false))}
               >
                 {isSubmitting ? <Loader2 className="animate-spin h-4 w-4 mr-2" /> : <Save className="mr-2 h-4 w-4" />}
-                {isEditing ? "Perbarui" : "Simpan & Selesai"}
+                {isEditing ? "Perbarui & Selesai" : "Simpan & Selesai"}
               </Button>
             </div>
           </div>
