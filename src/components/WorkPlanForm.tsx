@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { medanDistricts } from '@/data/medan-districts';
@@ -317,7 +317,18 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
               Rekap Rencana Kerja: {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
             </CardTitle>
           </div>
-          <Button variant="outline" size="sm" onClick={() => loadDailyPlans(selectedDate)}>Segarkan Tabel</Button>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="bg-blue-50 text-blue-700 border-blue-200"
+              onClick={() => navigate(`/work-plans/print-rekap?date=${selectedDate}`)}
+              disabled={dailyPlans.length === 0}
+            >
+              <Printer className="mr-2 h-4 w-4" /> Cetak Rekap Tabel
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => loadDailyPlans(selectedDate)}>Segarkan</Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
