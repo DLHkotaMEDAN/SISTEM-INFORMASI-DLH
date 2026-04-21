@@ -274,7 +274,22 @@ const DriveUploadDialog = ({ isOpen, onClose, onUpload, defaultFileName }: Drive
           </div>
         )}
 
-        <DialogFooter>{uploadResult ? <Button onClick={onClose} className="w-full bg-slate-900">Selesai</Button> : <><Button variant="ghost" onClick={onClose} disabled={isUploading}>Batal</Button><Button onClick={handleFinalUpload} disabled={isUploading || !accessToken || showNewFolderInput || isPimpinan} className={cn("bg-blue-600 min-w-[1200px] h-11 font-bold", isPimpinan && "opacity-50 cursor-not-allowed")}>{isUploading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" /> Mengunggah...</> : "Mulai Unggah"}</Button></>}</DialogFooter>
+        <DialogFooter>
+          {uploadResult ? (
+            <Button onClick={onClose} className="w-full bg-slate-900">Selesai</Button>
+          ) : (
+            <div className="flex w-full gap-3">
+              <Button variant="ghost" onClick={onClose} disabled={isUploading} className="flex-1">Batal</Button>
+              <Button 
+                onClick={handleFinalUpload} 
+                disabled={isUploading || !accessToken || showNewFolderInput || isPimpinan} 
+                className={cn("bg-blue-600 flex-[2] h-11 font-bold", isPimpinan && "opacity-50 cursor-not-allowed")}
+              >
+                {isUploading ? <><Loader2 className="animate-spin h-4 w-4 mr-2" /> Mengunggah...</> : "Mulai Unggah"}
+              </Button>
+            </div>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
