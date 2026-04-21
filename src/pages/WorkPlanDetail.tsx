@@ -79,10 +79,30 @@ const WorkPlanDetail = () => {
               <span className="font-bold flex items-center gap-2"><FileText size={14} /> Uraian Kegiatan</span>
               <span className="col-span-2">: {data.description}</span>
             </div>
+            
             <div className="grid grid-cols-3 border-b pb-2">
-              <span className="font-bold flex items-center gap-2"><MapPin size={14} /> Lokasi</span>
-              <span className="col-span-2">: {data.street}, Kel. {data.villages.join(", ")}, Kec. {data.sub_district}</span>
+              <span className="font-bold flex items-center gap-2"><MapPin size={14} /> Lokasi Pengerjaan</span>
+              <div className="col-span-2 space-y-3">
+                {data.locations?.length > 0 ? data.locations.map((loc, i) => (
+                  <div key={i} className="flex gap-2">
+                    <span>:</span>
+                    <div>
+                      <p className="font-bold">{loc.street}</p>
+                      <p className="text-xs text-slate-500">Kel. {loc.villages.join(", ")}, Kec. {loc.sub_district}</p>
+                    </div>
+                  </div>
+                )) : (
+                  <div className="flex gap-2">
+                    <span>:</span>
+                    <div>
+                      <p className="font-bold">{data.street}</p>
+                      <p className="text-xs text-slate-500">Kel. {data.villages?.join(", ")}, Kec. {data.sub_district}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
+
             <div className="grid grid-cols-3 border-b pb-2">
               <span className="font-bold flex items-center gap-2"><Wrench size={14} /> Alat Operasional</span>
               <div className="col-span-2 flex flex-col gap-1">

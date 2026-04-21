@@ -103,7 +103,21 @@ const PrintWorkPlanRekap = () => {
                 <td className="border-2 border-black p-2 font-bold">{plan.category}</td>
                 <td className="border-2 border-black p-2">{plan.description}</td>
                 <td className="border-2 border-black p-2">
-                  {plan.street}, Kel. {plan.villages.join(", ")}, Kec. {plan.sub_district}
+                  {plan.locations?.length > 0 ? (
+                    <div className="space-y-2">
+                      {plan.locations.map((loc, i) => (
+                        <div key={i} className="border-b border-slate-200 last:border-0 pb-1 mb-1">
+                          <p className="font-bold">{loc.street}</p>
+                          <p className="text-[9px] text-slate-600">Kel. {loc.villages.join(", ")}, Kec. {loc.sub_district}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="font-bold">{plan.street}</p>
+                      <p className="text-[9px] text-slate-600">Kel. {plan.villages?.join(", ")}, Kec. {plan.sub_district}</p>
+                    </div>
+                  )}
                 </td>
                 <td className="border-2 border-black p-2">
                   {plan.equipment.map((eq, i) => (

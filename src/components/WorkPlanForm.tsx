@@ -10,12 +10,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, Printer, MapPinned } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { medanDistricts } from '@/data/medan-districts';
 import { workPlanService } from '@/services/workPlanService';
-import { WorkPlan } from '@/types/work-plan';
+import { WorkPlan, WorkPlanLocation } from '@/types/work-plan';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -30,13 +30,17 @@ const coordinatorMapping: Record<string, string> = {
   "Tim Pohon": "Ardiansyah Siregar"
 };
 
+const locationSchema = z.object({
+  street: z.string().min(1, "Nama jalan wajib diisi"),
+  sub_district: z.string().min(1, "Kecamatan wajib diisi"),
+  villages: z.array(z.string().min(1, "Kelurahan wajib diisi")).min(1),
+});
+
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
   description: z.string().min(1, "Uraian wajib diisi"),
-  street: z.string().min(1, "Nama jalan wajib diisi"),
-  sub_district: z.string().min(1, "Kecamatan wajib diisi"),
-  villages: z.array(z.string().min(1, "Kelurahan wajib diisi")).min(1),
+  locations: z.array(locationSchema).min(1, "Minimal satu lokasi"),
   equipment: z.array(z.object({
     name: z.string().min(1, "Nama alat wajib diisi"),
     quantity: z.coerce.number().min(1, "Minimal 1 unit")
@@ -62,14 +66,12 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
-      villages: Array.isArray(initialData.villages) ? initialData.villages : [initialData.villages as any]
+      locations: initialData.locations || [{ street: initialData.street || "", sub_district: initialData.sub_district || "", villages: initialData.villages || [""] }]
     } : {
       date: new Date().toISOString().split('T')[0],
       category: "",
       description: "",
-      street: "",
-      sub_district: "",
-      villages: [""],
+      locations: [{ street: "", sub_district: "", villages: [""] }],
       equipment: [],
       coordinator: "",
       personnel: 0,
@@ -78,9 +80,9 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     },
   });
 
-  const { fields: villageFields, append: appendVillage, remove: removeVillage } = useFieldArray({
+  const { fields: locationFields, append: appendLocation, remove: removeLocation } = useFieldArray({
     control: form.control,
-    name: "villages" as any
+    name: "locations"
   });
 
   const { fields: equipmentFields, append: appendEquipment, remove: removeEquipment } = useFieldArray({
@@ -89,7 +91,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   });
 
   const selectedCategory = form.watch("category");
-  const selectedDistrict = form.watch("sub_district");
   const selectedDate = form.watch("date");
 
   const loadDailyPlans = async (date: string) => {
@@ -119,12 +120,21 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   async function onSubmit(values: z.infer<typeof formSchema>, shouldAddAnother = false) {
     setIsSubmitting(true);
     try {
+      // Untuk kompatibilitas dengan kolom lama di DB, kita ambil lokasi pertama
+      const firstLoc = values.locations[0];
+      const payload = {
+        ...values,
+        street: firstLoc.street,
+        sub_district: firstLoc.sub_district,
+        villages: firstLoc.villages
+      };
+
       if (isEditing && initialData) {
-        await workPlanService.updateWorkPlan(initialData.id, values as Partial<WorkPlan>);
+        await workPlanService.updateWorkPlan(initialData.id, payload as any);
         showSuccess("Rencana kerja diperbarui");
         navigate('/work-plans');
       } else {
-        await workPlanService.createWorkPlan(values as Omit<WorkPlan, 'id' | 'created_at'>);
+        await workPlanService.createWorkPlan(payload as any);
         showSuccess("Rencana kerja berhasil disimpan");
         
         if (shouldAddAnother) {
@@ -133,9 +143,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             date: currentDate,
             category: "",
             description: "",
-            street: "",
-            sub_district: "",
-            villages: [""],
+            locations: [{ street: "", sub_district: "", villages: [""] }],
             equipment: [],
             coordinator: "",
             personnel: 0,
@@ -212,46 +220,70 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             </CardContent>
           </Card>
 
-          <Card className="shadow-sm">
-            <CardHeader><CardTitle className="text-lg flex items-center gap-2"><MapPin className="h-5 w-5 text-red-500" /> Lokasi Pengerjaan</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <FormField control={form.control} name="street" render={({ field }) => (
-                <FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input placeholder="Jl. Contoh No. 123" {...field} /></FormControl><FormMessage /></FormItem>
-              )} />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField control={form.control} name="sub_district" render={({ field }) => (
-                  <FormItem><FormLabel>Kecamatan</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue placeholder="Pilih kecamatan" /></SelectTrigger></FormControl>
-                      <SelectContent>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )} />
-                <div className="space-y-3">
-                  <FormLabel>Kelurahan</FormLabel>
-                  {villageFields.map((field, index) => (
-                    <div key={field.id} className="flex gap-2">
-                      <FormField control={form.control} name={`villages.${index}` as any} render={({ field }) => (
-                        <FormItem className="flex-1">
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl><SelectTrigger><SelectValue placeholder="Pilih kelurahan" /></SelectTrigger></FormControl>
-                            <SelectContent>
-                              {selectedDistrict && medanDistricts[selectedDistrict]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </FormItem>
-                      )} />
-                      {villageFields.length > 1 && (
-                        <Button type="button" variant="ghost" size="icon" onClick={() => removeVillage(index)} className="text-red-500"><Trash2 size={18} /></Button>
-                      )}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold flex items-center gap-2"><MapPinned className="text-red-500" /> Lokasi Pengerjaan</h2>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendLocation({ street: "", sub_district: "", villages: [""] })} className="border-dashed border-red-200 text-red-600 hover:bg-red-50">
+                <Plus className="h-4 w-4 mr-2" /> Tambah Lokasi Lain
+              </Button>
+            </div>
+
+            {locationFields.map((locField, locIndex) => (
+              <Card key={locField.id} className="shadow-sm border-l-4 border-l-red-400">
+                <CardHeader className="py-3 px-4 flex flex-row items-center justify-between bg-slate-50/50">
+                  <Badge variant="secondary" className="bg-red-100 text-red-700">Lokasi #{locIndex + 1}</Badge>
+                  {locationFields.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => removeLocation(locIndex)} className="text-red-500 h-8 hover:bg-red-50">
+                      <Trash2 size={14} className="mr-1" /> Hapus Lokasi
+                    </Button>
+                  )}
+                </CardHeader>
+                <CardContent className="p-4 space-y-4">
+                  <FormField control={form.control} name={`locations.${locIndex}.street`} render={({ field }) => (
+                    <FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input placeholder="Jl. Contoh No. 123" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <FormField control={form.control} name={`locations.${locIndex}.sub_district`} render={({ field }) => (
+                      <FormItem><FormLabel>Kecamatan</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl><SelectTrigger><SelectValue placeholder="Pilih kecamatan" /></SelectTrigger></FormControl>
+                          <SelectContent>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )} />
+                    <div className="space-y-3">
+                      <FormLabel>Kelurahan</FormLabel>
+                      {form.watch(`locations.${locIndex}.villages`)?.map((_, vIdx) => (
+                        <div key={vIdx} className="flex gap-2">
+                          <FormField control={form.control} name={`locations.${locIndex}.villages.${vIdx}`} render={({ field }) => (
+                            <FormItem className="flex-1">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl><SelectTrigger><SelectValue placeholder="Pilih kelurahan" /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  {form.watch(`locations.${locIndex}.sub_district`) && medanDistricts[form.watch(`locations.${locIndex}.sub_district`)]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )} />
+                          {form.watch(`locations.${locIndex}.villages`).length > 1 && (
+                            <Button type="button" variant="ghost" size="icon" onClick={() => {
+                              const current = form.getValues(`locations.${locIndex}.villages`);
+                              form.setValue(`locations.${locIndex}.villages`, current.filter((_, i) => i !== vIdx));
+                            }} className="text-red-500"><Trash2 size={16} /></Button>
+                          )}
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" onClick={() => {
+                        const current = form.getValues(`locations.${locIndex}.villages`);
+                        form.setValue(`locations.${locIndex}.villages`, [...current, ""]);
+                      }} className="w-full border-dashed text-[10px] h-7"><Plus size={12} className="mr-1" /> Tambah Kelurahan</Button>
                     </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={() => appendVillage("")} className="w-full border-dashed"><Plus size={14} className="mr-2" /> Tambah Kelurahan</Button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
 
           <Card className="shadow-sm">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Wrench className="h-5 w-5 text-orange-500" /> Alat Operasional</CardTitle></CardHeader>
@@ -353,7 +385,17 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                       <TableCell className="text-center font-medium">{idx + 1}</TableCell>
                       <TableCell><Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge></TableCell>
                       <TableCell className="max-w-[200px] truncate">{plan.description}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{plan.street}, {plan.sub_district}</TableCell>
+                      <TableCell className="max-w-[200px]">
+                        {plan.locations?.length > 0 ? (
+                          <div className="space-y-1">
+                            {plan.locations.map((loc, i) => (
+                              <div key={i} className="text-[10px] leading-tight">• {loc.street}</div>
+                            ))}
+                          </div>
+                        ) : (
+                          <span className="truncate">{plan.street}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-center">{plan.personnel} Orang</TableCell>
                       <TableCell>{plan.coordinator}</TableCell>
                       <TableCell className="text-right">
