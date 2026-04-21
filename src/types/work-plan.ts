@@ -3,6 +3,7 @@
 export interface WorkPlanEquipment {
   name: string;
   quantity: number;
+  usage: string; // Menambahkan kegunaan alat
 }
 
 export interface WorkPlan {
