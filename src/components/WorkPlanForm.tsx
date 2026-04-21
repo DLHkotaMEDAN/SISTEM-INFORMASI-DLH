@@ -308,6 +308,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         </form>
       </Form>
 
+      {/* Tabel Rekap Harian */}
       <Card className="border-t-4 border-t-green-500 shadow-lg">
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
