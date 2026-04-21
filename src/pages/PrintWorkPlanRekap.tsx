@@ -112,11 +112,11 @@ const PrintWorkPlanRekap = () => {
                       {plan.locations?.length > 0 ? (
                         <div className="space-y-1">
                           {plan.locations.map((loc, i) => (
-                            <div key={i}>{i + 1}. {loc.street}</div>
+                            <div key={i}>{i + 1}. {loc.street} ({loc.sub_district})</div>
                           ))}
                         </div>
                       ) : (
-                        <div>1. {plan.street}</div>
+                        <div>1. {plan.street} ({plan.sub_district})</div>
                       )}
                     </td>
                     

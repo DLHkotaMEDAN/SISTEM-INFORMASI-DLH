@@ -391,7 +391,19 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                     <TableCell className="text-center font-medium">{idx + 1}</TableCell>
                     <TableCell><Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge></TableCell>
                     <TableCell className="max-w-[200px] truncate">{plan.description}</TableCell>
-                    <TableCell className="max-w-[200px]">{plan.locations?.length > 0 ? (<div className="space-y-1">{plan.locations.map((loc, i) => (<div key={i} className="text-[10px] leading-tight">• {loc.street}</div>))}</div>) : (<span className="truncate">{plan.street}</span>)}</TableCell>
+                    <TableCell className="max-w-[200px]">
+                      {plan.locations?.length > 0 ? (
+                        <div className="space-y-1">
+                          {plan.locations.map((loc, i) => (
+                            <div key={i} className="text-[10px] leading-tight">
+                              • {loc.street} ({loc.sub_district})
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="truncate">{plan.street} ({plan.sub_district})</span>
+                      )}
+                    </TableCell>
                     <TableCell className="text-center">{plan.personnel} Orang</TableCell>
                     <TableCell>{plan.coordinator}</TableCell>
                     <TableCell className="text-right"><div className="flex justify-end gap-1"><Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600" onClick={() => navigate(`/work-plans/${plan.id}`)}><Eye size={14} /></Button><Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400" onClick={() => navigate(`/work-plans/edit/${plan.id}`)}><Edit size={14} /></Button></div></TableCell>
