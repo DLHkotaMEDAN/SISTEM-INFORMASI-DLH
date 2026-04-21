@@ -3,21 +3,23 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck, LogIn } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck, LogIn, ShieldCheck } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
 import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
 import { useAuth } from '@/context/AuthContext';
+import { Badge } from "@/components/ui/badge";
 
 const ReportDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
 
   const isLoggedIn = !!session;
+  const isPimpinan = profile?.role === 'pimpinan';
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
 
@@ -48,9 +50,17 @@ const ReportDetail = () => {
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           
           {isLoggedIn ? (
-            <div className="flex gap-2">
-              <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
-              <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
+            <div className="flex gap-2 items-center">
+              {isPimpinan ? (
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200 h-9 px-4">
+                  <ShieldCheck className="h-4 w-4 mr-2" /> Mode Pantau Pimpinan
+                </Badge>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => navigate(`/edit/${report.id}`)}><Edit className="mr-2 h-4 w-4" /> Edit</Button>
+                  <Button variant="destructive" onClick={async () => { if(confirm("Hapus?")) { await reportService.deleteReport(report.id); navigate('/'); } }}><Trash2 className="mr-2 h-4 w-4" /> Hapus</Button>
+                </>
+              )}
             </div>
           ) : (
             <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600">

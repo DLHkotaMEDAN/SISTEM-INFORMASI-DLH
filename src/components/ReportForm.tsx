@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Report, ReportCategory, Task, FuelUsage, Location, Equipment, HeavyEquipment } from '@/types/report';
@@ -20,6 +20,7 @@ import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
 import { storageService } from '@/services/storageService';
 import { useAuth } from '@/context/AuthContext';
+import { cn } from "@/lib/utils";
 
 const categories: ReportCategory[] = [
   "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
@@ -99,7 +100,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const [uploadProgress, setUploadProgress] = useState("");
   const [existingVehicles, setExistingVehicles] = useState<string[]>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]);
 
-  const isUserRestricted = profile?.role !== 'admin';
+  const isPimpinan = profile?.role === 'pimpinan';
+  const isUserRestricted = profile?.role === 'user';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -206,6 +208,10 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (isPimpinan) {
+      showError("Akun Pimpinan tidak diizinkan menyimpan atau mengubah data");
+      return;
+    }
     setIsSubmitting(true);
     try {
       // Jika sedang edit, cek apakah ada task yang dihapus seluruhnya
@@ -290,10 +296,17 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Laporan" : "Input Laporan Baru"}</h1>
-          <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
+          <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : <><Save className="mr-2 h-4 w-4" /> Simpan</>}
           </Button>
         </div>
+
+        {isPimpinan && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-center gap-3 text-amber-800 mb-6">
+            <ShieldAlert className="h-5 w-5 shrink-0" />
+            <p className="text-sm font-medium">Anda masuk sebagai <strong>Pimpinan</strong>. Anda dapat melihat dan mengisi formulir, namun tombol <strong>Simpan</strong> dinonaktifkan.</p>
+          </div>
+        )}
 
         <Card className="border-t-4 border-t-blue-500">
           <CardHeader><CardTitle className="text-lg">Informasi Dasar</CardTitle></CardHeader>
@@ -476,17 +489,19 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
               </CardContent>
             </Card>
           ))}
-          <Button type="button" variant="outline" className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" onClick={() => appendTask({ 
-            description: "", 
-            location: { street: "", village: [""], subDistrict: "" }, 
-            photos: { zero: "", fifty: "", hundred: "" }, 
-            volume: 0,
-            equipment: [{ type: "", quantity: 1 }],
-            heavyEquipment: [],
-            personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 },
-            vehicle: "",
-            remarks: ""
-          })}><Plus className="mr-2 h-5 w-5" /> Tambah Kegiatan & Lokasi Baru</Button>
+          {!isPimpinan && (
+            <Button type="button" variant="outline" className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" onClick={() => appendTask({ 
+              description: "", 
+              location: { street: "", village: [""], subDistrict: "" }, 
+              photos: { zero: "", fifty: "", hundred: "" }, 
+              volume: 0,
+              equipment: [{ type: "", quantity: 1 }],
+              heavyEquipment: [],
+              personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 },
+              vehicle: "",
+              remarks: ""
+            })}><Plus className="mr-2 h-5 w-5" /> Tambah Kegiatan & Lokasi Baru</Button>
+          )}
         </div>
 
         <Card className="border-t-4 border-t-slate-400">
@@ -498,7 +513,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <div className="flex justify-end gap-4">
           <Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button>
-          <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700 px-8">
+          <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700 px-8", isPimpinan && "opacity-50 cursor-not-allowed")}>
             {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : "Simpan Laporan"}
           </Button>
         </div>

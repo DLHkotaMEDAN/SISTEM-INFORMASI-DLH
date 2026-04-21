@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
-  LogOut, LogIn, FilterX
+  LogOut, LogIn, FilterX, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -61,7 +61,9 @@ const Index = () => {
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
 
   const isLoggedIn = !!session;
-  const isUserRestricted = isLoggedIn && profile?.role !== 'admin';
+  // Pimpinan tidak dibatasi kategorinya (sama seperti admin)
+  const isUserRestricted = isLoggedIn && profile?.role === 'user';
+  const isPimpinan = profile?.role === 'pimpinan';
 
   useEffect(() => {
     loadReports();
@@ -97,6 +99,10 @@ const Index = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) {
+      showError("Akun Pimpinan tidak memiliki izin untuk menghapus data");
+      return;
+    }
     if (window.confirm("Hapus laporan ini secara permanen?")) {
       try {
         await reportService.deleteReport(id);
@@ -150,7 +156,6 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Tombol Rekap Bulanan (Sekarang Publik) */}
             <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200">
               <FileBarChart className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rekap Bulanan</span>
             </Button>
@@ -184,15 +189,24 @@ const Index = () => {
 
                 <div className="flex items-center gap-1 border-l pl-2 ml-1">
                   <div className="hidden sm:flex flex-col items-end mr-2">
-                    <p className="text-[10px] font-bold text-slate-900 leading-none">{profile?.role === 'admin' ? 'Admin' : 'User'}</p>
+                    <p className="text-[10px] font-bold text-slate-900 leading-none">
+                      {profile?.role === 'admin' ? 'Admin' : profile?.role === 'pimpinan' ? 'Pimpinan' : 'User'}
+                    </p>
                     <p className="text-[8px] text-slate-500">{profile?.category || 'Semua'}</p>
                   </div>
                   <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="h-5 w-5" /></Button>
                 </div>
 
-                <Button onClick={() => navigate('/create')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4 ml-1">
-                  <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
-                </Button>
+                {!isPimpinan && (
+                  <Button onClick={() => navigate('/create')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-3 md:px-4 ml-1">
+                    <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
+                  </Button>
+                )}
+                {isPimpinan && (
+                  <Badge className="bg-amber-100 text-amber-700 border-amber-200 ml-2 hidden md:flex">
+                    <ShieldCheck className="h-3 w-3 mr-1" /> Mode Pantau
+                  </Badge>
+                )}
               </>
             ) : (
               !authLoading && (
@@ -282,7 +296,7 @@ const Index = () => {
                       <Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge>
                     </div>
                     
-                    {isLoggedIn && (
+                    {isLoggedIn && !isPimpinan && (
                       <div className="flex items-center gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}>
                           <Edit className="h-4 w-4" />
