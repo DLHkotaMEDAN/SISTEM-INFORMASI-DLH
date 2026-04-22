@@ -483,12 +483,12 @@ const MonthlyRecap = () => {
             <colgroup>
               <col style={{ width: '35px' }} />
               <col style={{ width: '70px' }} />
-              <col style={{ width: '80px' }} />
+              <col style={{ width: '75px' }} />
               <col style={{ width: '110px' }} />
-              <col style={{ width: '150px' }} />
-              <col style={{ width: '160px' }} />
-              <col style={{ width: '160px' }} />
-              <col style={{ width: '160px' }} />
+              <col style={{ width: '140px' }} />
+              <col style={{ width: '155px' }} />
+              <col style={{ width: '155px' }} />
+              <col style={{ width: '155px' }} />
               <col style={{ width: '65px' }} />
               <col style={{ width: '105px' }} />
               <col style={{ width: '25px' }} />
