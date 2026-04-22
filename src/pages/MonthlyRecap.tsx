@@ -75,9 +75,16 @@ const MonthlyRecap = () => {
   const isLoggedIn = !!session;
   
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
+  const isAdminHarian = profile?.role === 'admin_harian';
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan;
 
   useEffect(() => {
+    if (isAdminHarian) {
+      showError("Akses ditolak. Admin Harian tidak diizinkan mengakses Rekap Bulanan.");
+      navigate('/');
+      return;
+    }
+
     if (isLoggedIn && profile) {
       if (isUserRestricted && profile.category) {
         setSelectedCategories([profile.category]);
@@ -87,10 +94,10 @@ const MonthlyRecap = () => {
     } else {
       setSelectedCategories(['semua']);
     }
-  }, [profile, isLoggedIn, isUserRestricted]);
+  }, [profile, isLoggedIn, isUserRestricted, isAdminHarian]);
 
   useEffect(() => {
-    if (selectedCategories.length > 0) {
+    if (selectedCategories.length > 0 && !isAdminHarian) {
       loadData();
     }
   }, [selectedMonth, selectedYear, selectedCategories]);
@@ -359,6 +366,8 @@ const MonthlyRecap = () => {
   const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
 
   const totalCols = 15 + (recapMode === "with-fuel" ? 3 : 0);
+
+  if (isAdminHarian) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
