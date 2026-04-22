@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, MapPinned, ClipboardCheck, Truck } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Wrench, Users, FileText, Eye, RefreshCw, Edit, MapPinned, ClipboardCheck, Truck, Copy } from 'lucide-react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { medanDistricts } from '@/data/medan-districts';
@@ -167,6 +167,15 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     }
   }, [selectedCategory, form, isEditing, isGlobalSDM]);
 
+  const duplicateLocation = (index: number) => {
+    const currentValues = form.getValues(`locations.${index}`);
+    appendLocation({
+      ...currentValues,
+      // Kita biarkan deskripsi dan jalan sama agar user tinggal edit sedikit
+    });
+    showSuccess("Lokasi diduplikasi");
+  };
+
   async function onSubmit(values: z.infer<typeof formSchema>, shouldAddAnother = false) {
     setIsSubmitting(true);
     try {
@@ -191,7 +200,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
         locations: values.locations,
         coordinator: finalCoordinator,
         personnel: finalPersonnel,
-        basis: firstLoc.basis, // Simpan basis pertama ke root untuk kompatibilitas
+        basis: firstLoc.basis,
         remarks: values.remarks,
       };
 
@@ -269,13 +278,24 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-bold flex items-center gap-2"><MapPinned className="text-red-500" /> Lokasi Pengerjaan</h2>
-              <Button type="button" variant="outline" size="sm" onClick={() => appendLocation({ description: "", street: "", sub_district: "", villages: [""], equipment: [], coordinator: isGlobalSDM ? "" : (coordinatorMapping[selectedCategory] || ""), personnel: 0, basis: basisMapping[selectedCategory] || "Laporan Masyarakat / Rutin" })} className="border-dashed border-red-200 text-red-600 hover:bg-red-50"><Plus className="h-4 w-4 mr-2" /> Tambah Lokasi Lain</Button>
+              <Button type="button" variant="outline" size="sm" onClick={() => appendLocation({ description: "", street: "", sub_district: "", villages: [""], equipment: [], coordinator: isGlobalSDM ? "" : (coordinatorMapping[selectedCategory] || ""), personnel: 0, basis: basisMapping[selectedCategory] || "Laporan Masyarakat / Rutin" })} className="border-dashed border-red-200 text-red-600 hover:bg-red-50"><Plus className="h-4 w-4 mr-2" /> Tambah Lokasi Baru</Button>
             </div>
             {locationFields.map((locField, locIndex) => (
               <Card key={locField.id} className="shadow-sm border-l-4 border-l-red-400">
                 <CardHeader className="py-3 px-4 flex flex-row items-center justify-between bg-slate-50/50">
-                  <Badge variant="secondary" className="bg-red-100 text-red-700">Lokasi #{locIndex + 1}</Badge>
-                  {locationFields.length > 1 && (<Button type="button" variant="ghost" size="sm" onClick={() => removeLocation(locIndex)} className="text-red-500 h-8 hover:bg-red-50"><Trash2 size={14} className="mr-1" /> Hapus Lokasi</Button>)}
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="bg-red-100 text-red-700">Lokasi #{locIndex + 1}</Badge>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => duplicateLocation(locIndex)} 
+                      className="h-7 text-[10px] border-blue-200 text-blue-600 hover:bg-blue-50"
+                    >
+                      <Copy size={12} className="mr-1" /> Duplikat
+                    </Button>
+                  </div>
+                  {locationFields.length > 1 && (<Button type="button" variant="ghost" size="sm" onClick={() => removeLocation(locIndex)} className="text-red-500 h-8 hover:bg-red-50"><Trash2 size={14} className="mr-1" /> Hapus</Button>)}
                 </CardHeader>
                 <CardContent className="p-4 space-y-6">
                   <div className="space-y-4">
@@ -311,13 +331,11 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                     </div>
                   </div>
 
-                  {/* Dasar Pengerjaan per Lokasi */}
                   <div className="pt-6 border-t border-slate-100 space-y-4">
                     <h3 className="text-sm font-bold flex items-center gap-2 text-blue-600"><ClipboardCheck size={14} /> Dasar Pengerjaan Lokasi #{locIndex + 1}</h3>
                     <FormField control={form.control} name={`locations.${locIndex}.basis`} render={({ field }) => (<FormItem><FormControl><Input placeholder="Contoh: Laporan Masyarakat / Rutin" {...field} /></FormControl><FormMessage /></FormItem>)} />
                   </div>
 
-                  {/* SDM per Lokasi (Hanya untuk tim non-global) */}
                   { !isGlobalSDM && (
                     <div className="pt-6 border-t border-slate-100 space-y-4">
                       <h3 className="text-sm font-bold flex items-center gap-2 text-green-600"><Users size={14} /> Sumber Daya Manusia Lokasi #{locIndex + 1}</h3>
@@ -328,7 +346,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                     </div>
                   )}
 
-                  {/* Alat Operasional per Lokasi */}
                   <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-sm font-bold flex items-center gap-2 text-orange-600"><Wrench size={14} /> Alat Operasional Lokasi #{locIndex + 1}</h3>
@@ -402,7 +419,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
             ))}
           </div>
 
-          {/* SDM Global (Hanya untuk Tim Pohon & Tim Babat) */}
           { isGlobalSDM && (
             <Card className="shadow-sm border-l-4 border-l-green-500">
               <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="h-5 w-5 text-green-600" /> Sumber Daya Manusia (Tim)</CardTitle></CardHeader>
