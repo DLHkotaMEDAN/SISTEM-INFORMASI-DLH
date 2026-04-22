@@ -472,13 +472,13 @@ const DailyRecap = () => {
               <col style={{ width: '120px' }} />
               {photoMode === "with-photo" && (
                 <>
-                  <col style={{ width: '155px' }} />
-                  <col style={{ width: '155px' }} />
-                  <col style={{ width: '155px' }} />
+                  <col style={{ width: '145px' }} />
+                  <col style={{ width: '145px' }} />
+                  <col style={{ width: '145px' }} />
                 </>
               )}
               <col style={{ width: '65px' }} />
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '95px' }} />
               <col style={{ width: '25px' }} />
               <col style={{ width: '120px' }} />
               {recapMode === "with-fuel" && (
@@ -488,7 +488,7 @@ const DailyRecap = () => {
                   <col style={{ width: '40px' }} />
                 </>
               )}
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '95px' }} />
               <col style={{ width: '50px' }} />
               <col style={{ width: '165px' }} />
             </colgroup>

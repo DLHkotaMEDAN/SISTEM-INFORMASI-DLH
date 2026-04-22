@@ -483,14 +483,14 @@ const MonthlyRecap = () => {
             <colgroup>
               <col style={{ width: '35px' }} />
               <col style={{ width: '70px' }} />
-              <col style={{ width: '65px' }} />
+              <col style={{ width: '75px' }} />
               <col style={{ width: '110px' }} />
               <col style={{ width: '120px' }} />
-              <col style={{ width: '155px' }} />
-              <col style={{ width: '155px' }} />
-              <col style={{ width: '155px' }} />
+              <col style={{ width: '145px' }} />
+              <col style={{ width: '145px' }} />
+              <col style={{ width: '145px' }} />
               <col style={{ width: '65px' }} />
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '95px' }} />
               <col style={{ width: '25px' }} />
               <col style={{ width: '120px' }} />
               {recapMode === "with-fuel" && (
@@ -500,7 +500,7 @@ const MonthlyRecap = () => {
                   <col style={{ width: '40px' }} />
                 </>
               )}
-              <col style={{ width: '100px' }} />
+              <col style={{ width: '95px' }} />
               <col style={{ width: '50px' }} />
               <col style={{ width: '165px' }} />
             </colgroup>
