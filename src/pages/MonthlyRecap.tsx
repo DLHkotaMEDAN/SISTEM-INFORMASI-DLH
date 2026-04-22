@@ -267,7 +267,7 @@ const MonthlyRecap = () => {
       worksheet.columns = columns;
       const lastColLetter = String.fromCharCode(64 + columns.length);
       worksheet.mergeCells(`A1:${lastColLetter}1`);
-      worksheet.getCell('A1').value = 'PEMERINTTAH KOTA MEDAN';
+      worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN';
       worksheet.getCell('A1').font = { bold: true, size: 14 };
       worksheet.getCell('A1').alignment = { horizontal: 'center' };
       worksheet.mergeCells(`A2:${lastColLetter}2`);
@@ -486,8 +486,8 @@ const MonthlyRecap = () => {
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">0%</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">50%</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">100%</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[130px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px]">Jml</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[150px]">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px] px-0">Jml</th>
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
@@ -516,7 +516,7 @@ const MonthlyRecap = () => {
                           <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
                           <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
                           <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
-                          <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
                           <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
                           {recapMode === "with-fuel" && (
                             <>

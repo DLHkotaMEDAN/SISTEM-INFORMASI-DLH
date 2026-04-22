@@ -472,8 +472,8 @@ const DailyRecap = () => {
               </tr>
               <tr style={{ height: '30px' }}>
                 {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">100%</th></>)}
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[130px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px]">Jml</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[150px]">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px] px-0">Jml</th>
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
@@ -504,7 +504,7 @@ const DailyRecap = () => {
                           )}
                           <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
                           <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
-                          <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
                           <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
                           {recapMode === "with-fuel" && (
                             <>
