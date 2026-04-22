@@ -4,15 +4,17 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { 
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   CheckCircle2, FileWarning, Loader2, Database, 
-  Eye, X 
+  Eye, X, HardDrive, AlertTriangle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -26,12 +28,22 @@ const Maintenance = () => {
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [orphanedFiles, setOrphanedFiles] = useState<any[]>([]);
-  const [stats, setStats] = useState({ totalStorage: 0, usedInDb: 0, orphaned: 0 });
+  const [stats, setStats] = useState({ 
+    totalStorageCount: 0, 
+    totalStorageSize: 0, // dalam bytes
+    usedInDb: 0, 
+    orphaned: 0,
+    dbRecordCount: 0
+  });
   const [isCleaned, setIsCleaned] = useState(false);
   
   // State untuk Preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
+
+  // Limit Supabase Free Tier
+  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1GB
+  const DB_LIMIT_RECORDS = 10000; // Estimasi aman untuk free tier (limit sebenarnya 500MB)
 
   // Hanya Admin yang bisa akses
   const isAdmin = profile?.role === 'admin' || session?.user?.email === 'admin@gmail.com';
@@ -43,10 +55,26 @@ const Maintenance = () => {
     }
   }, [isAdmin, session]);
 
+  const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   const analyzeStorage = async () => {
     setAnalyzing(true);
     setIsCleaned(false);
     try {
+      // 1. Hitung Record Database
+      const { count: reportCount, error: countError } = await supabase
+        .from('reports')
+        .select('*', { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+
+      // 2. Ambil data tasks untuk cek referensi foto
       const { data: reports, error: dbError } = await supabase
         .from('reports')
         .select('tasks');
@@ -66,6 +94,7 @@ const Maintenance = () => {
         });
       });
 
+      // 3. List file di Storage
       const { data: storageFiles, error: storageError } = await supabase
         .storage
         .from('report-photos')
@@ -73,16 +102,23 @@ const Maintenance = () => {
 
       if (storageError) throw storageError;
 
+      let totalSize = 0;
+      storageFiles?.forEach(file => {
+        totalSize += file.metadata?.size || 0;
+      });
+
       const orphaned = storageFiles?.filter(file => !usedFileNames.has(file.name)) || [];
       
       setOrphanedFiles(orphaned);
       setStats({
-        totalStorage: storageFiles?.length || 0,
+        totalStorageCount: storageFiles?.length || 0,
+        totalStorageSize: totalSize,
         usedInDb: usedFileNames.size,
-        orphaned: orphaned.length
+        orphaned: orphaned.length,
+        dbRecordCount: reportCount || 0
       });
 
-      showSuccess(`Analisis selesai: Ditemukan ${orphaned.length} file tidak terpakai.`);
+      showSuccess(`Analisis selesai: Storage ${formatSize(totalSize)} digunakan.`);
     } catch (error: any) {
       console.error(error);
       showError("Gagal menganalisis storage: " + error.message);
@@ -112,8 +148,8 @@ const Maintenance = () => {
       if (error) throw error;
 
       showSuccess(`${fileNamesToDelete.length} file berhasil dihapus.`);
-      setOrphanedFiles([]);
-      setStats(prev => ({ ...prev, orphaned: 0 }));
+      // Re-analyze after cleaning
+      await analyzeStorage();
       setIsCleaned(true);
     } catch (error: any) {
       console.error(error);
@@ -122,6 +158,9 @@ const Maintenance = () => {
       setLoading(false);
     }
   };
+
+  const storageUsagePercent = (stats.totalStorageSize / STORAGE_LIMIT_BYTES) * 100;
+  const isStorageCritical = storageUsagePercent > 80;
 
   if (!isAdmin) return null;
 
@@ -133,27 +172,66 @@ const Maintenance = () => {
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
           </Button>
           <h1 className="text-2xl font-bold flex items-center gap-2">
-            <Database className="text-blue-600" /> Pemeliharaan Storage
+            <Database className="text-blue-600" /> Pemeliharaan Sistem
           </h1>
           <div className="w-20"></div>
+        </div>
+
+        {/* Kuota Monitor */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card className={cn("bg-white border-t-4", isStorageCritical ? "border-t-red-500" : "border-t-blue-500")}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Foto)</span>
+                <Badge variant={isStorageCritical ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Progress value={storageUsagePercent} className={cn("h-2", isStorageCritical ? "bg-red-100" : "bg-blue-100")} />
+              <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                <span>Terpakai: {formatSize(stats.totalStorageSize)}</span>
+                <span>Limit: 1 GB</span>
+              </div>
+              {isStorageCritical && (
+                <div className="flex items-center gap-2 text-red-600 text-[10px] font-bold bg-red-50 p-2 rounded border border-red-100">
+                  <AlertTriangle size={12} /> PERINGATAN: Penyimpanan hampir penuh! Segera bersihkan file sampah.
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white border-t-4 border-t-green-500">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold flex items-center justify-between">
+                <span className="flex items-center gap-2"><Database className="h-4 w-4 text-green-500" /> Database Records</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-black text-slate-900">{stats.dbRecordCount}</span>
+                <span className="text-slate-400 text-xs mb-1">Laporan Tersimpan</span>
+              </div>
+              <p className="text-[10px] text-slate-500 italic">* Batas database versi gratis adalah 500MB (estimasi ribuan record).</p>
+            </CardContent>
+          </Card>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Card className="bg-white border-blue-100">
             <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Total File di Storage</p>
-              <p className="text-3xl font-black text-blue-600">{stats.totalStorage}</p>
+              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Total File Foto</p>
+              <p className="text-3xl font-black text-blue-600">{stats.totalStorageCount}</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-green-100">
             <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Terhubung (Aktif)</p>
+              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Aktif (Link)</p>
               <p className="text-3xl font-black text-green-600">{stats.usedInDb}</p>
             </CardContent>
           </Card>
           <Card className="bg-white border-red-100">
             <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Tidak Terpakai</p>
+              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Sampah</p>
               <p className="text-3xl font-black text-red-600">{stats.orphaned}</p>
             </CardContent>
           </Card>
@@ -168,7 +246,7 @@ const Maintenance = () => {
           <CardContent className="space-y-6">
             <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
               <p className="font-bold mb-1">Cara Kerja:</p>
-              <p>Sistem akan membandingkan nama file di Storage dengan URL foto yang tersimpan di database laporan. File yang tidak ditemukan referensinya di database akan dianggap sebagai "sampah" dan aman untuk dihapus.</p>
+              <p>Sistem akan membandingkan nama file di Storage dengan URL foto yang tersimpan di database laporan. File yang tidak ditemukan referensinya di database akan dianggap sebagai "sampah" dan aman untuk dihapus guna menghemat kuota gratis.</p>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -213,7 +291,7 @@ const Maintenance = () => {
                         <Eye className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
                         <span className="font-mono text-slate-600 group-hover:text-blue-700 group-hover:font-bold">{file.name}</span>
                       </div>
-                      <Badge variant="outline" className="text-[10px]">{Math.round(file.metadata?.size / 1024)} KB</Badge>
+                      <Badge variant="outline" className="text-[10px]">{formatSize(file.metadata?.size || 0)}</Badge>
                     </div>
                   ))}
                 </div>
