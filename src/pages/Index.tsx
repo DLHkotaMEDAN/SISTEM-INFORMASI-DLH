@@ -8,7 +8,8 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
-  LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronsUpDown
+  LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronsUpDown,
+  ChevronDown
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -37,6 +38,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const categories: string[] = [
   "semua", "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
@@ -66,6 +73,7 @@ const Index = () => {
   
   // Print Dialog States
   const [isPrintDialogOpen, setIsPrintDialogOpen] = useState(false);
+  const [printTab, setPrintTab] = useState<"cetak" | "rekap">("cetak");
   const [selectedPrintCategory, setSelectedPrintCategory] = useState("semua");
   const [selectedRekapDate, setSelectedRekapDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedRekapCategories, setSelectedRekapCategories] = useState<string[]>(['semua']);
@@ -192,19 +200,31 @@ const Index = () => {
             {isLoggedIn ? (
               <>
                 <div className="flex items-center gap-2">
-                  <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
-                    <DialogTrigger asChild>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
-                        <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Harian</span>
+                        <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Laporan</span>
+                        <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
                       </Button>
-                    </DialogTrigger>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuItem onClick={() => { setPrintTab("cetak"); setIsPrintDialogOpen(true); }} className="cursor-pointer">
+                        <Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => { setPrintTab("rekap"); setIsPrintDialogOpen(true); }} className="cursor-pointer">
+                        <FileText className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+
+                  <Dialog open={isPrintDialogOpen} onOpenChange={setIsPrintDialogOpen}>
                     <DialogContent className="sm:max-w-[450px]">
                       <DialogHeader>
-                        <DialogTitle>Opsi Cetak Laporan</DialogTitle>
+                        <DialogTitle>{printTab === 'cetak' ? 'Cetak Laporan Harian' : 'Rekap Laporan Harian'}</DialogTitle>
                         <DialogDescription>Pilih format cetak yang Anda inginkan.</DialogDescription>
                       </DialogHeader>
                       
-                      <Tabs defaultValue="cetak" className="w-full mt-4">
+                      <Tabs value={printTab} onValueChange={(v) => setPrintTab(v as any)} className="w-full mt-4">
                         <TabsList className="grid w-full grid-cols-2">
                           <TabsTrigger value="cetak">Cetak Harian</TabsTrigger>
                           <TabsTrigger value="rekap">Rekap Harian</TabsTrigger>
