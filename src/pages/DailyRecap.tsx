@@ -259,6 +259,7 @@ const DailyRecap = () => {
       const worksheet = workbook.addWorksheet('Rekap Harian');
       const columns: any[] = [
         { header: 'No', key: 'no', width: 5 },
+        { header: 'Hari / Tgl', key: 'date', width: 15 },
         { header: 'Tim/Kec.', key: 'cat', width: 15 },
         { header: 'Uraian Kegiatan', key: 'desc', width: 30 },
         { header: 'Lokasi', key: 'loc', width: 40 },
@@ -296,6 +297,7 @@ const DailyRecap = () => {
           const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
           const rowData: any = {
             no: i === 0 ? displayIdx : '',
+            date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) : '',
             cat: i === 0 ? report.category : '',
             desc: task.description,
             loc: `${task.location.street}, ${villages}`,
@@ -329,9 +331,10 @@ const DailyRecap = () => {
                 worksheet.addImage(imageId, { tl: { col: colIndex - 1, row: row.number - 1 }, ext: { width: 140, height: 130 }, editAs: 'oneCell' });
               } catch (e) { console.error(e); }
             };
-            await addImageToCell(task.photos.zero, 5);
-            await addImageToCell(task.photos.fifty, 6);
-            await addImageToCell(task.photos.hundred, 7);
+            // Kolom dokumentasi bergeser karena ada kolom Tanggal
+            await addImageToCell(task.photos.zero, 6);
+            await addImageToCell(task.photos.fifty, 7);
+            await addImageToCell(task.photos.hundred, 8);
           }
         }
         displayIdx++;
@@ -362,7 +365,7 @@ const DailyRecap = () => {
   const headerStyle = { backgroundColor: '#f1f5f9', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
   const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
 
-  const totalCols = 11 + (photoMode === "with-photo" ? 3 : 0) + (recapMode === "with-fuel" ? 3 : 0);
+  const totalCols = 12 + (photoMode === "with-photo" ? 3 : 0) + (recapMode === "with-fuel" ? 3 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -496,6 +499,7 @@ const DailyRecap = () => {
           <table className="w-full min-w-[1200px] border-collapse border-2 border-black text-[11px] table-fixed">
             <colgroup>
               <col style={{ width: '35px' }} />
+              <col style={{ width: '70px' }} />
               <col style={{ width: '75px' }} />
               <col style={{ width: '105px' }} />
               <col style={{ width: '110px' }} />
@@ -524,6 +528,7 @@ const DailyRecap = () => {
             <thead className="pdf-table-header">
               <tr style={{ height: '40px' }}>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/Kec.</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
@@ -555,13 +560,11 @@ const DailyRecap = () => {
                           {taskIdx === 0 ? (
                             <>
                               <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={report.tasks.length}>{reportIdx + 1}</td>
+                              <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={report.tasks.length}>
+                                {new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' })}
+                              </td>
                               <td className="border-2 border-black p-2 text-center align-top font-bold text-blue-700" rowSpan={report.tasks.length}>
-                                <div className="flex flex-col gap-1">
-                                  <span>{report.category}</span>
-                                  {selectedDate === "semua" && (
-                                    <span className="text-[8px] text-slate-500 font-normal">{report.date}</span>
-                                  )}
-                                </div>
+                                {report.category}
                               </td>
                             </>
                           ) : null}
