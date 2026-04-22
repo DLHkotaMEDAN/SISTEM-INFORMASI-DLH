@@ -473,16 +473,16 @@ const DailyRecap = () => {
                 <th style={headerStyle} className="border-2 border-black p-2 w-[150px]" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
                 {photoMode === "with-photo" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>)}
                 <th style={headerStyle} className="border-2 border-black p-2 w-[65px]" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[210px]" colSpan={2}>Peralatan</th>
+                <th style={headerStyle} className="border-2 border-black p-2 w-[190px]" colSpan={2}>Peralatan</th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[115px]" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
                 {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>)}
                 <th style={headerStyle} className="border-2 border-black p-2 w-[140px]" colSpan={2}>Personil</th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[170px]" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
               </tr>
               <tr style={{ height: '30px' }}>
-                {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">100%</th></>)}
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[180px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[30px] px-0">Jml</th>
+                {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[156px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[156px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[156px]">100%</th></>)}
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[170px]">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[20px] px-0">Jml</th>
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
