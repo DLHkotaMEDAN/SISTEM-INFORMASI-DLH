@@ -11,6 +11,7 @@ import ReportDetail from "./pages/ReportDetail";
 import PrintRekap from "./pages/PrintRekap";
 import MonthlyRecap from "./pages/MonthlyRecap";
 import DailyRecap from "./pages/DailyRecap";
+import WeeklyRecap from "./pages/WeeklyRecap";
 import Maintenance from "./pages/Maintenance";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/report/:id" element={<ReportDetail />} />
             <Route path="/monthly-rekap" element={<MonthlyRecap />} />
             <Route path="/daily-rekap" element={<DailyRecap />} />
+            <Route path="/weekly-rekap" element={<WeeklyRecap />} />
             
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />

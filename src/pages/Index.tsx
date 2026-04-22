@@ -169,7 +169,7 @@ const Index = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
                       <Printer className="h-4 w-4 md:mr-2" /> 
-                      <span className="hidden md:inline">Cetak Harian</span>
+                      <span className="hidden md:inline">Cetak</span>
                       <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -185,6 +185,12 @@ const Index = () => {
                       className="cursor-pointer py-2"
                     >
                       <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)}
+                      className="cursor-pointer py-2"
+                    >
+                      <Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
