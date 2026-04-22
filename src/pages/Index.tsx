@@ -169,7 +169,7 @@ const Index = () => {
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200">
                       <Printer className="h-4 w-4 md:mr-2" /> 
-                      <span className="hidden md:inline">Cetak Laporan</span>
+                      <span className="hidden md:inline">Cetak Harian</span>
                       <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
