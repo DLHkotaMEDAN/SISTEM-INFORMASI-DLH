@@ -490,7 +490,7 @@ const DailyRecap = () => {
               )}
               <col style={{ width: '100px' }} />
               <col style={{ width: '50px' }} />
-              <col style={{ width: '170px' }} />
+              <col style={{ width: '165px' }} />
             </colgroup>
             <thead className="pdf-table-header">
               <tr style={{ height: '40px' }}>
