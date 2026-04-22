@@ -252,6 +252,7 @@ const MonthlyRecap = () => {
       const columns = [
         { header: 'No', key: 'no', width: 5 },
         { header: 'Hari / Tgl', key: 'date', width: 15 },
+        { header: 'Kategori', key: 'category', width: 15 },
         { header: 'Uraian Kegiatan', key: 'desc', width: 30 },
         { header: 'Lokasi', key: 'loc', width: 40 },
         { header: '0%', key: 'p0', width: 22 },
@@ -292,6 +293,7 @@ const MonthlyRecap = () => {
           const rowData: any = {
             no: i === 0 ? displayIdx : '',
             date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) : '',
+            category: i === 0 ? report.category : '',
             desc: task.description,
             loc: `${task.location.street}, ${villages}`,
             vol: `${task.volume} ${getUnitByCategory(report.category)}`,
@@ -323,9 +325,10 @@ const MonthlyRecap = () => {
               worksheet.addImage(imageId, { tl: { col: colIndex - 1, row: row.number - 1 }, ext: { width: 140, height: 130 }, editAs: 'oneCell' });
             } catch (e) { console.error(e); }
           };
-          await addImageToCell(task.photos.zero, 5);
-          await addImageToCell(task.photos.fifty, 6);
-          await addImageToCell(task.photos.hundred, 7);
+          // Kolom dokumentasi bergeser karena ada kolom Kategori
+          await addImageToCell(task.photos.zero, 6);
+          await addImageToCell(task.photos.fifty, 7);
+          await addImageToCell(task.photos.hundred, 8);
         }
         displayIdx++;
       }
@@ -355,7 +358,7 @@ const MonthlyRecap = () => {
   const headerStyle = { backgroundColor: '#f1f5f9', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
   const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
 
-  const totalCols = 14 + (recapMode === "with-fuel" ? 3 : 0);
+  const totalCols = 15 + (recapMode === "with-fuel" ? 3 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -481,6 +484,7 @@ const MonthlyRecap = () => {
               <tr style={{ height: '40px' }}>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[35px]" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[70px]" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2 w-[80px]" rowSpan={2}><div className="flex items-center justify-center h-full">Kategori</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[110px]" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[150px]" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
@@ -515,6 +519,9 @@ const MonthlyRecap = () => {
                               <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={report.tasks.length}>{reportIdx + 1}</td>
                               <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={report.tasks.length}>
                                 {new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
+                              </td>
+                              <td className="border-2 border-black p-2 text-center align-top font-bold text-blue-700" rowSpan={report.tasks.length}>
+                                {report.category}
                               </td>
                             </>
                           ) : null}
