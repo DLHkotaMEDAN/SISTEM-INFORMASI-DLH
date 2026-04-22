@@ -9,7 +9,7 @@ import {
   ArrowLeft, Printer, Fuel, FileText, ChevronsUpDown, 
   Table, LogOut, LogIn, CloudUpload, 
   Loader2, Lock, ChevronDown, Calendar as CalendarIcon,
-  Image as ImageIcon, ImageOff
+  Image as ImageIcon, ImageOff, PenTool
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
@@ -52,6 +52,7 @@ const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
 type RecapMode = "with-fuel" | "without-fuel";
 type PhotoMode = "with-photo" | "without-photo";
+type SignatureMode = "with-signature" | "without-signature";
 
 const DailyRecap = () => {
   const navigate = useNavigate();
@@ -64,6 +65,7 @@ const DailyRecap = () => {
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || new Date().toISOString().split('T')[0]);
   const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
   const [photoMode, setPhotoMode] = useState<PhotoMode>("with-photo");
+  const [signatureMode, setSignatureMode] = useState<SignatureMode>("with-signature");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   
   const printRef = useRef<HTMLDivElement>(null);
@@ -169,7 +171,7 @@ const DailyRecap = () => {
       const footerEl = document.querySelector('.pdf-footer') as HTMLElement;
       let footerImg = "";
       let footerHeight = 0;
-      if (footerEl) {
+      if (footerEl && signatureMode === "with-signature") {
         const canvas = await html2canvas(footerEl, { scale: 2, useCORS: true });
         footerImg = canvas.toDataURL('image/jpeg', 0.95);
         footerHeight = (canvas.height * contentWidth) / canvas.width;
@@ -182,7 +184,7 @@ const DailyRecap = () => {
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
         const isLastBlock = i === reportBlocks.length - 1;
-        if (isLastBlock) {
+        if (isLastBlock && signatureMode === "with-signature") {
           if (currentY + imgHeight + footerHeight > pdfHeight - margin) {
             pdf.addPage('a3', 'landscape');
             currentY = margin;
@@ -205,7 +207,7 @@ const DailyRecap = () => {
         currentY += imgHeight;
       }
 
-      if (footerImg) {
+      if (footerImg && signatureMode === "with-signature") {
         if (currentY + footerHeight > pdfHeight - margin) {
           pdf.addPage('a3', 'landscape');
           currentY = margin;
@@ -401,6 +403,13 @@ const DailyRecap = () => {
               <SelectTrigger className="w-[180px] bg-blue-50 border-blue-200 text-blue-700 font-medium"><SelectValue placeholder="Mode Rekap" /></SelectTrigger>
               <SelectContent><SelectItem value="with-fuel"><div className="flex items-center gap-2"><Fuel size={14} /> Rekap Dengan BBM</div></SelectItem><SelectItem value="without-fuel"><div className="flex items-center gap-2"><FileText size={14} /> Rekap Tanpa BBM</div></SelectItem></SelectContent>
             </Select>
+            <Select value={signatureMode} onValueChange={(v) => setSignatureMode(v as SignatureMode)}>
+              <SelectTrigger className="w-[180px] bg-amber-50 border-amber-200 text-amber-700 font-medium"><SelectValue placeholder="Tanda Tangan" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="with-signature"><div className="flex items-center gap-2"><PenTool size={14} /> Ada Tanda Tangan</div></SelectItem>
+                <SelectItem value="without-signature"><div className="flex items-center gap-2"><PenTool size={14} className="opacity-40" /> Tanpa Tanda Tangan</div></SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex items-center gap-2">
             {isLoggedIn && (
@@ -540,15 +549,17 @@ const DailyRecap = () => {
           </table>
         </div>
 
-        <div className="pdf-footer mt-12">
-          <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-          <div className="grid grid-cols-4 gap-4 text-[11px] leading-normal">
-            <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
-            <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
-            <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
-            <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p>{showSignatory4 && !showSignatory5 && (<><p className="font-bold">Kepala Koordinator Taman</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold">Kepala Koordinator Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory4 && showSignatory5 && (<><p className="font-bold">Koordinator Taman & Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}</div><div>{showSignatory4 && !showSignatory5 && (<><p className="font-bold underline">Tiurmaida Silitonga</p><p>NIP. 19690507 200701 2 042</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></>)}{showSignatory4 && showSignatory5 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}</div></div>
+        {signatureMode === "with-signature" && (
+          <div className="pdf-footer mt-12">
+            <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date(selectedDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+            <div className="grid grid-cols-4 gap-4 text-[11px] leading-normal">
+              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p>{showSignatory4 && !showSignatory5 && (<><p className="font-bold">Kepala Koordinator Taman</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold">Kepala Koordinator Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory4 && showSignatory5 && (<><p className="font-bold">Koordinator Taman & Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}</div><div>{showSignatory4 && !showSignatory5 && (<><p className="font-bold underline">Tiurmaida Silitonga</p><p>NIP. 19690507 200701 2 042</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></>)}{showSignatory4 && showSignatory5 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}</div></div>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
