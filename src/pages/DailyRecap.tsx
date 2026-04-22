@@ -472,8 +472,8 @@ const DailyRecap = () => {
               </tr>
               <tr style={{ height: '30px' }}>
                 {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">100%</th></>)}
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[120px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[20px]">Jml</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[130px]">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px]">Jml</th>
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
