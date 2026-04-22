@@ -252,7 +252,7 @@ const MonthlyRecap = () => {
       const columns = [
         { header: 'No', key: 'no', width: 5 },
         { header: 'Hari / Tgl', key: 'date', width: 15 },
-        { header: 'Kategori', key: 'category', width: 15 },
+        { header: 'Tim/ Kecamatan', key: 'category', width: 15 },
         { header: 'Uraian Kegiatan', key: 'desc', width: 30 },
         { header: 'Lokasi', key: 'loc', width: 40 },
         { header: '0%', key: 'p0', width: 22 },
@@ -484,7 +484,7 @@ const MonthlyRecap = () => {
               <tr style={{ height: '40px' }}>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[35px]" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[70px]" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[80px]" rowSpan={2}><div className="flex items-center justify-center h-full">Kategori</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2 w-[80px]" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/ Kecamatan</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[110px]" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2 w-[150px]" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
