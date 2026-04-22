@@ -471,9 +471,9 @@ const DailyRecap = () => {
                 <th style={headerStyle} className="border-2 border-black p-2 w-[170px]" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
               </tr>
               <tr style={{ height: '30px' }}>
-                {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[142px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[142px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[142px]">100%</th></>)}
+                {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1 w-[149px]">100%</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[120px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Jml</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[20px]">Jml</th>
                 {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
                 <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
