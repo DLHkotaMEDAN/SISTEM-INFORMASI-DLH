@@ -434,11 +434,11 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                       <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
                         <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
                           <div className="md:col-span-6">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Excavator..." /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Mesin Robin, Excavator..." /></FormControl></FormItem>)} />
                           </div>
                           <div className="md:col-span-5">
                             <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.vehicle`} render={({ field }) => (
-                              <FormItem><FormLabel className="text-xs">Plat Kendaraan</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX" onChange={(e) => {
+                              <FormItem><FormLabel className="text-xs">Plat Kendaraan (Opsional)</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX (Kosongkan jika tidak ada)" onChange={(e) => {
                                 field.onChange(e);
                                 if (heIdx === 0 && (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon")) {
                                   const coordinator = vehicleCoordinatorMapping[e.target.value] || "";
