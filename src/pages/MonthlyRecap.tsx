@@ -480,30 +480,54 @@ const MonthlyRecap = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1200px] border-collapse border-2 border-black text-[11px] table-fixed">
+            <colgroup>
+              <col style={{ width: '35px' }} />
+              <col style={{ width: '70px' }} />
+              <col style={{ width: '80px' }} />
+              <col style={{ width: '110px' }} />
+              <col style={{ width: '150px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '160px' }} />
+              <col style={{ width: '65px' }} />
+              <col style={{ width: '170px' }} />
+              <col style={{ width: '10px' }} />
+              <col style={{ width: '115px' }} />
+              {recapMode === "with-fuel" && (
+                <>
+                  <col style={{ width: '40px' }} />
+                  <col style={{ width: '40px' }} />
+                  <col style={{ width: '40px' }} />
+                </>
+              )}
+              <col style={{ width: '100px' }} />
+              <col style={{ width: '40px' }} />
+              <col style={{ width: '170px' }} />
+            </colgroup>
             <thead className="pdf-table-header">
               <tr style={{ height: '40px' }}>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[35px]" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[70px]" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[80px]" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/ Kecamatan</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[110px]" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[150px]" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/ Kecamatan</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[65px]" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[180px]" colSpan={2}>Peralatan</th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[115px]" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
-                {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2 w-[120px]" colSpan={3}>BBM (Liter)</th>)}
-                <th style={headerStyle} className="border-2 border-black p-2 w-[140px]" colSpan={2}>Personil</th>
-                <th style={headerStyle} className="border-2 border-black p-2 w-[170px]" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
+                {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>BBM (Liter)</th>)}
+                <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
               </tr>
               <tr style={{ height: '30px' }}>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[160px]">0%</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[160px]">50%</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[160px]">100%</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[170px]">Jenis Alat</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[10px] px-0">Jml</th>
-                {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px] w-[40px]">S</th></>)}
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[100px]">Koordinator</th>
-                <th style={subHeaderStyle} className="border-2 border-black p-1 w-[40px]">Anggota</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">0%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">50%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">100%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 px-0">Jml</th>
+                {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">S</th></>)}
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Koordinator</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Anggota</th>
               </tr>
             </thead>
             {reports.length > 0 ? (
