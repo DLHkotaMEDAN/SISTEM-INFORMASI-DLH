@@ -134,6 +134,16 @@ const Index = () => {
     return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
 
+  // Sort: Date (desc) then Category (Tim Pohon first)
+  filteredReports.sort((a, b) => {
+    const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+    if (dateDiff !== 0) return dateDiff;
+    
+    if (a.category === "Tim Pohon" && b.category !== "Tim Pohon") return -1;
+    if (a.category !== "Tim Pohon" && b.category === "Tim Pohon") return 1;
+    return a.category.localeCompare(b.category);
+  });
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="bg-white border-b sticky top-0 z-20">

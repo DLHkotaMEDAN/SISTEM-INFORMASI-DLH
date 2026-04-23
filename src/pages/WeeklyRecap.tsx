@@ -129,7 +129,17 @@ const WeeklyRecap = () => {
         }
         return matchDate && matchCategory;
       });
-      data.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime() || a.category.localeCompare(b.category));
+      
+      // Sort: Date (asc) then Category (Tim Pohon first)
+      data.sort((a, b) => {
+        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        
+        if (a.category === "Tim Pohon" && b.category !== "Tim Pohon") return -1;
+        if (a.category !== "Tim Pohon" && b.category === "Tim Pohon") return 1;
+        return a.category.localeCompare(b.category);
+      });
+      
       setReports(data);
     } catch (error) {
       console.error(error);

@@ -122,7 +122,17 @@ const DailyRecap = () => {
         }
         return matchDate && matchCategory;
       });
-      data.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || a.category.localeCompare(b.category));
+      
+      // Sort: Date (desc) then Category (Tim Pohon first)
+      data.sort((a, b) => {
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        
+        if (a.category === "Tim Pohon" && b.category !== "Tim Pohon") return -1;
+        if (a.category !== "Tim Pohon" && b.category === "Tim Pohon") return 1;
+        return a.category.localeCompare(b.category);
+      });
+      
       setReports(data);
     } catch (error) {
       console.error(error);
@@ -500,7 +510,7 @@ const DailyRecap = () => {
             <colgroup>
               <col style={{ width: '35px' }} />
               <col style={{ width: '70px' }} />
-              <col style={{ width: '75px' }} />
+              <col style={{ width: '65px' }} />
               <col style={{ width: '105px' }} />
               <col style={{ width: '110px' }} />
               {photoMode === "with-photo" && (
@@ -536,7 +546,7 @@ const DailyRecap = () => {
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
                 <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
-                {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>BBM (Liter)</th>)}
+                {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-1" colSpan={3}>BBM (Liter)</th>)}
                 <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
                 <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
               </tr>
