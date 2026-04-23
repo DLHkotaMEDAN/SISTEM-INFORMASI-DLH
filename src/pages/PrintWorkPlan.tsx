@@ -72,44 +72,51 @@ const PrintWorkPlan = () => {
           <p className="font-bold">Tanggal: {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
         </div>
 
-        <table className="w-full border-collapse border-2 border-black text-[10px]">
+        <table className="w-full border-collapse border-2 border-black text-[10px] table-fixed">
           <thead>
             <tr className="bg-slate-100">
-              <th className="border-2 border-black p-1 w-8">No</th>
-              <th className="border-2 border-black p-1 w-24">Kategori</th>
-              <th className="border-2 border-black p-1">Detail Kegiatan</th>
-              <th className="border-2 border-black p-1">Lokasi (Jalan + Kel + Kec)</th>
-              <th className="border-2 border-black p-1">Alat Operasional</th>
-              <th className="border-2 border-black p-1 w-10">Unit</th>
-              <th className="border-2 border-black p-1">Kegunaan</th>
-              <th className="border-2 border-black p-1">Koordinator</th>
-              <th className="border-2 border-black p-1 w-12">Personil</th>
-              <th className="border-2 border-black p-1">Dasar Pengerjaan</th>
-              <th className="border-2 border-black p-1">Keterangan</th>
+              <th className="border-2 border-black p-1 w-[30px]">No</th>
+              <th className="border-2 border-black p-1 w-[80px]">Kategori</th>
+              <th className="border-2 border-black p-1 w-[120px]">Detail Kegiatan</th>
+              <th className="border-2 border-black p-1 w-[150px]">Lokasi (Jalan + Kel + Kec)</th>
+              <th className="border-2 border-black p-1 w-[100px]">Alat Operasional</th>
+              <th className="border-2 border-black p-1 w-[40px]">Unit</th>
+              <th className="border-2 border-black p-1 w-[100px]">Kegunaan</th>
+              <th className="border-2 border-black p-1 w-[80px]">Koordinator</th>
+              <th className="border-2 border-black p-1 w-[50px]">Personil</th>
+              <th className="border-2 border-black p-1 w-[100px]">Dasar Pengerjaan</th>
+              <th className="border-2 border-black p-1 w-[100px]">Keterangan</th>
             </tr>
           </thead>
           <tbody>
             {plan.items.map((item, idx) => (
               <tr key={idx}>
-                <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                <td className="border-2 border-black p-1 text-center font-bold">{plan.category}</td>
-                <td className="border-2 border-black p-1">{item.description}</td>
-                <td className="border-2 border-black p-1">
+                <td className="border-2 border-black p-1 text-center align-top">{idx + 1}</td>
+                <td className="border-2 border-black p-1 text-center font-bold align-top">{plan.category}</td>
+                <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
+                <td className="border-2 border-black p-1 align-top break-words">
                   {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                 </td>
-                <td className="border-2 border-black p-1">
-                  {item.tools.map((t, i) => <div key={i}>• {t.name}</div>)}
+                
+                {/* Kolom Alat, Unit, Kegunaan yang disatukan dalam sub-tabel agar sejajar */}
+                <td colSpan={3} className="border-2 border-black p-0 align-top">
+                  <table className="w-full border-collapse border-none">
+                    <tbody>
+                      {item.tools.map((t, i) => (
+                        <tr key={i} className={i !== item.tools.length - 1 ? "border-b border-black" : ""}>
+                          <td className="p-1 w-[100px] border-r border-black align-top break-words">• {t.name}</td>
+                          <td className="p-1 w-[40px] border-r border-black text-center align-top">{t.unit}</td>
+                          <td className="p-1 w-[100px] align-top break-words">{t.usage}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </td>
-                <td className="border-2 border-black p-1 text-center">
-                  {item.tools.map((t, i) => <div key={i}>{t.unit}</div>)}
-                </td>
-                <td className="border-2 border-black p-1">
-                  {item.tools.map((t, i) => <div key={i}>{t.usage}</div>)}
-                </td>
-                <td className="border-2 border-black p-1 text-center">{item.coordinator}</td>
-                <td className="border-2 border-black p-1 text-center">{item.personnel.members} Org</td>
-                <td className="border-2 border-black p-1">{item.basis}</td>
-                <td className="border-2 border-black p-1 italic">{item.remarks || "-"}</td>
+
+                <td className="border-2 border-black p-1 text-center align-top">{item.coordinator}</td>
+                <td className="border-2 border-black p-1 text-center align-top">{item.personnel.members} Org</td>
+                <td className="border-2 border-black p-1 align-top break-words">{item.basis}</td>
+                <td className="border-2 border-black p-1 italic align-top break-words">{item.remarks || "-"}</td>
               </tr>
             ))}
           </tbody>
@@ -140,6 +147,7 @@ const PrintWorkPlan = () => {
           @page { size: landscape; margin: 1cm; }
           table { border-color: black !important; }
           th, td { border-color: black !important; }
+          .border-black { border-color: black !important; }
         }
       `}} />
     </div>
