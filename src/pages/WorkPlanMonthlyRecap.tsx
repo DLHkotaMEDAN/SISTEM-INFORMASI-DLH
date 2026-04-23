@@ -6,7 +6,7 @@ import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, FileText, PenTool } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, PenTool, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -82,9 +82,14 @@ const WorkPlanMonthlyRecap = () => {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={() => window.print()} className="bg-blue-600">
-            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button onClick={() => navigate('/work-plans/create')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
+              <Plus className="mr-2 h-4 w-4" /> Tambah Rencana Baru
+            </Button>
+            <Button onClick={() => window.print()} className="bg-blue-600">
+              <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+            </Button>
+          </div>
         </div>
       </div>
 
