@@ -54,6 +54,8 @@ const WorkPlanWeeklyRecap = () => {
     }
   };
 
+  const hasRemarks = plans.some(plan => plan.items.some(item => item.remarks && item.remarks.trim() !== ""));
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
@@ -117,8 +119,8 @@ const WorkPlanWeeklyRecap = () => {
               <th className="border-2 border-black p-1 w-[90px]">Kegunaan</th>
               <th className="border-2 border-black p-1 w-[70px]">Koordinator</th>
               <th className="border-2 border-black p-1 w-[35px]">Pers</th>
-              <th className="border-2 border-black p-1 w-[90px]">Dasar</th>
-              <th className="border-2 border-black p-1 w-[90px]">Keterangan</th>
+              <th className="border-2 border-black p-1 w-[90px]">Dasar Pengerjaan</th>
+              {hasRemarks && <th className="border-2 border-black p-1 w-[90px]">Keterangan</th>}
             </tr>
           </thead>
           <tbody>
@@ -157,7 +159,7 @@ const WorkPlanWeeklyRecap = () => {
                           <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.coordinator}</td>
                           <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.personnel.members}</td>
                           <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.basis}</td>
-                          <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={itemRowCount}>{item.remarks || "-"}</td>
+                          {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={itemRowCount}>{item.remarks || "-"}</td>}
                         </>
                       )}
                     </tr>
@@ -165,7 +167,7 @@ const WorkPlanWeeklyRecap = () => {
                 });
               })
             ) : (
-              <tr><td colSpan={12} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
+              <tr><td colSpan={hasRemarks ? 12 : 11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
             )}
           </tbody>
         </table>

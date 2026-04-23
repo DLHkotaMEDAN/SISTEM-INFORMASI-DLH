@@ -41,6 +41,8 @@ const PrintWorkPlan = () => {
   if (loading) return <div className="p-20 text-center">Menyiapkan dokumen...</div>;
   if (!plan) return null;
 
+  const hasRemarks = plan.items.some(item => item.remarks && item.remarks.trim() !== "");
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-lg shadow-sm border">
@@ -78,14 +80,14 @@ const PrintWorkPlan = () => {
               <th className="border-2 border-black p-1 w-[30px]">No</th>
               <th className="border-2 border-black p-1 w-[80px]">Tim/ Kec</th>
               <th className="border-2 border-black p-1 w-[120px]">Detail Kegiatan</th>
-              <th className="border-2 border-black p-1 w-[150px]">Lokasi (Jalan + Kel + Kec)</th>
-              <th className="border-2 border-black p-1 w-[100px]">Alat Operasional</th>
+              <th className="border-2 border-black p-1 w-[140px]">Lokasi (Jalan + Kel + Kec)</th>
+              <th className="border-2 border-black p-1 w-[110px]">Alat Operasional</th>
               <th className="border-2 border-black p-1 w-[40px]">Unit</th>
               <th className="border-2 border-black p-1 w-[100px]">Kegunaan</th>
               <th className="border-2 border-black p-1 w-[80px]">Koordinator</th>
               <th className="border-2 border-black p-1 w-[50px]">Personil</th>
               <th className="border-2 border-black p-1 w-[100px]">Dasar Pengerjaan</th>
-              <th className="border-2 border-black p-1 w-[100px]">Keterangan</th>
+              {hasRemarks && <th className="border-2 border-black p-1 w-[100px]">Keterangan</th>}
             </tr>
           </thead>
           <tbody>
@@ -113,7 +115,7 @@ const PrintWorkPlan = () => {
                       <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.coordinator}</td>
                       <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.personnel.members} Org</td>
                       <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>{item.basis}</td>
-                      <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={rowCount}>{item.remarks || "-"}</td>
+                      {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={rowCount}>{item.remarks || "-"}</td>}
                     </>
                   )}
                 </tr>
