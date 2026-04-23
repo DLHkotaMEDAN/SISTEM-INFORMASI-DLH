@@ -123,42 +123,47 @@ const WorkPlanWeeklyRecap = () => {
           </thead>
           <tbody>
             {plans.length > 0 ? (
-              plans.flatMap((plan, pIdx) => 
-                plan.items.map((item, iIdx) => (
-                  <tr key={`${plan.id}-${iIdx}`}>
-                    {iIdx === 0 ? (
-                      <>
-                        <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={plan.items.length}>{pIdx + 1}</td>
-                        <td className="border-2 border-black p-1 text-center align-top" rowSpan={plan.items.length}>
-                          {format(parseISO(plan.date), 'eee, dd MMM', { locale: localeId })}
-                        </td>
-                        <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={plan.items.length}>{plan.category}</td>
-                      </>
-                    ) : null}
-                    <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
-                    <td className="border-2 border-black p-1 align-top break-words">
-                      {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                    </td>
-                    <td colSpan={3} className="border-2 border-black p-0 align-top">
-                      <table className="w-full border-collapse border-none">
-                        <tbody>
-                          {item.tools.map((t, tIdx) => (
-                            <tr key={tIdx} className={tIdx !== item.tools.length - 1 ? "border-b-2 border-black" : ""}>
-                              <td className="p-1 w-[90px] border-r-2 border-black align-top break-words">• {t.name}</td>
-                              <td className="p-1 w-[25px] border-r-2 border-black text-center align-top">{t.unit}</td>
-                              <td className="p-1 w-[90px] align-top break-words">{t.usage}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </td>
-                    <td className="border-2 border-black p-1 text-center align-top">{item.coordinator}</td>
-                    <td className="border-2 border-black p-1 text-center align-top">{item.personnel.members}</td>
-                    <td className="border-2 border-black p-1 align-top break-words">{item.basis}</td>
-                    <td className="border-2 border-black p-1 italic align-top break-words">{item.remarks || "-"}</td>
-                  </tr>
-                ))
-              )
+              plans.flatMap((plan, pIdx) => {
+                const planTotalRows = plan.items.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
+                
+                return plan.items.flatMap((item, iIdx) => {
+                  const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
+                  const itemRowCount = toolsToRender.length;
+                  
+                  return toolsToRender.map((tool, tIdx) => (
+                    <tr key={`${plan.id}-${iIdx}-${tIdx}`}>
+                      {iIdx === 0 && tIdx === 0 && (
+                        <>
+                          <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={planTotalRows}>{pIdx + 1}</td>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>
+                            {format(parseISO(plan.date), 'eee, dd MMM', { locale: localeId })}
+                          </td>
+                          <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
+                        </>
+                      )}
+                      {tIdx === 0 && (
+                        <>
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.description}</td>
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>
+                            {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                          </td>
+                        </>
+                      )}
+                      <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
+                      <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
+                      <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
+                      {tIdx === 0 && (
+                        <>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.coordinator}</td>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.personnel.members}</td>
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.basis}</td>
+                          <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={itemRowCount}>{item.remarks || "-"}</td>
+                        </>
+                      )}
+                    </tr>
+                  ));
+                });
+              })
             ) : (
               <tr><td colSpan={12} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
             )}

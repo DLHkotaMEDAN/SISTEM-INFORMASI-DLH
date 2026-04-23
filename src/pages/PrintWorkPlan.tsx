@@ -89,35 +89,36 @@ const PrintWorkPlan = () => {
             </tr>
           </thead>
           <tbody>
-            {plan.items.map((item, idx) => (
-              <tr key={idx}>
-                <td className="border-2 border-black p-1 text-center align-top">{idx + 1}</td>
-                <td className="border-2 border-black p-1 text-center font-bold align-top">{plan.category}</td>
-                <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
-                <td className="border-2 border-black p-1 align-top break-words">
-                  {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                </td>
-                
-                <td colSpan={3} className="border-2 border-black p-0 align-top">
-                  <table className="w-full border-collapse border-none">
-                    <tbody>
-                      {item.tools.map((t, i) => (
-                        <tr key={i} className={i !== item.tools.length - 1 ? "border-b-2 border-black" : ""}>
-                          <td className="p-1 w-[100px] border-r-2 border-black align-top break-words">• {t.name}</td>
-                          <td className="p-1 w-[40px] border-r-2 border-black text-center align-top">{t.unit}</td>
-                          <td className="p-1 w-[100px] align-top break-words">{t.usage}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </td>
-
-                <td className="border-2 border-black p-1 text-center align-top">{item.coordinator}</td>
-                <td className="border-2 border-black p-1 text-center align-top">{item.personnel.members} Org</td>
-                <td className="border-2 border-black p-1 align-top break-words">{item.basis}</td>
-                <td className="border-2 border-black p-1 italic align-top break-words">{item.remarks || "-"}</td>
-              </tr>
-            ))}
+            {plan.items.map((item, itemIdx) => {
+              const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
+              const rowCount = toolsToRender.length;
+              
+              return toolsToRender.map((tool, toolIdx) => (
+                <tr key={`${itemIdx}-${toolIdx}`}>
+                  {toolIdx === 0 && (
+                    <>
+                      <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{itemIdx + 1}</td>
+                      <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={rowCount}>{plan.category}</td>
+                      <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>{item.description}</td>
+                      <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>
+                        {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                      </td>
+                    </>
+                  )}
+                  <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
+                  <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
+                  <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
+                  {toolIdx === 0 && (
+                    <>
+                      <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.coordinator}</td>
+                      <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.personnel.members} Org</td>
+                      <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>{item.basis}</td>
+                      <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={rowCount}>{item.remarks || "-"}</td>
+                    </>
+                  )}
+                </tr>
+              ));
+            })}
           </tbody>
         </table>
 
