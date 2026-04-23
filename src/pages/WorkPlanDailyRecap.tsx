@@ -7,7 +7,7 @@ import { workPlanService } from '@/services/workPlanService';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, Calendar as CalendarIcon, FileText, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Printer, Calendar as CalendarIcon, FileText, ChevronDown, PenTool } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -20,12 +20,15 @@ const getLogoUrl = (fileName: string) => {
 const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
+type SignatureMode = "with-signature" | "without-signature";
+
 const WorkPlanDailyRecap = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [plans, setPlans] = useState<WorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || "semua");
+  const [signatureMode, setSignatureMode] = useState<SignatureMode>("with-signature");
   
   const printRef = useRef<HTMLDivElement>(null);
 
@@ -74,6 +77,16 @@ const WorkPlanDailyRecap = () => {
                 </div>
               )}
             </div>
+
+            <Select value={signatureMode} onValueChange={(v) => setSignatureMode(v as SignatureMode)}>
+              <SelectTrigger className="w-[180px] bg-amber-50 border-amber-200 h-10 text-amber-700 font-medium">
+                <SelectValue placeholder="Tanda Tangan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="with-signature"><div className="flex items-center gap-2"><PenTool size={14} /> Ada Tanda Tangan</div></SelectItem>
+                <SelectItem value="without-signature"><div className="flex items-center gap-2"><PenTool size={14} className="opacity-40" /> Tanpa Tanda Tangan</div></SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <Button onClick={() => window.print()} className="bg-blue-600">
             <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
@@ -156,14 +169,16 @@ const WorkPlanDailyRecap = () => {
           </tbody>
         </table>
 
-        <div className="mt-12 flex justify-end">
-          <div className="text-center w-64">
-            <p>Medan, {format(new Date(), 'dd MMMM yyyy', { locale: localeId })}</p>
-            <p className="font-bold mt-1">Koordinator Wilayah 4</p>
-            <div className="h-20"></div>
-            <p className="font-bold underline">( ............................................ )</p>
+        {signatureMode === "with-signature" && (
+          <div className="mt-12 flex justify-end">
+            <div className="text-center w-64">
+              <p>Medan, {format(new Date(), 'dd MMMM yyyy', { locale: localeId })}</p>
+              <p className="font-bold mt-1">Koordinator Wilayah 4</p>
+              <div className="h-20"></div>
+              <p className="font-bold underline">( ............................................ )</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

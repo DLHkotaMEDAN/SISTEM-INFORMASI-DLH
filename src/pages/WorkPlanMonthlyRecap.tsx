@@ -6,7 +6,7 @@ import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, PenTool } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -26,12 +26,15 @@ const months = [
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
+type SignatureMode = "with-signature" | "without-signature";
+
 const WorkPlanMonthlyRecap = () => {
   const navigate = useNavigate();
   const [plans, setPlans] = useState<WorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [signatureMode, setSignatureMode] = useState<SignatureMode>("with-signature");
 
   useEffect(() => {
     loadData();
@@ -68,6 +71,15 @@ const WorkPlanMonthlyRecap = () => {
             <Select value={selectedYear} onValueChange={setSelectedYear}>
               <SelectTrigger className="w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={signatureMode} onValueChange={(v) => setSignatureMode(v as SignatureMode)}>
+              <SelectTrigger className="w-[180px] bg-amber-50 border-amber-200 h-10 text-amber-700 font-medium">
+                <SelectValue placeholder="Tanda Tangan" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="with-signature"><div className="flex items-center gap-2"><PenTool size={14} /> Ada Tanda Tangan</div></SelectItem>
+                <SelectItem value="without-signature"><div className="flex items-center gap-2"><PenTool size={14} className="opacity-40" /> Tanpa Tanda Tangan</div></SelectItem>
+              </SelectContent>
             </Select>
           </div>
           <Button onClick={() => window.print()} className="bg-blue-600">
@@ -153,14 +165,16 @@ const WorkPlanMonthlyRecap = () => {
           </tbody>
         </table>
 
-        <div className="mt-12 flex justify-end">
-          <div className="text-center w-64">
-            <p>Medan, {format(new Date(), 'dd MMMM yyyy', { locale: localeId })}</p>
-            <p className="font-bold mt-1">Koordinator Wilayah 4</p>
-            <div className="h-20"></div>
-            <p className="font-bold underline">( ............................................ )</p>
+        {signatureMode === "with-signature" && (
+          <div className="mt-12 flex justify-end">
+            <div className="text-center w-64">
+              <p>Medan, {format(new Date(), 'dd MMMM yyyy', { locale: localeId })}</p>
+              <p className="font-bold mt-1">Koordinator Wilayah 4</p>
+              <div className="h-20"></div>
+              <p className="font-bold underline">( ............................................ )</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `

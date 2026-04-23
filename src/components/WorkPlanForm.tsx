@@ -22,9 +22,9 @@ import { cn } from "@/lib/utils";
 const categories = ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"];
 
 const toolSchema = z.object({
-  name: z.string().min(1, "Nama alat wajib diisi"),
-  unit: z.coerce.number().min(1, "Jumlah minimal 1"),
-  usage: z.string().min(1, "Kegunaan wajib diisi"),
+  name: z.string().optional().default(""),
+  unit: z.coerce.number().default(0),
+  usage: z.string().optional().default(""),
 });
 
 const itemSchema = z.object({
@@ -34,7 +34,7 @@ const itemSchema = z.object({
     village: z.array(z.string()).default([""]),
     subDistrict: z.string().default(""),
   }),
-  tools: z.array(toolSchema).min(1, "Minimal satu alat operasional"),
+  tools: z.array(toolSchema).default([]),
   coordinator: z.string().min(1, "Koordinator wajib diisi"),
   personnel: z.object({
     members: z.coerce.number().min(0),
@@ -48,25 +48,39 @@ const formSchema = z.object({
   category: z.string().min(1, "Kategori wajib dipilih"),
   items: z.array(itemSchema).min(1),
 }).superRefine((data, ctx) => {
-  // Validasi kondisional: Jika bukan Tim Siram, Kecamatan dan Kelurahan wajib diisi
-  if (data.category !== "Tim Siram") {
-    data.items.forEach((item, index) => {
-      if (!item.location.subDistrict) {
+  const optionalToolsCategories = ["Taman Kota", "Taman Amplas", "Taman Area"];
+  const isToolsOptional = optionalToolsCategories.includes(data.category);
+
+  data.items.forEach((item, index) => {
+    // Validasi Kecamatan & Kelurahan (Opsional hanya untuk Tim Siram)
+    if (data.category !== "Tim Siram") {
+      if (!item.location.subDistrict || item.location.subDistrict === " ") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Kecamatan wajib diisi",
           path: ['items', index, 'location', 'subDistrict']
         });
       }
-      if (!item.location.village[0]) {
+      if (!item.location.village[0] || item.location.village[0] === " ") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Kelurahan wajib diisi",
           path: ['items', index, 'location', 'village', 0]
         });
       }
-    });
-  }
+    }
+
+    // Validasi Alat Operasional (Opsional untuk Taman Kota, Amplas, Area)
+    if (!isToolsOptional) {
+      if (item.tools.length === 0 || !item.tools[0].name) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Minimal satu alat operasional wajib diisi",
+          path: ['items', index, 'tools', 0, 'name']
+        });
+      }
+    }
+  });
 });
 
 interface WorkPlanFormProps {
@@ -106,15 +120,25 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
   });
 
   const selectedCategory = form.watch("category");
+  const isToolsOptional = ["Taman Kota", "Taman Amplas", "Taman Area"].includes(selectedCategory);
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
     try {
+      // Bersihkan alat kosong sebelum simpan
+      const processedValues = {
+        ...values,
+        items: values.items.map(item => ({
+          ...item,
+          tools: item.tools.filter(t => t.name && t.name.trim() !== "")
+        }))
+      };
+
       if (isEditing && initialData) {
-        await workPlanService.updateWorkPlan(initialData.id, values as Partial<WorkPlan>);
+        await workPlanService.updateWorkPlan(initialData.id, processedValues as Partial<WorkPlan>);
         showSuccess("Rencana Kerja diperbarui!");
       } else {
-        await workPlanService.createWorkPlan(values as Omit<WorkPlan, 'id' | 'createdAt'>);
+        await workPlanService.createWorkPlan(processedValues as Omit<WorkPlan, 'id' | 'createdAt'>);
         showSuccess("Rencana Kerja disimpan!");
       }
       navigate('/work-plans');
@@ -221,7 +245,9 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
 
                 <div className="pt-4 border-t space-y-4">
                   <div className="flex items-center justify-between">
-                    <FormLabel className="flex items-center gap-2 text-blue-700 font-bold"><Wrench size={16} /> Alat Operasional</FormLabel>
+                    <FormLabel className="flex items-center gap-2 text-blue-700 font-bold">
+                      <Wrench size={16} /> Alat Operasional {isToolsOptional && <span className="text-[10px] text-slate-400 font-normal">(Opsional)</span>}
+                    </FormLabel>
                     <Button type="button" variant="outline" size="sm" className="h-8" onClick={() => {
                       const current = form.getValues(`items.${index}.tools`);
                       form.setValue(`items.${index}.tools`, [...current, { name: "", unit: 1, usage: "" }]);
@@ -234,7 +260,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                     <div key={toolIdx} className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-slate-50 p-3 rounded-lg border">
                       <div className="md:col-span-5">
                         <FormField control={form.control} name={`items.${index}.tools.${toolIdx}.name`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase">Nama Alat</FormLabel><FormControl><Input className="h-9" {...field} /></FormControl></FormItem>
+                          <FormItem><FormLabel className="text-[10px] uppercase">Nama Alat</FormLabel><FormControl><Input className="h-9" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                       <div className="md:col-span-2">
@@ -248,14 +274,12 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                         )} />
                       </div>
                       <div className="md:col-span-1 flex justify-end">
-                        {form.watch(`items.${index}.tools`).length > 1 && (
-                          <Button type="button" variant="ghost" size="icon" className="text-red-400 h-9 w-9" onClick={() => {
-                            const current = form.getValues(`items.${index}.tools`);
-                            form.setValue(`items.${index}.tools`, current.filter((_, i) => i !== toolIdx));
-                          }}>
-                            <Trash2 size={16} />
-                          </Button>
-                        )}
+                        <Button type="button" variant="ghost" size="icon" className="text-red-400 h-9 w-9" onClick={() => {
+                          const current = form.getValues(`items.${index}.tools`);
+                          form.setValue(`items.${index}.tools`, current.filter((_, i) => i !== toolIdx));
+                        }}>
+                          <Trash2 size={16} />
+                        </Button>
                       </div>
                     </div>
                   ))}
