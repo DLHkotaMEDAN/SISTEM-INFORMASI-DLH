@@ -5,13 +5,23 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Calendar, MapPin, FileText, Trash2, Edit, Eye, Printer, Search, FilterX, ArrowLeft } from 'lucide-react';
+import { 
+  Plus, Calendar, MapPin, FileText, Trash2, Edit, 
+  Printer, Search, FilterX, ArrowLeft, ChevronDown,
+  Table
+} from 'lucide-react';
 import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
 import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const WorkPlanList = () => {
   const navigate = useNavigate();
@@ -75,9 +85,29 @@ const WorkPlanList = () => {
               <FileText className="text-blue-600" /> Rencana Kerja
             </h1>
           </div>
-          <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600">
-            <Plus className="mr-2 h-4 w-4" /> Buat Rencana Baru
-          </Button>
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="bg-white">
+                  <Printer className="mr-2 h-4 w-4" /> Cetak Rekap <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer">
+                  <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer">
+                  <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+            <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600">
+              <Plus className="mr-2 h-4 w-4" /> Buat Rencana Baru
+            </Button>
+          </div>
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border flex flex-col md:flex-row gap-4">

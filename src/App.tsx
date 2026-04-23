@@ -21,6 +21,9 @@ import WorkPlanList from "./pages/WorkPlanList";
 import CreateWorkPlan from "./pages/CreateWorkPlan";
 import EditWorkPlan from "./pages/EditWorkPlan";
 import PrintWorkPlan from "./pages/PrintWorkPlan";
+import WorkPlanDailyRecap from "./pages/WorkPlanDailyRecap";
+import WorkPlanWeeklyRecap from "./pages/WorkPlanWeeklyRecap";
+import WorkPlanMonthlyRecap from "./pages/WorkPlanMonthlyRecap";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +56,9 @@ const App = () => (
             <Route path="/work-plans/create" element={<ProtectedRoute><CreateWorkPlan /></ProtectedRoute>} />
             <Route path="/work-plans/edit/:id" element={<ProtectedRoute><EditWorkPlan /></ProtectedRoute>} />
             <Route path="/work-plans/print/:id" element={<ProtectedRoute><PrintWorkPlan /></ProtectedRoute>} />
+            <Route path="/work-plans/daily-rekap" element={<ProtectedRoute><WorkPlanDailyRecap /></ProtectedRoute>} />
+            <Route path="/work-plans/weekly-rekap" element={<ProtectedRoute><WorkPlanWeeklyRecap /></ProtectedRoute>} />
+            <Route path="/work-plans/monthly-rekap" element={<ProtectedRoute><WorkPlanMonthlyRecap /></ProtectedRoute>} />
             
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />
