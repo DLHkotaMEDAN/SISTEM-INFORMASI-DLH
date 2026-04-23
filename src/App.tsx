@@ -16,6 +16,12 @@ import Maintenance from "./pages/Maintenance";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
+// Work Plan Pages
+import WorkPlanList from "./pages/WorkPlanList";
+import CreateWorkPlan from "./pages/CreateWorkPlan";
+import EditWorkPlan from "./pages/EditWorkPlan";
+import PrintWorkPlan from "./pages/PrintWorkPlan";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -41,6 +47,12 @@ const App = () => (
             <Route path="/monthly-rekap" element={<MonthlyRecap />} />
             <Route path="/daily-rekap" element={<DailyRecap />} />
             <Route path="/weekly-rekap" element={<WeeklyRecap />} />
+            
+            {/* Work Plan Routes */}
+            <Route path="/work-plans" element={<ProtectedRoute><WorkPlanList /></ProtectedRoute>} />
+            <Route path="/work-plans/create" element={<ProtectedRoute><CreateWorkPlan /></ProtectedRoute>} />
+            <Route path="/work-plans/edit/:id" element={<ProtectedRoute><EditWorkPlan /></ProtectedRoute>} />
+            <Route path="/work-plans/print/:id" element={<ProtectedRoute><PrintWorkPlan /></ProtectedRoute>} />
             
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />

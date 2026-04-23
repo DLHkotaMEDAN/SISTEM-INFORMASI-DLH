@@ -9,7 +9,7 @@ import {
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
   LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronDown,
-  Table
+  Table, ClipboardList
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -151,6 +151,12 @@ const Index = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {isLoggedIn && (
+              <Button variant="outline" size="sm" onClick={() => navigate('/work-plans')} className="bg-blue-50 text-blue-700 border-blue-200">
+                <ClipboardList className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rencana Kerja</span>
+              </Button>
+            )}
+
             {isAdmin && (
               <Button variant="outline" size="sm" onClick={() => navigate('/maintenance')} className="bg-amber-50 text-amber-700 border-amber-200">
                 <Database className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Maintenance</span>
