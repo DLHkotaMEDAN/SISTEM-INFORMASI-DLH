@@ -111,8 +111,8 @@ const WorkPlanWeeklyRecap = () => {
               <th className="border-2 border-black p-1 w-[60px]">Hari / Tgl</th>
               <th className="border-2 border-black p-1 w-[70px]">Tim/ Kec</th>
               <th className="border-2 border-black p-1 w-[110px]">Detail Kegiatan</th>
-              <th className="border-2 border-black p-1 w-[130px]">Lokasi</th>
-              <th className="border-2 border-black p-1 w-[90px]">Alat Operasional</th>
+              <th className="border-2 border-black p-1 w-[140px]">Lokasi</th>
+              <th className="border-2 border-black p-1 w-[110px]">Alat Operasional</th>
               <th className="border-2 border-black p-1 w-[25px]">Unit</th>
               <th className="border-2 border-black p-1 w-[90px]">Kegunaan</th>
               <th className="border-2 border-black p-1 w-[70px]">Koordinator</th>
