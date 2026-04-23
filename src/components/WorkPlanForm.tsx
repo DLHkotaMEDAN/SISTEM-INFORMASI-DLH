@@ -31,8 +31,8 @@ const itemSchema = z.object({
   description: z.string().min(1, "Detail kegiatan wajib diisi"),
   location: z.object({
     street: z.string().min(1, "Jalan wajib diisi"),
-    village: z.array(z.string().min(1, "Kelurahan wajib diisi")).min(1),
-    subDistrict: z.string().min(1, "Kecamatan wajib diisi"),
+    village: z.array(z.string()).default([""]),
+    subDistrict: z.string().default(""),
   }),
   tools: z.array(toolSchema).min(1, "Minimal satu alat operasional"),
   coordinator: z.string().min(1, "Koordinator wajib diisi"),
@@ -47,6 +47,26 @@ const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
   items: z.array(itemSchema).min(1),
+}).superRefine((data, ctx) => {
+  // Validasi kondisional: Jika bukan Tim Siram, Kecamatan dan Kelurahan wajib diisi
+  if (data.category !== "Tim Siram") {
+    data.items.forEach((item, index) => {
+      if (!item.location.subDistrict) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Kecamatan wajib diisi",
+          path: ['items', index, 'location', 'subDistrict']
+        });
+      }
+      if (!item.location.village[0]) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Kelurahan wajib diisi",
+          path: ['items', index, 'location', 'village', 0]
+        });
+      }
+    });
+  }
 });
 
 interface WorkPlanFormProps {
@@ -84,6 +104,8 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
     control: form.control,
     name: "items"
   });
+
+  const selectedCategory = form.watch("category");
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsSubmitting(true);
@@ -169,21 +191,25 @@ const WorkPlanForm = ({ initialData, isEditing = false }: WorkPlanFormProps) => 
                     )} />
                     <FormField control={form.control} name={`items.${index}.location.subDistrict`} render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Kecamatan</FormLabel>
+                        <FormLabel>Kecamatan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal">(Opsional)</span>}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
-                          <SelectContent>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+                          <FormControl><SelectTrigger><SelectValue placeholder={selectedCategory === "Tim Siram" ? "Boleh Kosong" : "Pilih..."} /></SelectTrigger></FormControl>
+                          <SelectContent>
+                            <SelectItem value=" ">Abaikan / Kosong</SelectItem>
+                            {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                          </SelectContent>
                         </Select>
                         <FormMessage />
                       </FormItem>
                     )} />
                     <FormField control={form.control} name={`items.${index}.location.village.0`} render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Kelurahan</FormLabel>
+                        <FormLabel>Kelurahan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal">(Opsional)</span>}</FormLabel>
                         <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
+                          <FormControl><SelectTrigger><SelectValue placeholder={selectedCategory === "Tim Siram" ? "Boleh Kosong" : "Pilih..."} /></SelectTrigger></FormControl>
                           <SelectContent>
-                            {form.watch(`items.${index}.location.subDistrict`) && 
+                            <SelectItem value=" ">Abaikan / Kosong</SelectItem>
+                            {form.watch(`items.${index}.location.subDistrict`) && form.watch(`items.${index}.location.subDistrict`) !== " " &&
                               medanDistricts[form.watch(`items.${index}.location.subDistrict`)].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
                           </SelectContent>
                         </Select>
