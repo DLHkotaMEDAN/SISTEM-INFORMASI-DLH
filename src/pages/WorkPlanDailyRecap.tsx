@@ -149,13 +149,13 @@ const WorkPlanDailyRecap = () => {
                       {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                     </td>
                     <td colSpan={3} className="border-2 border-black p-0 align-top">
-                      <table className="w-full border-collapse border-none">
+                      <table className="w-full border-collapse" style={{ border: 'none', margin: '-1px' }}>
                         <tbody>
                           {item.tools.map((t, tIdx) => (
-                            <tr key={tIdx} className={tIdx !== item.tools.length - 1 ? "border-b border-black" : ""}>
-                              <td className="p-1 w-[100px] border-r border-black align-top break-words">• {t.name}</td>
-                              <td className="p-1 w-[30px] border-r border-black text-center align-top">{t.unit}</td>
-                              <td className="p-1 w-[100px] align-top break-words">{t.usage}</td>
+                            <tr key={tIdx}>
+                              <td className="p-1 w-[100px] border-r border-black align-top break-words" style={{ borderBottom: tIdx !== item.tools.length - 1 ? '1px solid black' : 'none' }}>• {t.name}</td>
+                              <td className="p-1 w-[30px] border-r border-black text-center align-top" style={{ borderBottom: tIdx !== item.tools.length - 1 ? '1px solid black' : 'none' }}>{t.unit}</td>
+                              <td className="p-1 w-[100px] align-top break-words" style={{ borderBottom: tIdx !== item.tools.length - 1 ? '1px solid black' : 'none' }}>{t.usage}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -199,6 +199,8 @@ const WorkPlanDailyRecap = () => {
             max-width: none !important;
           }
           @page { size: landscape; margin: 1cm; }
+          table { border-collapse: collapse !important; }
+          th, td { border: 1px solid black !important; }
         }
       `}} />
     </div>
