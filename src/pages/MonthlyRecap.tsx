@@ -79,7 +79,6 @@ const MonthlyRecap = () => {
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan && !isAdminHarian;
 
   useEffect(() => {
-    // Blokir akses untuk Admin Harian
     if (isAdminHarian) {
       showError("Admin Harian tidak diizinkan mengakses Rekap Bulanan");
       navigate('/');
@@ -161,11 +160,10 @@ const MonthlyRecap = () => {
       let currentY = margin;
 
       const headerEl = document.querySelector('.pdf-header') as HTMLElement;
-      let headerHeight = 0;
       if (headerEl) {
         const canvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
         const headerImg = canvas.toDataURL('image/jpeg', 0.95);
-        headerHeight = (canvas.height * contentWidth) / canvas.width;
+        const headerHeight = (canvas.height * contentWidth) / canvas.width;
         pdf.addImage(headerImg, 'JPEG', margin, currentY, contentWidth, headerHeight);
         currentY += headerHeight + 5;
       }
@@ -196,26 +194,16 @@ const MonthlyRecap = () => {
         const canvas = await html2canvas(block, { scale: 2, useCORS: true });
         const imgData = canvas.toDataURL('image/jpeg', 0.95);
         const imgHeight = (canvas.height * contentWidth) / canvas.width;
-        const isLastBlock = i === reportBlocks.length - 1;
-        if (isLastBlock && signatureMode === "with-signature") {
-          if (currentY + imgHeight + footerHeight > pdfHeight - margin) {
-            pdf.addPage('a3', 'landscape');
-            currentY = margin;
-            if (tableHeaderImg) {
-              pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
-              currentY += tableHeaderHeight;
-            }
-          }
-        } else {
-          if (currentY + imgHeight > pdfHeight - margin - 20) {
-            pdf.addPage('a3', 'landscape');
-            currentY = margin;
-            if (tableHeaderImg) {
-              pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
-              currentY += tableHeaderHeight;
-            }
+        
+        if (currentY + imgHeight > pdfHeight - margin - 20) {
+          pdf.addPage('a3', 'landscape');
+          currentY = margin;
+          if (tableHeaderImg) {
+            pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
+            currentY += tableHeaderHeight;
           }
         }
+        
         pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
         currentY += imgHeight;
       }
@@ -276,6 +264,7 @@ const MonthlyRecap = () => {
       }
       columns.push({ header: 'Koordinator', key: 'coord', width: 20 }, { header: 'Anggota', key: 'members', width: 10 }, { header: 'Keterangan', key: 'rem', width: 35 });
       worksheet.columns = columns;
+      
       const lastColLetter = String.fromCharCode(64 + columns.length);
       worksheet.mergeCells(`A1:${lastColLetter}1`);
       worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN';
@@ -286,6 +275,7 @@ const MonthlyRecap = () => {
       worksheet.getCell('A2').font = { bold: true, size: 16 };
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
       worksheet.addRow([]);
+      
       const headerRow = worksheet.addRow(columns.map(c => c.header));
       headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
@@ -293,6 +283,7 @@ const MonthlyRecap = () => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.font = { bold: true };
       });
+
       let displayIdx = 1;
       for (const report of reports) {
         for (let i = 0; i < report.tasks.length; i++) {
@@ -300,7 +291,7 @@ const MonthlyRecap = () => {
           const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
           const rowData: any = {
             no: i === 0 ? displayIdx : '',
-            date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short' }) : '',
+            date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '',
             category: i === 0 ? report.category : '',
             desc: task.description,
             loc: `${task.location.street}, ${villages}`,
@@ -323,20 +314,6 @@ const MonthlyRecap = () => {
             cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
             cell.alignment = { vertical: 'middle', wrapText: true };
           });
-          const addImageToCell = async (url: string, colIndex: number) => {
-            if (!url) return;
-            try {
-              const response = await fetch(url);
-              const blob = await response.blob();
-              const arrayBuffer = await blob.arrayBuffer();
-              const imageId = workbook.addImage({ buffer: arrayBuffer, extension: 'jpeg' });
-              worksheet.addImage(imageId, { tl: { col: colIndex - 1, row: row.number - 1 }, ext: { width: 140, height: 130 }, editAs: 'oneCell' });
-            } catch (e) { console.error(e); }
-          };
-          // Kolom dokumentasi bergeser karena ada kolom Kategori
-          await addImageToCell(task.photos.zero, 6);
-          await addImageToCell(task.photos.fifty, 7);
-          await addImageToCell(task.photos.hundred, 8);
         }
         displayIdx++;
       }
@@ -366,9 +343,7 @@ const MonthlyRecap = () => {
   const headerStyle = { backgroundColor: '#f1f5f9', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
   const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
 
-  const totalCols = 15 + (recapMode === "with-fuel" ? 3 : 0);
-
-  if (isAdminHarian) return null;
+  const totalCols = 12 + (recapMode === "with-fuel" ? 3 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -626,13 +601,22 @@ const MonthlyRecap = () => {
             visibility: hidden !important;
             opacity: 0 !important;
           }
-          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          .print-area { 
+            box-shadow: none !important; 
+            border: none !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+            width: 100% !important; 
+            max-width: none !important; 
+            background-color: white !important;
+          }
           @page { size: A3 landscape; margin: 1.5cm; }
           table { page-break-inside: auto; width: 100% !important; }
           tr { page-break-inside: avoid; page-break-after: auto; }
           thead { display: table-header-group; }
           tfoot { display: table-footer-group; }
           .pdf-report-block { page-break-inside: avoid; }
+          .bg-slate-50, .bg-slate-100 { background-color: white !important; }
         }
       `}} />
     </div>

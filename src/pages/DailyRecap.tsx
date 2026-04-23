@@ -639,13 +639,22 @@ const DailyRecap = () => {
             visibility: hidden !important;
             opacity: 0 !important;
           }
-          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          .print-area { 
+            box-shadow: none !important; 
+            border: none !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+            width: 100% !important; 
+            max-width: none !important; 
+            background-color: white !important;
+          }
           @page { size: A3 landscape; margin: 1.5cm; }
           table { page-break-inside: auto; width: 100% !important; }
           tr { page-break-inside: avoid; page-break-after: auto; }
           thead { display: table-header-group; }
           tfoot { display: table-footer-group; }
           .pdf-report-block { page-break-inside: avoid; }
+          .bg-slate-50, .bg-slate-100 { background-color: white !important; }
         }
       `}} />
     </div>
