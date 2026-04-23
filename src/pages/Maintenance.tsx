@@ -5,10 +5,11 @@ import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   CheckCircle2, FileWarning, Loader2, Database, 
-  Eye, X, HardDrive, AlertTriangle
+  Eye, HardDrive, AlertTriangle, Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -21,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import UserManagement from '@/components/UserManagement';
 
 const Maintenance = () => {
   const navigate = useNavigate();
@@ -30,22 +32,16 @@ const Maintenance = () => {
   const [orphanedFiles, setOrphanedFiles] = useState<any[]>([]);
   const [stats, setStats] = useState({ 
     totalStorageCount: 0, 
-    totalStorageSize: 0, // dalam bytes
+    totalStorageSize: 0, 
     usedInDb: 0, 
     orphaned: 0,
     dbRecordCount: 0
   });
   const [isCleaned, setIsCleaned] = useState(false);
-  
-  // State untuk Preview
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
 
-  // Limit Supabase Free Tier
-  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1GB
-  const DB_LIMIT_RECORDS = 10000; // Estimasi aman untuk free tier (limit sebenarnya 500MB)
-
-  // Hanya Admin yang bisa akses
+  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; 
   const isAdmin = profile?.role === 'admin' || session?.user?.email === 'admin@gmail.com';
 
   useEffect(() => {
@@ -67,14 +63,12 @@ const Maintenance = () => {
     setAnalyzing(true);
     setIsCleaned(false);
     try {
-      // 1. Hitung Record Database
       const { count: reportCount, error: countError } = await supabase
         .from('reports')
         .select('*', { count: 'exact', head: true });
       
       if (countError) throw countError;
 
-      // 2. Ambil data tasks untuk cek referensi foto
       const { data: reports, error: dbError } = await supabase
         .from('reports')
         .select('tasks');
@@ -94,7 +88,6 @@ const Maintenance = () => {
         });
       });
 
-      // 3. List file di Storage
       const { data: storageFiles, error: storageError } = await supabase
         .storage
         .from('report-photos')
@@ -135,7 +128,7 @@ const Maintenance = () => {
 
   const cleanStorage = async () => {
     if (orphanedFiles.length === 0) return;
-    if (!confirm(`Apakah Anda yakin ingin menghapus ${orphanedFiles.length} file secara permanen? Tindakan ini tidak dapat dibatalkan.`)) return;
+    if (!confirm(`Hapus ${orphanedFiles.length} file sampah secara permanen?`)) return;
 
     setLoading(true);
     try {
@@ -148,7 +141,6 @@ const Maintenance = () => {
       if (error) throw error;
 
       showSuccess(`${fileNamesToDelete.length} file berhasil dihapus.`);
-      // Re-analyze after cleaning
       await analyzeStorage();
       setIsCleaned(true);
     } catch (error: any) {
@@ -166,7 +158,7 @@ const Maintenance = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="max-w-5xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/')}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -177,144 +169,149 @@ const Maintenance = () => {
           <div className="w-20"></div>
         </div>
 
-        {/* Kuota Monitor */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className={cn("bg-white border-t-4", isStorageCritical ? "border-t-red-500" : "border-t-blue-500")}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center justify-between">
-                <span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Foto)</span>
-                <Badge variant={isStorageCritical ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Progress value={storageUsagePercent} className={cn("h-2", isStorageCritical ? "bg-red-100" : "bg-blue-100")} />
-              <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
-                <span>Terpakai: {formatSize(stats.totalStorageSize)}</span>
-                <span>Limit: 1 GB</span>
-              </div>
-              {isStorageCritical && (
-                <div className="flex items-center gap-2 text-red-600 text-[10px] font-bold bg-red-50 p-2 rounded border border-red-100">
-                  <AlertTriangle size={12} /> PERINGATAN: Penyimpanan hampir penuh! Segera bersihkan file sampah.
-                </div>
-              )}
-            </CardContent>
-          </Card>
+        <Tabs defaultValue="storage" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8 h-12 bg-white border shadow-sm p-1">
+            <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2">
+              <HardDrive size={16} /> Storage & Kuota
+            </TabsTrigger>
+            <TabsTrigger value="users" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2">
+              <Users size={16} /> Manajemen Pengguna
+            </TabsTrigger>
+          </TabsList>
 
-          <Card className="bg-white border-t-4 border-t-green-500">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-bold flex items-center justify-between">
-                <span className="flex items-center gap-2"><Database className="h-4 w-4 text-green-500" /> Database Records</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-end gap-2">
-                <span className="text-3xl font-black text-slate-900">{stats.dbRecordCount}</span>
-                <span className="text-slate-400 text-xs mb-1">Laporan Tersimpan</span>
-              </div>
-              <p className="text-[10px] text-slate-500 italic">* Batas database versi gratis adalah 500MB (estimasi ribuan record).</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card className="bg-white border-blue-100">
-            <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Total File Foto</p>
-              <p className="text-3xl font-black text-blue-600">{stats.totalStorageCount}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-green-100">
-            <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Aktif (Link)</p>
-              <p className="text-3xl font-black text-green-600">{stats.usedInDb}</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-white border-red-100">
-            <CardContent className="pt-6 text-center">
-              <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Sampah</p>
-              <p className="text-3xl font-black text-red-600">{stats.orphaned}</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        <Card className="shadow-md border-t-4 border-t-blue-600">
-          <CardHeader>
-            <CardTitle className="text-lg flex items-center gap-2">
-              <ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
-              <p className="font-bold mb-1">Cara Kerja:</p>
-              <p>Sistem akan membandingkan nama file di Storage dengan URL foto yang tersimpan di database laporan. File yang tidak ditemukan referensinya di database akan dianggap sebagai "sampah" dan aman untuk dihapus guna menghemat kuota gratis.</p>
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <Button 
-                onClick={analyzeStorage} 
-                disabled={analyzing || loading}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                {analyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menganalisis...</> : <><RefreshCw className="mr-2 h-4 w-4" /> Mulai Analisis</>}
-              </Button>
-
-              {orphanedFiles.length > 0 && (
-                <Button 
-                  onClick={cleanStorage} 
-                  disabled={loading}
-                  variant="destructive"
-                >
-                  {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...</> : <><Trash2 className="mr-2 h-4 w-4" /> Hapus {orphanedFiles.length} File Sampah</>}
-                </Button>
-              )}
-            </div>
-
-            {isCleaned && (
-              <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 p-4 rounded-lg border border-green-200">
-                <CheckCircle2 className="h-5 w-5" /> Storage sudah bersih dan optimal!
-              </div>
-            )}
-
-            {orphanedFiles.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="font-bold text-slate-700 flex items-center gap-2">
-                  <FileWarning className="text-red-500 h-4 w-4" /> Daftar File Tidak Terpakai (Klik nama untuk preview):
-                </h3>
-                <div className="max-h-[400px] overflow-y-auto border rounded-lg divide-y bg-slate-50">
-                  {orphanedFiles.map((file, i) => (
-                    <div 
-                      key={i} 
-                      className="p-3 flex items-center justify-between text-xs hover:bg-blue-50 cursor-pointer transition-colors group"
-                      onClick={() => handlePreview(file.name)}
-                    >
-                      <div className="flex items-center gap-2">
-                        <Eye className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
-                        <span className="font-mono text-slate-600 group-hover:text-blue-700 group-hover:font-bold">{file.name}</span>
-                      </div>
-                      <Badge variant="outline" className="text-[10px]">{formatSize(file.metadata?.size || 0)}</Badge>
+          <TabsContent value="storage" className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card className={cn("bg-white border-t-4", isStorageCritical ? "border-t-red-500" : "border-t-blue-500")}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Foto)</span>
+                    <Badge variant={isStorageCritical ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <Progress value={storageUsagePercent} className={cn("h-2", isStorageCritical ? "bg-red-100" : "bg-blue-100")} />
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Terpakai: {formatSize(stats.totalStorageSize)}</span>
+                    <span>Limit: 1 GB</span>
+                  </div>
+                  {isStorageCritical && (
+                    <div className="flex items-center gap-2 text-red-600 text-[10px] font-bold bg-red-50 p-2 rounded border border-red-100">
+                      <AlertTriangle size={12} /> PERINGATAN: Penyimpanan hampir penuh!
                     </div>
-                  ))}
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-white border-t-4 border-t-green-500">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-bold flex items-center justify-between">
+                    <span className="flex items-center gap-2"><Database className="h-4 w-4 text-green-500" /> Database Records</span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-end gap-2">
+                    <span className="text-3xl font-black text-slate-900">{stats.dbRecordCount}</span>
+                    <span className="text-slate-400 text-xs mb-1">Laporan Tersimpan</span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 italic">* Batas database versi gratis adalah 500MB.</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Card className="bg-white border-blue-100">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Total File Foto</p>
+                  <p className="text-3xl font-black text-blue-600">{stats.totalStorageCount}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-green-100">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Aktif (Link)</p>
+                  <p className="text-3xl font-black text-green-600">{stats.usedInDb}</p>
+                </CardContent>
+              </Card>
+              <Card className="bg-white border-red-100">
+                <CardContent className="pt-6 text-center">
+                  <p className="text-xs font-bold text-slate-500 uppercase mb-1">Foto Sampah</p>
+                  <p className="text-3xl font-black text-red-600">{stats.orphaned}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="shadow-md border-t-4 border-t-blue-600">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 text-sm text-blue-800">
+                  <p className="font-bold mb-1">Cara Kerja:</p>
+                  <p>Sistem akan membandingkan nama file di Storage dengan URL foto yang tersimpan di database laporan. File yang tidak ditemukan referensinya akan dianggap sebagai "sampah".</p>
                 </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={analyzeStorage} disabled={analyzing || loading} className="bg-blue-600 hover:bg-blue-700">
+                    {analyzing ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menganalisis...</> : <><RefreshCw className="mr-2 h-4 w-4" /> Mulai Analisis</>}
+                  </Button>
+                  {orphanedFiles.length > 0 && (
+                    <Button onClick={cleanStorage} disabled={loading} variant="destructive">
+                      {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...</> : <><Trash2 className="mr-2 h-4 w-4" /> Hapus {orphanedFiles.length} File Sampah</>}
+                    </Button>
+                  )}
+                </div>
+
+                {isCleaned && (
+                  <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 p-4 rounded-lg border border-green-200">
+                    <CheckCircle2 className="h-5 w-5" /> Storage sudah bersih dan optimal!
+                  </div>
+                )}
+
+                {orphanedFiles.length > 0 && (
+                  <div className="space-y-3">
+                    <h3 className="font-bold text-slate-700 flex items-center gap-2">
+                      <FileWarning className="text-red-500 h-4 w-4" /> Daftar File Tidak Terpakai:
+                    </h3>
+                    <div className="max-h-[400px] overflow-y-auto border rounded-lg divide-y bg-slate-50">
+                      {orphanedFiles.map((file, i) => (
+                        <div key={i} className="p-3 flex items-center justify-between text-xs hover:bg-blue-50 cursor-pointer transition-colors group" onClick={() => handlePreview(file.name)}>
+                          <div className="flex items-center gap-2">
+                            <Eye className="h-3 w-3 text-slate-400 group-hover:text-blue-500" />
+                            <span className="font-mono text-slate-600 group-hover:text-blue-700 group-hover:font-bold">{file.name}</span>
+                          </div>
+                          <Badge variant="outline" className="text-[10px]">{formatSize(file.metadata?.size || 0)}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users">
+            <Card className="shadow-md border-t-4 border-t-blue-600">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="text-blue-600" /> Manajemen Pengguna & Hak Akses
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <UserManagement />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
 
-      {/* Dialog Preview Foto */}
       <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
         <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-black">
           <DialogHeader className="p-4 bg-white border-b">
             <DialogTitle className="text-sm truncate pr-8">{previewName}</DialogTitle>
           </DialogHeader>
           <div className="relative aspect-[2.26/2.95] w-full flex items-center justify-center bg-slate-900">
-            {previewUrl && (
-              <img 
-                src={previewUrl} 
-                alt="Preview" 
-                className="max-w-full max-h-full object-contain"
-              />
-            )}
+            {previewUrl && <img src={previewUrl} alt="Preview" className="max-w-full max-h-full object-contain" />}
           </div>
           <div className="p-4 bg-white flex justify-end">
             <Button variant="outline" onClick={() => setPreviewUrl(null)}>Tutup</Button>
