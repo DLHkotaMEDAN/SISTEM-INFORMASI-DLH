@@ -1,46 +1,3 @@
-... corrected JSX ...
-＜/dyad-write>
-
-We must ensure the corrected code includes the fixes.
-
-Let's rewrite the relevant part:
-
-Original snippet:
-
-```
-<div class="table-wrapper" style={{ overflowX: 'auto', width: '100%' }}> // <-- TypeScript compiler error here
-          <div class="table-inner" style={{ minWidth: '1200px' }}> // <-- TypeScript compiler error here
-            <div class="overflow-x-auto"> // <-- TypeScript compiler error here
-              <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
-```
-
-Replace with:
-
-```
-<div className="table-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
-          <div className="table-inner" style={{ minWidth: '1200px' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
-```
-
-Thus fix all three errors.
-
-Now produce the dyad-write with the full file? Probably just the corrected part, but the instruction says "Fix these 3 TypeScript compile-time errors". We can provide the corrected file snippet. Probably better to provide the whole file with modifications.
-
-But to be concise, we can just output the corrected snippet within a dyad-write tag, indicating the file path.
-
-Let's do:
-
-<dyad-write path="src/pages/MonthlyRecap.tsx" description="Fix class attribute errors in MonthlyRecap.tsx">
-... corrected JSX snippet ...
-＜/dyad-write>
-
-But the system may expect the entire file? In previous interactions, they used dyad-write to replace entire file content. So we should provide the entire corrected file content.
-
-Thus we will output the full MonthlyRecap.tsx with the fixes applied.
-
-Let's produce the full file with the fixes.
-</think><dyad-write path="src/pages/MonthlyRecap.tsx" description="Fix TS class attribute errors by using className instead of class">
 "use client";
 
 import React, { useEffect, useState, useRef } from 'react';
@@ -54,11 +11,11 @@ import {
   Loader2, Lock, ChevronDown, PenTool 
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from '@/context/AuthContext';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Checkbox } from '@/components/ui/checkbox';
-import { cn } from '@/lib/utils';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { cn } from "@/lib/utils";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
@@ -71,13 +28,13 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@/components/ui/tooltip';
+} from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from "@/components/ui/dropdown-menu";
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -246,7 +203,8 @@ const MonthlyRecap = () => {
             currentY += tableHeaderHeight;
           }
         }
-                pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
+        
+        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
         currentY += imgHeight;
       }
 
@@ -462,7 +420,8 @@ const MonthlyRecap = () => {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700">
-                  <Printer className="h-4 w-4 md:mr-2" />                   <span className="hidden md:inline">Cetak</span>
+                  <Printer className="h-4 w-4 md:mr-2" /> 
+                  <span className="hidden md:inline">Cetak</span>
                   <ChevronDown className="ml-1 h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -486,7 +445,7 @@ const MonthlyRecap = () => {
         defaultFileName={`Rekap_${selectedMonth === 'semua' ? 'Semua' : months[parseInt(selectedMonth)-1]}_${selectedYear}`}
       />
 
-      <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[1400px]">
+      <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
         <div className="pdf-header">
           <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
             <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
@@ -504,122 +463,118 @@ const MonthlyRecap = () => {
           </div>
         </div>
 
-        <div class="table-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
-          <div class="table-inner" style={{ minWidth: '1200px' }}>
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
-                <colgroup>
-                  <col style={{ width: '35px' }} />
-                  <col style={{ width: '70px' }} />
-                  <col style={{ width: '65px' }} />
-                  <col style={{ width: '105px' }} />
-                  <col style={{ width: '115px' }} />
-                  <col style={{ width: '145px' }} />
-                  <col style={{ width: '145px' }} />
-                  <col style={{ width: '145px' }} />
-                  <col style={{ width: '65px' }} />
-                  <col style={{ width: '95px' }} />
-                  <col style={{ width: '25px' }} />
-                  <col style={{ width: '120px' }} />
-                  {recapMode === "with-fuel" && (
-                    <>
-                      <col style={{ width: '40px' }} />
-                      <col style={{ width: '40px' }} />
-                      <col style={{ width: '40px' }} />
-                    </>
-                  )}
-                  <col style={{ width: '95px' }} />
-                  <col style={{ width: '50px' }} />
-                  <col style={{ width: '165px' }} />
-                </colgroup>
-                <thead className="pdf-table-header sticky-header" style={{ position: 'sticky', top: 0, background: '#f1f5f9', zIndex: 10 }}>
-                  <tr style={{ height: '40px' }}>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/Kec.</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
-                    <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
-                    {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>BBM (Liter)</th>)}
-                    <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
-                    <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
-                  </tr>
-                  <tr style={{ height: '30px' }}>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">0%</th>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">50%</th>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">100%</th>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">Jenis Alat</th>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1 px-0">Jml</th>
-                    {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">S</th></>)}
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">Koordinator</th>
-                    <th style={subHeaderStyle} className="border-2 border-black p-1">Anggota</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {reports.length > 0 ? (
-                    reports.map((report, reportIdx) => (
-                      <tbody key={report.id} className="pdf-report-block border-b-2 border-black">
-                        {report.tasks.map((task, taskIdx) => {
-                          const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
-                          return (
-                            <tr key={`${report.id}-${taskIdx}`}>
-                              {taskIdx === 0 ? (
-                                <>
-                                  <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={report.tasks.length}>{reportIdx + 1}</td>
-                                  <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={report.tasks.length}>
-                                    {new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-                                  </td>
-                                  <td className="border-2 border-black p-2 text-center align-top font-bold text-blue-700" rowSpan={report.tasks.length}>
-                                    {report.category}
-                                  </td>
-                                </>
-                              ) : null}
-                              <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{task.description}</td>
-                              <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
-                              <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
-                              <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
-                              <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
-                              <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
-                              {recapMode === "with-fuel" && (
-                                <>
-                                  <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
-                                  <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
-                                  <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
-                                </>
-                              )}
-                              <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
-                              <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.members}</td>
-                              <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic">
-                                <div className="space-y-1">
-                                  {task.remarks && <div>{task.remarks}</div>}
-                                  {taskIdx === 0 && report.remarks && (
-                                    <div className={cn("text-blue-700 font-medium", task.remarks && "border-t border-slate-200 pt-1")}>
-                                      Catatan: {report.remarks}
-                                    </div>
-                                  )}
-                                  {!task.remarks && (taskIdx !== 0 || !report.remarks) && "-"}
-                                </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1200px] border-collapse border-2 border-black text-[11px] table-fixed">
+            <colgroup>
+              <col style={{ width: '35px' }} />
+              <col style={{ width: '70px' }} />
+              <col style={{ width: '65px' }} />
+              <col style={{ width: '105px' }} />
+              <col style={{ width: '115px' }} />
+              <col style={{ width: '145px' }} />
+              <col style={{ width: '145px' }} />
+              <col style={{ width: '145px' }} />
+              <col style={{ width: '65px' }} />
+              <col style={{ width: '95px' }} />
+              <col style={{ width: '25px' }} />
+              <col style={{ width: '120px' }} />
+              {recapMode === "with-fuel" && (
+                <>
+                  <col style={{ width: '40px' }} />
+                  <col style={{ width: '40px' }} />
+                  <col style={{ width: '40px' }} />
+                </>
+              )}
+              <col style={{ width: '95px' }} />
+              <col style={{ width: '50px' }} />
+              <col style={{ width: '165px' }} />
+            </colgroup>
+            <thead className="pdf-table-header">
+              <tr style={{ height: '40px' }}>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/Kec.</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
+                <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
+                {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>BBM (Liter)</th>)}
+                <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
+                <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
+              </tr>
+              <tr style={{ height: '30px' }}>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">0%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">50%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">100%</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Jenis Alat</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1 px-0">Jml</th>
+                {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">S</th></>)}
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Koordinator</th>
+                <th style={subHeaderStyle} className="border-2 border-black p-1">Anggota</th>
+              </tr>
+            </thead>
+            {reports.length > 0 ? (
+              <>
+                {reports.map((report, reportIdx) => (
+                  <tbody key={report.id} className="pdf-report-block border-b-2 border-black">
+                    {report.tasks.map((task, taskIdx) => {
+                      const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
+                      return (
+                        <tr key={`${report.id}-${taskIdx}`}>
+                          {taskIdx === 0 ? (
+                            <>
+                              <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={report.tasks.length}>{reportIdx + 1}</td>
+                              <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={report.tasks.length}>
+                                {new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
                               </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    ))
-                  ) : (
-                    <tbody>
-                      <tr><td colSpan={totalCols} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>
-                    </tbody>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                              <td className="border-2 border-black p-2 text-center align-top font-bold text-blue-700" rowSpan={report.tasks.length}>
+                                {report.category}
+                              </td>
+                            </>
+                          ) : null}
+                          <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{task.description}</td>
+                          <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
+                          <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
+                          <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
+                          <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
+                          <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
+                          <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e, i) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
+                          <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
+                          {recapMode === "with-fuel" && (
+                            <>
+                              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
+                              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
+                              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
+                            </>
+                          )}
+                          <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
+                          <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.members}</td>
+                          <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic">
+                            <div className="space-y-1">
+                              {task.remarks && <div>{task.remarks}</div>}
+                              {taskIdx === 0 && report.remarks && (
+                                <div className={cn("text-blue-700 font-medium", task.remarks && "border-t border-slate-200 pt-1")}>
+                                  Catatan: {report.remarks}
+                                </div>
+                              )}
+                              {!task.remarks && (taskIdx !== 0 || !report.remarks) && "-"}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                ))}
+              </>
+            ) : (
+              <tbody>
+                <tr><td colSpan={totalCols} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>
+              </tbody>
+            )}
+          </table>
         </div>
 
         {signatureMode === "with-signature" && (
@@ -641,11 +596,14 @@ const MonthlyRecap = () => {
           .no-print, 
           [data-radix-portal], 
           [role="menu"], 
-          [data-radix-popper-content-wrapper] {             display: none !important; 
+          [data-radix-popper-content-wrapper] { 
+            display: none !important; 
             visibility: hidden !important;
             opacity: 0 !important;
           }
-          .print-area {             box-shadow: none !important;             border: none !important; 
+          .print-area { 
+            box-shadow: none !important; 
+            border: none !important; 
             padding: 0 !important; 
             margin: 0 !important; 
             width: 100% !important; 
