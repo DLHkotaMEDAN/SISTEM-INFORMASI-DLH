@@ -144,6 +144,7 @@ const WorkPlanMonthlyRecap = () => {
                   const planTotalRows = maxRows;
 
                   return Array.from({ length: maxRows }).map((_, rowIndex) => {
+                    const item = allItems[rowIndex];
                     const tool = allTools[rowIndex];
 
                     return (
@@ -155,23 +156,12 @@ const WorkPlanMonthlyRecap = () => {
                               {format(parseISO(plan.date), 'dd/MM/yy')}
                             </td>
                             <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
-                            {/* Detail Kegiatan & Lokasi digabung (merged) agar tidak ada garis kosong */}
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
-                              {allItems.map((it, idx) => (
-                                <div key={idx} className={idx > 0 ? "mt-1.5 pt-1.5 border-t border-slate-100" : ""}>
-                                  {it.description}
-                                </div>
-                              ))}
-                            </td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
-                              {allItems.map((it, idx) => (
-                                <div key={idx} className={idx > 0 ? "mt-1.5 pt-1.5 border-t border-slate-100" : ""}>
-                                  {it.location.street}, {Array.isArray(it.location.village) ? it.location.village.join(", ") : it.location.village}, {it.location.subDistrict}
-                                </div>
-                              ))}
-                            </td>
                           </>
                         )}
+                        <td className="border-2 border-black p-1 align-top break-words">{item?.description || ""}</td>
+                        <td className="border-2 border-black p-1 align-top break-words">
+                          {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
+                        </td>
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
                         <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
@@ -206,7 +196,7 @@ const WorkPlanMonthlyRecap = () => {
                         {tIdx === 0 && (
                           <>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.description}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>
+                            <td className="border-2 border-black p-1 align-top break-words">
                               {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                             </td>
                           </>
