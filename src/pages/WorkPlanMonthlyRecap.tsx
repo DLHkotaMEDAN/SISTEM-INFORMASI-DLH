@@ -147,6 +147,11 @@ const WorkPlanMonthlyRecap = () => {
                     const item = allItems[rowIndex];
                     const tool = allTools[rowIndex];
 
+                    let itemRowSpan = 0;
+                    if (rowIndex < allItems.length) {
+                      itemRowSpan = (rowIndex === allItems.length - 1) ? (maxRows - rowIndex) : 1;
+                    }
+
                     return (
                       <tr key={`${plan.id}-${rowIndex}`}>
                         {rowIndex === 0 && (
@@ -158,13 +163,20 @@ const WorkPlanMonthlyRecap = () => {
                             <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
                           </>
                         )}
-                        <td className="border-2 border-black p-1 align-top break-words">{item?.description || ""}</td>
-                        <td className="border-2 border-black p-1 align-top break-words">
-                          {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
-                        </td>
+                        
+                        {itemRowSpan > 0 && (
+                          <>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>{item?.description || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>
+                              {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
+                            </td>
+                          </>
+                        )}
+
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
                         <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+                        
                         {rowIndex === 0 && (
                           <>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].coordinator}</td>

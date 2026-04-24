@@ -145,7 +145,6 @@ const WorkPlanDailyRecap = () => {
                 const isTimPohon = plan.category === "Tim Pohon";
                 
                 if (isTimPohon) {
-                  // Logika khusus Tim Pohon: Gabungkan alat dan lokasi agar tidak double
                   const allTools = plan.items[0].tools;
                   const allItems = plan.items;
                   const maxRows = Math.max(allItems.length, allTools.length);
@@ -155,6 +154,12 @@ const WorkPlanDailyRecap = () => {
                     const item = allItems[rowIndex];
                     const tool = allTools[rowIndex];
 
+                    // Logika rowSpan untuk Detail Kegiatan dan Lokasi agar tidak ada garis kosong
+                    let itemRowSpan = 0;
+                    if (rowIndex < allItems.length) {
+                      itemRowSpan = (rowIndex === allItems.length - 1) ? (maxRows - rowIndex) : 1;
+                    }
+
                     return (
                       <tr key={`${plan.id}-${rowIndex}`}>
                         {rowIndex === 0 && (
@@ -163,13 +168,20 @@ const WorkPlanDailyRecap = () => {
                             <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
                           </>
                         )}
-                        <td className="border-2 border-black p-1 align-top break-words">{item?.description || ""}</td>
-                        <td className="border-2 border-black p-1 align-top break-words">
-                          {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
-                        </td>
+                        
+                        {itemRowSpan > 0 && (
+                          <>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>{item?.description || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>
+                              {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
+                            </td>
+                          </>
+                        )}
+
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
                         <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
                         <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+                        
                         {rowIndex === 0 && (
                           <>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].coordinator}</td>
@@ -182,7 +194,6 @@ const WorkPlanDailyRecap = () => {
                     );
                   });
                 } else {
-                  // Logika standar untuk kategori lain
                   const planTotalRows = plan.items.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
                   return plan.items.flatMap((item, iIdx) => {
                     const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
