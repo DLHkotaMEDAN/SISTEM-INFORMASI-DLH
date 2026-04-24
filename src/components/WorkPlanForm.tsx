@@ -35,7 +35,7 @@ const itemSchema = z.object({
     subDistrict: z.string().default(""),
   }),
   tools: z.array(toolSchema).default([]),
-  coordinator: z.string().min(1, "Koordinator wajib diisi"),
+  coordinator: z.string().optional().default(""),
   personnel: z.object({
     members: z.coerce.number().min(0),
   }),
@@ -58,14 +58,14 @@ const formSchema = z.object({
 
   // Validasi Global untuk Tim Pohon
   if (isTimPohon) {
-    if (!data.globalCoordinator) {
+    if (!data.globalCoordinator || data.globalCoordinator.trim() === "") {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Koordinator tim wajib diisi",
         path: ['globalCoordinator']
       });
     }
-    if (data.globalTools && (data.globalTools.length === 0 || !data.globalTools[0].name)) {
+    if (data.globalTools && (data.globalTools.length === 0 || !data.globalTools[0].name || data.globalTools[0].name.trim() === "")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Minimal satu alat operasional tim wajib diisi",
@@ -77,14 +77,14 @@ const formSchema = z.object({
   data.items.forEach((item, index) => {
     // Validasi Kecamatan & Kelurahan (Opsional hanya untuk Tim Siram)
     if (data.category !== "Tim Siram") {
-      if (!item.location.subDistrict || item.location.subDistrict === " ") {
+      if (!item.location.subDistrict || item.location.subDistrict.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Kecamatan wajib diisi",
           path: ['items', index, 'location', 'subDistrict']
         });
       }
-      if (!item.location.village[0] || item.location.village[0] === " ") {
+      if (!item.location.village[0] || item.location.village[0].trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Kelurahan wajib diisi",
@@ -95,7 +95,7 @@ const formSchema = z.object({
 
     // Validasi Alat Operasional (Hanya jika bukan Tim Pohon dan bukan kategori opsional)
     if (!isTimPohon && !isToolsOptional) {
-      if (item.tools.length === 0 || !item.tools[0].name) {
+      if (item.tools.length === 0 || !item.tools[0].name || item.tools[0].name.trim() === "") {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Minimal satu alat operasional wajib diisi",
@@ -105,7 +105,7 @@ const formSchema = z.object({
     }
     
     // Validasi Koordinator (Hanya jika bukan Tim Pohon)
-    if (!isTimPohon && !item.coordinator) {
+    if (!isTimPohon && (!item.coordinator || item.coordinator.trim() === "")) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         message: "Koordinator wajib diisi",
