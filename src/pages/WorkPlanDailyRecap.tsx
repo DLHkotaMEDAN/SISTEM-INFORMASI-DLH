@@ -41,7 +41,8 @@ const WorkPlanDailyRecap = () => {
       setLoading(true);
       const data = await workPlanService.getAllWorkPlans();
       const filtered = data.filter(p => selectedDate === "semua" || p.date === selectedDate);
-      filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || a.category.localeCompare(b.category));
+      // Urutkan berdasarkan kategori agar yang sama berkumpul
+      filtered.sort((a, b) => a.category.localeCompare(b.category));
       setPlans(filtered);
     } catch (error) {
       console.error(error);
@@ -54,6 +55,21 @@ const WorkPlanDailyRecap = () => {
   const categoriesInPlans = Array.from(new Set(plans.map(p => p.category)));
   const showSignatory4 = categoriesInPlans.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
   const showSignatory5 = categoriesInPlans.some(c => c === "Tim Pohon");
+
+  // Hitung total baris per kategori untuk RowSpan Tim/Kec
+  const categoryRowSpans: Record<string, number> = {};
+  plans.forEach(plan => {
+    const isTimPohon = plan.category === "Tim Pohon";
+    let planRows = 0;
+    if (isTimPohon) {
+      planRows = Math.max(plan.items.length, plan.items[0].tools.length);
+    } else {
+      planRows = plan.items.reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0);
+    }
+    categoryRowSpans[plan.category] = (categoryRowSpans[plan.category] || 0) + planRows;
+  });
+
+  const renderedCategories = new Set<string>();
 
   const calculateSpans = (items: WorkPlanItem[]) => {
     const spans: any[] = [];
@@ -145,6 +161,8 @@ const WorkPlanDailyRecap = () => {
               plans.flatMap((plan, pIdx) => {
                 const isTimPohon = plan.category === "Tim Pohon";
                 const itemSpans = calculateSpans(plan.items);
+                const isFirstOfCategory = !renderedCategories.has(plan.category);
+                if (isFirstOfCategory) renderedCategories.add(plan.category);
                 
                 if (isTimPohon) {
                   const allTools = plan.items[0].tools;
@@ -161,7 +179,9 @@ const WorkPlanDailyRecap = () => {
                         {rowIndex === 0 && (
                           <>
                             <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={planTotalRows}>{pIdx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
+                            {isFirstOfCategory && (
+                              <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={categoryRowSpans[plan.category]}>{plan.category}</td>
+                            )}
                           </>
                         )}
                         {itemRowSpan > 0 && (
@@ -187,6 +207,7 @@ const WorkPlanDailyRecap = () => {
                     );
                   });
                 } else {
+                  const planTotalRows = plan.items.reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0);
                   return plan.items.flatMap((item, iIdx) => {
                     const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
                     const toolRowCount = toolsToRender.length;
@@ -195,8 +216,10 @@ const WorkPlanDailyRecap = () => {
                       <tr key={`${plan.id}-${iIdx}-${tIdx}`}>
                         {iIdx === 0 && tIdx === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={plan.items.reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>{pIdx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={plan.items.reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>{plan.category}</td>
+                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={planTotalRows}>{pIdx + 1}</td>
+                            {isFirstOfCategory && (
+                              <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={categoryRowSpans[plan.category]}>{plan.category}</td>
+                            )}
                           </>
                         )}
                         {tIdx === 0 && (
