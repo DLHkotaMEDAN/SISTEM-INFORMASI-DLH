@@ -38,6 +38,20 @@ const toolUsageMapping: Record<string, string> = {
   "Mesin Babat": "Memotong Rumput"
 };
 
+// Mapping Koordinator Otomatis
+const categoryCoordinatorMapping: Record<string, string> = {
+  "Tim Pohon": "Budi",
+  "Tim Babat": "Muhammad Fadri Saragih",
+  "Taman Kota": "Mhd. Said",
+  "Taman Amplas": "Erwinsyah",
+  "Taman Area": "Ismail Siregar",
+};
+
+const toolCoordinatorMapping: Record<string, string> = {
+  "Truk Siram (BK 8128 A)": "M. Irwan Syahputra, SE",
+  "Truk Siram (BK 9031 J)": "Aluddin Gultom",
+};
+
 const toolSchema = z.object({
   name: z.string().optional().default(""),
   unit: z.coerce.number().default(0),
@@ -58,7 +72,6 @@ const itemSchema = z.object({
   }),
   basis: z.string().min(1, "Dasar pengerjaan wajib diisi"),
   remarks: z.string().optional().default(""),
-  // Field internal untuk UI saja
   uiMode: z.enum(['full', 'activity_location', 'location_only']).default('full'),
 });
 
@@ -97,12 +110,9 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // State untuk Wizard (Hanya Tim Siram sekarang)
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
 
-  // Hitung tanggal besok untuk default value
   const getTomorrowDate = () => {
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -119,7 +129,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
       globalCoordinator: (initialData.category === "Tim Pohon" || initialData.category === "Tim Babat") ? initialData.items[0].coordinator : "",
       globalMembers: (initialData.category === "Tim Pohon" || initialData.category === "Tim Babat") ? initialData.items[0].personnel.members : 0,
     } : {
-      date: getTomorrowDate(), // Default ke tanggal besok
+      date: getTomorrowDate(),
       category: profile?.role === 'user' ? (profile?.category || "") : "",
       items: [{
         description: "",
@@ -144,8 +154,30 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
 
   const selectedCategory = form.watch("category");
   const isGlobalStyle = selectedCategory === "Tim Pohon" || selectedCategory === "Tim Babat";
-  const isToolsOptional = ["Taman Kota", "Taman Amplas", "Taman Area"].includes(selectedCategory);
-  const useWizard = selectedCategory === "Tim Siram"; // Tim Babat sudah pindah ke Global Style
+  const useWizard = selectedCategory === "Tim Siram";
+
+  // Effect untuk otomatisasi Koordinator Global (Pohon & Babat)
+  useEffect(() => {
+    if (!isEditing && isGlobalStyle) {
+      const autoCoord = categoryCoordinatorMapping[selectedCategory];
+      if (autoCoord) {
+        form.setValue("globalCoordinator", autoCoord);
+      }
+    }
+  }, [selectedCategory, isGlobalStyle, isEditing, form]);
+
+  // Effect untuk otomatisasi Koordinator Item (Taman Kota/Area/Amplas)
+  useEffect(() => {
+    if (!isEditing && !isGlobalStyle && selectedCategory !== "Tim Siram") {
+      const autoCoord = categoryCoordinatorMapping[selectedCategory];
+      if (autoCoord) {
+        const items = form.getValues("items");
+        items.forEach((_, index) => {
+          form.setValue(`items.${index}.coordinator`, autoCoord);
+        });
+      }
+    }
+  }, [selectedCategory, isGlobalStyle, isEditing, form]);
 
   const handleAddClick = () => {
     if (useWizard) {
@@ -160,12 +192,22 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
     const items = form.getValues("items");
     const lastItem = items[items.length - 1];
     
+    // Tentukan koordinator default untuk item baru
+    let defaultCoord = "";
+    if (isGlobalStyle) {
+      defaultCoord = form.getValues("globalCoordinator");
+    } else if (selectedCategory === "Tim Siram") {
+      defaultCoord = lastItem?.coordinator || "";
+    } else {
+      defaultCoord = categoryCoordinatorMapping[selectedCategory] || lastItem?.coordinator || "";
+    }
+
     if (mode === 'full') {
       appendItem({
         description: "",
         location: { street: "", village: [""], subDistrict: lastItem?.location.subDistrict || "" },
         tools: isGlobalStyle ? [] : [{ name: "", unit: 1, usage: "" }],
-        coordinator: isGlobalStyle ? form.getValues("globalCoordinator") : lastItem?.coordinator || "",
+        coordinator: defaultCoord,
         personnel: { members: isGlobalStyle ? form.getValues("globalMembers") : lastItem?.personnel.members || 0 },
         basis: lastItem?.basis || "",
         remarks: "",
@@ -215,7 +257,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         await workPlanService.updateWorkPlan(initialData.id, finalValues as Partial<WorkPlan>);
         showSuccess("Rencana Kerja diperbarui!");
       } else {
-        await workPlanService.createWorkPlan(finalValues as Omit<WorkPlan, 'id' | 'createdAt'>);
+        await workPlanService.createWorkPlan(finalValues as Omit<WorkPlan, 'id' | 'created_at'>);
         showSuccess("Rencana Kerja disimpan!");
       }
       navigate('/work-plans');
@@ -378,6 +420,14 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
                                         field.onChange(e);
                                         const usage = toolUsageMapping[e.target.value];
                                         if (usage) form.setValue(`items.${index}.tools.${toolIdx}.usage`, usage);
+                                        
+                                        // Otomatisasi Koordinator Tim Siram berdasarkan Alat
+                                        if (selectedCategory === "Tim Siram" && toolIdx === 0) {
+                                          const autoCoord = toolCoordinatorMapping[e.target.value];
+                                          if (autoCoord) {
+                                            form.setValue(`items.${index}.coordinator`, autoCoord);
+                                          }
+                                        }
                                       }}
                                     />
                                   </FormControl>
@@ -417,7 +467,6 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         </div>
       </form>
 
-      {/* Wizard Dialog (Hanya Tim Siram) */}
       <Dialog open={showWizard} onOpenChange={setShowWizard}>
         <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
