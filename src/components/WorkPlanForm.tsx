@@ -102,6 +102,13 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
 
+  // Hitung tanggal besok untuk default value
+  const getTomorrowDate = () => {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    return tomorrow.toISOString().split('T')[0];
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
@@ -112,7 +119,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
       globalCoordinator: (initialData.category === "Tim Pohon" || initialData.category === "Tim Babat") ? initialData.items[0].coordinator : "",
       globalMembers: (initialData.category === "Tim Pohon" || initialData.category === "Tim Babat") ? initialData.items[0].personnel.members : 0,
     } : {
-      date: new Date().toISOString().split('T')[0],
+      date: getTomorrowDate(), // Default ke tanggal besok
       category: profile?.role === 'user' ? (profile?.category || "") : "",
       items: [{
         description: "",
