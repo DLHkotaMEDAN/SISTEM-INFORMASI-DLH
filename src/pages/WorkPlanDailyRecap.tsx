@@ -51,7 +51,10 @@ const WorkPlanDailyRecap = () => {
   };
 
   const hasRemarks = plans.some(plan => plan.items.some(item => item.remarks && item.remarks.trim() !== ""));
-  
+  const categoriesInPlans = Array.from(new Set(plans.map(p => p.category)));
+  const showSignatory4 = categoriesInPlans.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
+  const showSignatory5 = categoriesInPlans.some(c => c === "Tim Pohon");
+
   // Hitung total baris per kategori untuk RowSpan Tim/Kec
   const categoryRowSpans: Record<string, number> = {};
   plans.forEach(plan => {
