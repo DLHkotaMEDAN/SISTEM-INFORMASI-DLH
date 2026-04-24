@@ -93,75 +93,86 @@ const PrintWorkPlan = () => {
           </thead>
           <tbody>
             {isTimPohon ? (
-              // Tim Pohon: Satu baris untuk seluruh rencana kerja
-              <tr>
-                <td className="border-2 border-black p-1 text-center align-top">1</td>
-                <td className="border-2 border-black p-1 text-center font-bold align-top">{plan.category}</td>
-                <td className="border-2 border-black p-1 align-top break-words">
-                  {plan.items.map((it, idx) => (
-                    <div key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-slate-100" : ""}>
-                      {it.description}
-                    </div>
-                  ))}
-                </td>
-                <td className="border-2 border-black p-1 align-top break-words">
-                  {plan.items.map((it, idx) => (
-                    <div key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-slate-100" : ""}>
-                      {it.location.street}, {Array.isArray(it.location.village) ? it.location.village.join(", ") : it.location.village}, {it.location.subDistrict}
-                    </div>
-                  ))}
-                </td>
-                <td className="border-2 border-black p-1 align-top break-words">
-                  {plan.items[0].tools.map((tool, idx) => (
-                    <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>• {tool.name}</div>
-                  ))}
-                </td>
-                <td className="border-2 border-black p-1 text-center align-top">
-                  {plan.items[0].tools.map((tool, idx) => (
-                    <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>{tool.unit}</div>
-                  ))}
-                </td>
-                <td className="border-2 border-black p-1 align-top break-words">
-                  {plan.items[0].tools.map((tool, idx) => (
-                    <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>{tool.usage || "-"}</div>
-                  ))}
-                </td>
-                <td className="border-2 border-black p-1 text-center align-top">{plan.items[0].coordinator}</td>
-                <td className="border-2 border-black p-1 text-center align-top">{plan.items[0].personnel.members} Org</td>
-                <td className="border-2 border-black p-1 align-top break-words">{plan.items[0].basis}</td>
-                {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words">{plan.items[0].remarks || "-"}</td>}
-              </tr>
+              // Logika khusus Tim Pohon
+              (() => {
+                const allTools = plan.items[0].tools;
+                const allItems = plan.items;
+                const maxRows = Math.max(allItems.length, allTools.length);
+                const planTotalRows = maxRows;
+
+                return Array.from({ length: maxRows }).map((_, rowIndex) => {
+                  const tool = allTools[rowIndex];
+
+                  return (
+                    <tr key={`pohon-${rowIndex}`}>
+                      {rowIndex === 0 && (
+                        <>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>1</td>
+                          <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
+                          {/* Detail Kegiatan & Lokasi digabung (merged) agar tidak ada garis kosong */}
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
+                            {allItems.map((it, idx) => (
+                              <div key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-slate-100" : ""}>
+                                {it.description}
+                              </div>
+                            ))}
+                          </td>
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
+                            {allItems.map((it, idx) => (
+                              <div key={idx} className={idx > 0 ? "mt-2 pt-2 border-t border-slate-100" : ""}>
+                                {it.location.street}, {Array.isArray(it.location.village) ? it.location.village.join(", ") : it.location.village}, {it.location.subDistrict}
+                              </div>
+                            ))}
+                          </td>
+                        </>
+                      )}
+                      <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
+                      <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
+                      <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+                      {rowIndex === 0 && (
+                        <>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].coordinator}</td>
+                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].personnel.members} Org</td>
+                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>{plan.items[0].basis}</td>
+                          {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={planTotalRows}>{plan.items[0].remarks || "-"}</td>}
+                        </>
+                      )}
+                    </tr>
+                  );
+                });
+              })()
             ) : (
-              // Kategori lain: Satu baris per item lokasi
-              plan.items.map((item, itemIdx) => (
-                <tr key={itemIdx}>
-                  <td className="border-2 border-black p-1 text-center align-top">{itemIdx + 1}</td>
-                  <td className="border-2 border-black p-1 text-center font-bold align-top">{itemIdx === 0 ? plan.category : ""}</td>
-                  <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
-                  <td className="border-2 border-black p-1 align-top break-words">
-                    {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                  </td>
-                  <td className="border-2 border-black p-1 align-top break-words">
-                    {item.tools.map((tool, idx) => (
-                      <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>• {tool.name}</div>
-                    ))}
-                  </td>
-                  <td className="border-2 border-black p-1 text-center align-top">
-                    {item.tools.map((tool, idx) => (
-                      <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>{tool.unit}</div>
-                    ))}
-                  </td>
-                  <td className="border-2 border-black p-1 align-top break-words">
-                    {item.tools.map((tool, idx) => (
-                      <div key={idx} className={idx > 0 ? "mt-1 pt-1 border-t border-slate-50" : ""}>{tool.usage || "-"}</div>
-                    ))}
-                  </td>
-                  <td className="border-2 border-black p-1 text-center align-top">{item.coordinator}</td>
-                  <td className="border-2 border-black p-1 text-center align-top">{item.personnel.members} Org</td>
-                  <td className="border-2 border-black p-1 align-top break-words">{item.basis}</td>
-                  {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words">{item.remarks || "-"}</td>}
-                </tr>
-              ))
+              // Logika standar
+              plan.items.map((item, itemIdx) => {
+                const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
+                const rowCount = toolsToRender.length;
+                
+                return toolsToRender.map((tool, toolIdx) => (
+                  <tr key={`${itemIdx}-${toolIdx}`}>
+                    {toolIdx === 0 && (
+                      <>
+                        <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{itemIdx + 1}</td>
+                        <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={rowCount}>{plan.category}</td>
+                        <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>{item.description}</td>
+                        <td className="border-2 border-black p-1 align-top break-words">
+                          {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                        </td>
+                      </>
+                    )}
+                    <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
+                    <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
+                    <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
+                    {toolIdx === 0 && (
+                      <>
+                        <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.coordinator}</td>
+                        <td className="border-2 border-black p-1 text-center align-top" rowSpan={rowCount}>{item.personnel.members} Org</td>
+                        <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowCount}>{item.basis}</td>
+                        {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={rowCount}>{item.remarks || "-"}</td>}
+                      </>
+                    )}
+                  </tr>
+                ));
+              })
             )}
           </tbody>
         </table>
