@@ -42,7 +42,7 @@ const PrintWorkPlan = () => {
   if (!plan) return null;
 
   const hasRemarks = plan.items.some(item => item.remarks && item.remarks.trim() !== "");
-  const isTimPohon = plan.category === "Tim Pohon";
+  const isGlobalStyle = ["Tim Pohon", "Tim Babat", "Tim Siram"].includes(plan.category);
 
   // Fungsi pembantu untuk menghitung rowspan
   const getSpans = (items: WorkPlanItem[], keyExtractor: (item: WorkPlanItem) => string) => {
@@ -116,7 +116,7 @@ const PrintWorkPlan = () => {
             </tr>
           </thead>
           <tbody>
-            {isTimPohon ? (
+            {isGlobalStyle ? (
               (() => {
                 const allTools = plan.items[0].tools;
                 const allItems = plan.items;
@@ -125,7 +125,7 @@ const PrintWorkPlan = () => {
                   const item = allItems[rowIndex];
                   const tool = allTools[rowIndex];
                   return (
-                    <tr key={`pohon-${rowIndex}`}>
+                    <tr key={`global-${rowIndex}`}>
                       {rowIndex === 0 && (
                         <>
                           <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>1</td>
