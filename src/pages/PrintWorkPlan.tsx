@@ -105,7 +105,7 @@ const PrintWorkPlan = () => {
               <th className="border-2 border-black p-1 w-[30px]">No</th>
               <th className="border-2 border-black p-1 w-[60px]">Tim/ Kec</th>
               <th className="border-2 border-black p-1 w-[120px]">Detail Kegiatan</th>
-              <th className="border-2 border-black p-1 w-[140px]">Lokasi (Jalan + Kel + Kec)</th>
+              <th className="border-2 border-black p-1 w-[140px]">Lokasi</th>
               <th className="border-2 border-black p-1 w-[110px]">Alat Operasional</th>
               <th className="border-2 border-black p-1 w-[40px]">Unit</th>
               <th className="border-2 border-black p-1 w-[100px]">Kegunaan</th>
