@@ -55,10 +55,9 @@ const WorkPlanDailyRecap = () => {
   const showSignatory4 = categoriesInPlans.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
   const showSignatory5 = categoriesInPlans.some(c => c === "Tim Pohon");
 
-  // Hitung total baris per kategori untuk RowSpan Tim/Kec
   const categoryRowSpans: Record<string, number> = {};
   plans.forEach(plan => {
-    const isTimPohon = plan.category === "Tim Pohon";
+    const isTimPohon = plan.category === "Tim Pohon" || plan.category === "Tim Babat";
     let planRows = 0;
     if (isTimPohon) {
       planRows = Math.max(plan.items.length, plan.items[0].tools.length);
@@ -155,7 +154,7 @@ const WorkPlanDailyRecap = () => {
           <tbody>
             {plans.length > 0 ? (
               plans.flatMap((plan, pIdx) => {
-                const isTimPohon = plan.category === "Tim Pohon";
+                const isTimPohon = plan.category === "Tim Pohon" || plan.category === "Tim Babat";
                 const isFirstOfCategory = !renderedCategories.has(plan.category);
                 if (isFirstOfCategory) renderedCategories.add(plan.category);
                 
@@ -202,7 +201,6 @@ const WorkPlanDailyRecap = () => {
                 } else {
                   return plan.items.flatMap((item, iIdx) => {
                     const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
-                    const toolRowCount = toolsToRender.length;
                     const dSpan = descSpans[iIdx];
                     const rSpan = resourceSpans[iIdx];
 
@@ -229,12 +227,17 @@ const WorkPlanDailyRecap = () => {
                           </td>
                         )}
 
-                        <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
-                        <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
-                        <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
-
-                        {tIdx === 0 && rSpan > 0 && (
+                        {rSpan > 0 ? (
                           <>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={plan.items.slice(iIdx, iIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                              {tool.name ? `• ${tool.name}` : "-"}
+                            </td>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={plan.items.slice(iIdx, iIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                              {tool.unit || "-"}
+                            </td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={plan.items.slice(iIdx, iIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                              {tool.usage || "-"}
+                            </td>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={plan.items.slice(iIdx, iIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
                               {item.coordinator}
                             </td>
@@ -249,6 +252,12 @@ const WorkPlanDailyRecap = () => {
                                 {item.remarks || "-"}
                               </td>
                             )}
+                          </>
+                        ) : tIdx === 0 ? null : (
+                          <>
+                            <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
+                            <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
+                            <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
                           </>
                         )}
                       </tr>

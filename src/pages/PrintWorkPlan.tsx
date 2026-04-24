@@ -42,10 +42,8 @@ const PrintWorkPlan = () => {
   if (!plan) return null;
 
   const hasRemarks = plan.items.some(item => item.remarks && item.remarks.trim() !== "");
-  // Tim Pohon dan Tim Babat menggunakan format Global (Alat diisi sekali untuk banyak lokasi)
   const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Babat";
 
-  // Fungsi pembantu untuk menghitung rowspan
   const getSpans = (items: WorkPlanItem[], keyExtractor: (item: WorkPlanItem) => string) => {
     const spans: number[] = [];
     let i = 0;
@@ -62,10 +60,7 @@ const PrintWorkPlan = () => {
     return spans;
   };
 
-  // Hitung span untuk Detail Kegiatan
   const descSpans = getSpans(plan.items, (it) => it.description);
-  
-  // Hitung span untuk Alat, Koordinator, Dasar (Resource Group)
   const resourceSpans = getSpans(plan.items, (it) => 
     JSON.stringify(it.tools) + it.coordinator + it.basis + it.personnel.members
   );
@@ -155,8 +150,6 @@ const PrintWorkPlan = () => {
             ) : (
               plan.items.map((item, itemIdx) => {
                 const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
-                const toolRowCount = toolsToRender.length;
-                
                 const dSpan = descSpans[itemIdx];
                 const rSpan = resourceSpans[itemIdx];
 
@@ -181,12 +174,18 @@ const PrintWorkPlan = () => {
                       </td>
                     )}
 
-                    <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
-                    <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
-                    <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
-
-                    {toolIdx === 0 && rSpan > 0 && (
+                    {/* Kolom Alat, Unit, Kegunaan sekarang menggunakan rSpan agar menyatu jika datanya sama */}
+                    {rSpan > 0 ? (
                       <>
+                        <td className="border-2 border-black p-1 align-top break-words" rowSpan={plan.items.slice(itemIdx, itemIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                          {tool.name ? `• ${tool.name}` : "-"}
+                        </td>
+                        <td className="border-2 border-black p-1 text-center align-top" rowSpan={plan.items.slice(itemIdx, itemIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                          {tool.unit || "-"}
+                        </td>
+                        <td className="border-2 border-black p-1 align-top break-words" rowSpan={plan.items.slice(itemIdx, itemIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
+                          {tool.usage || "-"}
+                        </td>
                         <td className="border-2 border-black p-1 text-center align-top" rowSpan={plan.items.slice(itemIdx, itemIdx + rSpan).reduce((acc, it) => acc + Math.max(it.tools.length, 1), 0)}>
                           {item.coordinator}
                         </td>
@@ -201,6 +200,13 @@ const PrintWorkPlan = () => {
                             {item.remarks || "-"}
                           </td>
                         )}
+                      </>
+                    ) : toolIdx === 0 ? null : (
+                      // Jika item memiliki lebih dari 1 alat tapi rSpan=0 (baris lanjutan), tetap tampilkan alat tambahannya
+                      <>
+                        <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
+                        <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
+                        <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
                       </>
                     )}
                   </tr>
