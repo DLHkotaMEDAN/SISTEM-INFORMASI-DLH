@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, FileText, Trash2, Edit, 
   Printer, Search, FilterX, ArrowLeft, ChevronDown,
-  Table, CalendarDays, Clock, ArrowUpDown
+  Table, CalendarDays
 } from 'lucide-react';
 import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
@@ -23,8 +23,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Checkbox } from "@/components/ui/checkbox";
-import { startOfWeek, endOfWeek, isWithinInterval, parseISO, format } from 'date-fns';
-import { id as localeId } from 'date-fns/locale';
+import { startOfWeek, endOfWeek, isWithinInterval, parseISO } from 'date-fns';
 
 const months = [
   "Januari", "Februari", "Maret", "April", "Mei", "Juni",
@@ -32,8 +31,6 @@ const months = [
 ];
 
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-
-type SortOption = "plan_date_desc" | "plan_date_asc" | "created_at_desc";
 
 const WorkPlanList = () => {
   const navigate = useNavigate();
@@ -48,7 +45,6 @@ const WorkPlanList = () => {
   const [isWeeklyMode, setIsWeeklyMode] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
-  const [sortBy, setSortBy] = useState<SortOption>("plan_date_desc");
 
   const isLoggedIn = !!session;
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && profile?.category;
@@ -90,7 +86,6 @@ const WorkPlanList = () => {
     setIsWeeklyMode(false);
     setSelectedMonth("semua");
     setSelectedYear("semua");
-    setSortBy("plan_date_desc");
   };
 
   const filteredPlans = plans.filter(plan => {
@@ -130,29 +125,17 @@ const WorkPlanList = () => {
     return matchSearch && matchCategory && matchDate && matchMonthYear;
   });
 
-  // Sorting Logic
-  filteredPlans.sort((a, b) => {
-    if (sortBy === "plan_date_desc") {
-      return new Date(b.date).getTime() - new Date(a.date).getTime();
-    } else if (sortBy === "plan_date_asc") {
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    } else if (sortBy === "created_at_desc") {
-      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-    }
-    return 0;
-  });
-
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="h-4 w-4 mr-2" /> Beranda</Button>
             <h1 className="text-2xl font-bold flex items-center gap-2">
               <FileText className="text-blue-600" /> Rencana Kerja
             </h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="bg-white">
@@ -210,48 +193,21 @@ const WorkPlanList = () => {
               </Select>
             </div>
 
-            {/* Sort By */}
+            {/* Date Picker */}
             <div className="md:col-span-3 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Urutkan Berdasarkan</label>
-              <Select value={sortBy} onValueChange={(val) => setSortBy(val as SortOption)}>
-                <SelectTrigger className="bg-slate-50 border-slate-200 h-10">
-                  <div className="flex items-center gap-2">
-                    <ArrowUpDown className="h-3 w-3 text-blue-500" />
-                    <SelectValue />
-                  </div>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="plan_date_desc">Tanggal Rencana (Terbaru)</SelectItem>
-                  <SelectItem value="plan_date_asc">Tanggal Rencana (Terlama)</SelectItem>
-                  <SelectItem value="created_at_desc">Terbaru Dibuat (Input Terakhir)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Reset Button */}
-            <div className="md:col-span-2 flex justify-end">
-              <Button variant="ghost" onClick={resetFilters} className="h-10 text-slate-400 hover:text-red-500 hover:bg-red-50 w-full md:w-auto">
-                <FilterX className="h-4 w-4 mr-2" /> Reset Filter
-              </Button>
-            </div>
-          </div>
-
-          {/* Date Picker & Month Filter */}
-          <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100">
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Filter Tanggal / Minggu</label>
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Filter Tanggal / Minggu</label>
               <div className="flex gap-2">
-                <div className="relative w-[180px]">
+                <div className="relative flex-1">
                   <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input 
                     type="date" 
-                    className="pl-10 bg-slate-50 border-slate-200 h-9 text-xs" 
+                    className="pl-10 bg-slate-50 border-slate-200 h-10" 
                     value={selectedDate}
                     onChange={(e) => setSelectedDate(e.target.value)}
                   />
                 </div>
                 {selectedDate && (
-                  <div className="flex items-center gap-2 bg-blue-50 px-3 rounded-md border border-blue-100 h-9">
+                  <div className="flex items-center gap-2 bg-blue-50 px-3 rounded-md border border-blue-100 h-10">
                     <Checkbox 
                       id="weekly" 
                       checked={isWeeklyMode} 
@@ -263,32 +219,40 @@ const WorkPlanList = () => {
               </div>
             </div>
 
-            {!selectedDate && (
-              <div className="space-y-1.5">
-                <label className="text-[10px] font-bold uppercase text-slate-400 ml-1">Atau Filter Bulan</label>
-                <div className="flex items-center gap-2">
-                  <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[140px] h-9 text-xs bg-slate-50">
-                      <SelectValue placeholder="Bulan" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semua">Semua Bulan</SelectItem>
-                      {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                  <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger className="w-[100px] h-9 text-xs bg-slate-50">
-                      <SelectValue placeholder="Tahun" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="semua">Semua Tahun</SelectItem>
-                      {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            )}
+            {/* Reset Button */}
+            <div className="md:col-span-2 flex justify-end">
+              <Button variant="ghost" onClick={resetFilters} className="h-10 text-slate-400 hover:text-red-500 hover:bg-red-50 w-full md:w-auto">
+                <FilterX className="h-4 w-4 mr-2" /> Reset Filter
+              </Button>
+            </div>
           </div>
+
+          {/* Month & Year Filter (Hanya muncul jika tanggal tidak dipilih) */}
+          {!selectedDate && (
+            <div className="flex flex-wrap items-center gap-4 pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-bold uppercase text-slate-400">Atau Filter Bulan:</span>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-[140px] h-8 text-xs bg-slate-50">
+                    <SelectValue placeholder="Bulan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semua">Semua Bulan</SelectItem>
+                    {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-[100px] h-8 text-xs bg-slate-50">
+                    <SelectValue placeholder="Tahun" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semua">Semua Tahun</SelectItem>
+                    {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -296,17 +260,17 @@ const WorkPlanList = () => {
         ) : filteredPlans.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPlans.map((plan) => (
-              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500 group" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
+              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center text-xs text-slate-500 font-bold">
-                        <Calendar className="h-3 w-3 mr-1 text-blue-500" />
+                      <div className="flex items-center text-xs text-slate-500">
+                        <Calendar className="h-3 w-3 mr-1" />
                         {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
-                      <Badge variant="outline" className="w-fit text-[10px] bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge>
+                      <Badge variant="outline" className="w-fit text-[10px] bg-blue-50 text-blue-700">{plan.category}</Badge>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/edit/${plan.id}`); }}>
                         <Edit className="h-4 w-4" />
                       </Button>
@@ -315,21 +279,15 @@ const WorkPlanList = () => {
                       </Button>
                     </div>
                   </div>
-                  <CardTitle className="text-base mt-2 line-clamp-1 group-hover:text-blue-600 transition-colors">{plan.items[0].description}</CardTitle>
+                  <CardTitle className="text-base mt-2 line-clamp-1">{plan.items[0].description}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   <div className="text-xs text-slate-600 flex items-start gap-2">
                     <MapPin className="h-3 w-3 mt-0.5 text-red-500 shrink-0" />
                     <span className="line-clamp-1">{plan.items[0].location.street}</span>
                   </div>
-                  
-                  <div className="flex items-center gap-1.5 text-[10px] text-slate-400 bg-slate-50 p-1.5 rounded border border-slate-100">
-                    <Clock size={12} className="text-slate-300" />
-                    <span>Dibuat: {format(new Date(plan.createdAt), 'dd MMM yyyy, HH:mm', { locale: localeId })}</span>
-                  </div>
-
                   <div className="pt-3 border-t flex justify-between items-center text-[10px]">
-                    <span className="text-slate-400 font-medium">{plan.items.length} Lokasi Kerja</span>
+                    <span className="text-slate-400">{plan.items.length} Lokasi Kerja</span>
                     <div className="flex items-center text-blue-600 font-bold">Preview Cetak <Printer className="ml-1 h-3 w-3" /></div>
                   </div>
                 </CardContent>
