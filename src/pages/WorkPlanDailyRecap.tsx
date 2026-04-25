@@ -7,15 +7,12 @@ import { workPlanService } from '@/services/workPlanService';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { ArrowLeft, Printer, Calendar as CalendarIcon, PenTool, Plus, Eye, EyeOff, Settings2 } from 'lucide-react';
+import { ArrowLeft, Printer, Calendar as CalendarIcon, PenTool, Plus } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import { sortByCategory } from '@/utils/report-helpers';
 import { useAuth } from '@/context/AuthContext';
-import { cn } from "@/lib/utils";
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -45,7 +42,6 @@ const WorkPlanDailyRecap = () => {
   
   const [selectedDate, setSelectedDate] = useState(searchParams.get('date') || "");
   const [signatureMode, setSignatureMode] = useState<SignatureMode>("with-signature");
-  const [excludedPlanIds, setExcludedPlanIds] = useState<string[]>([]);
   
   const printRef = useRef<HTMLDivElement>(null);
   const isLoggedIn = !!session;
@@ -79,7 +75,6 @@ const WorkPlanDailyRecap = () => {
       });
       
       setPlans(filtered);
-      setExcludedPlanIds([]); // Reset filter saat ganti tanggal
     } catch (error) {
       console.error(error);
     } finally {
@@ -87,10 +82,9 @@ const WorkPlanDailyRecap = () => {
     }
   };
 
-  const visiblePlans = plans.filter(p => !excludedPlanIds.includes(p.id));
-  const hasRemarks = visiblePlans.some(plan => plan.items.some(item => item.remarks && item.remarks.trim() !== ""));
+  const hasRemarks = plans.some(plan => plan.items.some(item => item.remarks && item.remarks.trim() !== ""));
   
-  const categoriesInPlans = Array.from(new Set(visiblePlans.map(p => p.category)));
+  const categoriesInPlans = Array.from(new Set(plans.map(p => p.category)));
   const showSignatory4 = categoriesInPlans.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat"].includes(c));
   const showSignatory5 = categoriesInPlans.some(c => ["Tim Pohon", "Tim Siram"].includes(c));
 
@@ -121,16 +115,10 @@ const WorkPlanDailyRecap = () => {
     return groups;
   };
 
-  const togglePlanVisibility = (id: string) => {
-    setExcludedPlanIds(prev => 
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
-  };
-
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
-        <div className="flex items-center justify-between gap-2 border-b pb-4">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4">
               <ArrowLeft className="h-4 w-4 md:mr-2" /> 
@@ -185,53 +173,6 @@ const WorkPlanDailyRecap = () => {
             </Button>
           </div>
         </div>
-
-        {/* Panel Kontrol Visibilitas */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 text-slate-500">
-            <Settings2 size={16} />
-            <span className="text-xs font-bold uppercase tracking-wider">Kontrol Visibilitas Cetak</span>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            {plans.length > 0 ? (
-              plans.map((plan) => {
-                const isHidden = excludedPlanIds.includes(plan.id);
-                return (
-                  <div 
-                    key={plan.id} 
-                    className={cn(
-                      "flex items-center gap-3 px-4 py-2 rounded-lg border transition-all shadow-sm",
-                      isHidden ? "bg-slate-50 border-slate-200 opacity-60" : "bg-blue-50 border-blue-200 ring-1 ring-blue-100"
-                    )}
-                  >
-                    <Switch 
-                      id={`switch-${plan.id}`}
-                      checked={!isHidden}
-                      onCheckedChange={() => togglePlanVisibility(plan.id)}
-                    />
-                    <Label 
-                      htmlFor={`switch-${plan.id}`} 
-                      className={cn(
-                        "text-xs font-bold cursor-pointer flex items-center gap-2",
-                        isHidden ? "text-slate-400" : "text-blue-700"
-                      )}
-                    >
-                      {isHidden ? <EyeOff size={12} /> : <Eye size={12} />}
-                      {plan.category}
-                    </Label>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-xs italic text-slate-400">Tidak ada data untuk tanggal ini</p>
-            )}
-          </div>
-          {excludedPlanIds.length > 0 && (
-            <p className="text-[10px] text-amber-600 font-medium italic">
-              * {excludedPlanIds.length} rencana kerja disembunyikan dari tampilan cetak.
-            </p>
-          )}
-        </div>
       </div>
 
       <div ref={printRef} className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
@@ -269,8 +210,8 @@ const WorkPlanDailyRecap = () => {
             </tr>
           </thead>
           <tbody>
-            {visiblePlans.length > 0 ? (
-              visiblePlans.flatMap((plan, pIdx) => {
+            {plans.length > 0 ? (
+              plans.flatMap((plan, pIdx) => {
                 const resourceGroups = groupPlanResources(plan);
                 const totalPlanRows = resourceGroups.reduce((acc, group) => 
                   acc + Math.max(group.items.length, group.tools.length, 1), 0
@@ -340,7 +281,7 @@ const WorkPlanDailyRecap = () => {
                 });
               })
             ) : (
-              <tr><td colSpan={hasRemarks ? 11 : 10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk ditampilkan</td></tr>
+              <tr><td colSpan={hasRemarks ? 11 : 10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
             )}
           </tbody>
         </table>
