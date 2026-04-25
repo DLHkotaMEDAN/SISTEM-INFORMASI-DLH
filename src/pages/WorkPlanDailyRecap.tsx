@@ -55,18 +55,21 @@ const WorkPlanDailyRecap = () => {
       setLoading(true);
       const data = await workPlanService.getAllWorkPlans();
       
+      // Filter hanya rencana yang AKTIF
+      const activeData = data.filter(p => p.is_active !== false);
+      
       let targetDate = selectedDate;
       
-      if (!targetDate && data.length > 0) {
-        const allDates = data.map(p => p.date);
+      if (!targetDate && activeData.length > 0) {
+        const allDates = activeData.map(p => p.date);
         targetDate = allDates.reduce((a, b) => (a > b ? a : b));
         setSelectedDate(targetDate);
-      } else if (!targetDate && data.length === 0) {
+      } else if (!targetDate && activeData.length === 0) {
         targetDate = "semua";
         setSelectedDate("semua");
       }
 
-      const filtered = data.filter(p => targetDate === "semua" || p.date === targetDate);
+      const filtered = activeData.filter(p => targetDate === "semua" || p.date === targetDate);
       
       filtered.sort((a, b) => {
         const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
