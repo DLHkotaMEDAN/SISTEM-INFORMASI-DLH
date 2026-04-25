@@ -240,7 +240,7 @@ const Index = () => {
                       <Button 
                         onClick={() => navigate('/create')} 
                         size="sm" 
-                        className="bg-blue-600 hover:bg-blue-700 h-8 md:h-9 px-2 md:px-4 ml-1"
+                        className="bg-blue-600 hover:bg-blue-700 h-8 md:h-9 px-2 md:px-4 ml-1 hidden md:inline-flex"
                       >
                         <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
                       </Button>
@@ -319,6 +319,18 @@ const Index = () => {
             </Button>
           </div>
         </div>
+
+        {/* Tombol Tambah Laporan Khusus Mobile */}
+        {isLoggedIn && (
+          <div className="md:hidden mb-6">
+            <Button 
+              onClick={() => navigate('/create')} 
+              className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base font-bold shadow-lg shadow-blue-100"
+            >
+              <Plus className="mr-2 h-5 w-5" /> Tambah Laporan Baru
+            </Button>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-20 text-slate-500">Memuat data...</div>
