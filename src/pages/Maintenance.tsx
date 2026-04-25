@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   CheckCircle2, FileWarning, Loader2, Database, 
-  Eye, HardDrive, AlertTriangle, Users
+  Eye, HardDrive, AlertTriangle, Users, Info, Clock, Zap, Activity
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -217,6 +217,59 @@ const Maintenance = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Informasi Batasan Supabase Free Tier */}
+            <Card className="bg-white border-l-4 border-l-amber-500 shadow-sm">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-700">
+                  <Info className="h-5 w-5" /> Informasi Batasan Layanan (Supabase Free Tier)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg shrink-0"><Zap className="h-4 w-4 text-amber-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Transfer Data (Egress)</p>
+                        <p className="text-sm font-medium">Limit: 2 GB / Bulan</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Termasuk download foto saat cetak rekap dan akses API harian.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg shrink-0"><Activity className="h-4 w-4 text-amber-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Pengguna Aktif (MAU)</p>
+                        <p className="text-sm font-medium">Limit: 50.000 Pengguna / Bulan</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Jumlah maksimal akun unik yang login dalam satu bulan.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="space-y-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg shrink-0"><Clock className="h-4 w-4 text-amber-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Project Pausing</p>
+                        <p className="text-sm font-medium">Status: Aktif (7 Hari Inaktivitas)</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Database akan "tidur" otomatis jika tidak ada akses selama 1 minggu.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-amber-100 p-2 rounded-lg shrink-0"><ShieldAlert className="h-4 w-4 text-amber-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Edge Functions</p>
+                        <p className="text-sm font-medium">Limit: 10 Fungsi Aktif</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5">Digunakan untuk fitur "Simpan ke Drive" dan integrasi eksternal.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-6 p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2 text-amber-800 text-[11px] font-medium">
+                  <AlertTriangle size={14} className="shrink-0" />
+                  PENTING: Jika salah satu limit tercapai, layanan mungkin akan dibatasi atau dihentikan sementara hingga bulan berikutnya.
+                </div>
+              </CardContent>
+            </Card>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="bg-white border-blue-100">
