@@ -141,7 +141,7 @@ const Index = () => {
   });
 
   filteredReports.sort((a, b) => {
-    const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+    const dateDiff = new Date(a.date).getTime() - new Date(a.date).getTime();
     if (dateDiff !== 0) return dateDiff;
     return sortByCategory(a.category, b.category);
   });
@@ -164,16 +164,15 @@ const Index = () => {
 
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
-              {isLoggedIn && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/work-plans')} className="bg-blue-50 text-blue-700 border-blue-200 px-2 md:px-3">
-                      <ClipboardList className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rencana Kerja</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="md:hidden"><p>Rencana Kerja</p></TooltipContent>
-                </Tooltip>
-              )}
+              {/* Rencana Kerja is now Public */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="sm" onClick={() => navigate('/work-plans')} className="bg-blue-50 text-blue-700 border-blue-200 px-2 md:px-3">
+                    <ClipboardList className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rencana Kerja</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent className="md:hidden"><p>Rencana Kerja</p></TooltipContent>
+              </Tooltip>
 
               {isAdmin && (
                 <Tooltip>
