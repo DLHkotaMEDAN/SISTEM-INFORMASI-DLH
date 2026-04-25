@@ -52,7 +52,6 @@ const WorkPlanDailyRecap = () => {
       const data = await workPlanService.getAllWorkPlans();
       const filtered = data.filter(p => selectedDate === "semua" || p.date === selectedDate);
       
-      // Urutan: Tanggal (desc), lalu Kategori sesuai urutan permanen
       filtered.sort((a, b) => {
         const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
         if (dateDiff !== 0) return dateDiff;
@@ -171,7 +170,12 @@ const WorkPlanDailyRecap = () => {
                 const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram";
                 
                 if (isGlobalStyle) {
-                  const allTools = plan.items[0].tools;
+                  // Ambil alat dari item pertama (data baru) atau gabungkan semua (data lama)
+                  let allTools = plan.items[0].tools || [];
+                  if (allTools.length === 0) {
+                    allTools = plan.items.flatMap(it => it.tools || []);
+                  }
+                  
                   const allItems = plan.items;
                   const maxRows = Math.max(allItems.length, allTools.length);
                   const planTotalRows = maxRows;
