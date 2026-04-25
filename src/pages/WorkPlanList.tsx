@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, FileText, Trash2, Edit, 
   Printer, Search, FilterX, ArrowLeft, ChevronDown,
-  Table, CalendarDays, Clock, LogIn, RefreshCw
+  Table, CalendarDays, Clock, LogIn, RefreshCw, Eye
 } from 'lucide-react';
 import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
@@ -105,17 +105,14 @@ const WorkPlanList = () => {
   };
 
   const filteredPlans = plans.filter(plan => {
-    // 1. Filter Pencarian
     const search = searchQuery.toLowerCase();
     const matchSearch = !search || (plan.items && plan.items.some(item => 
       (item.description?.toLowerCase() || "").includes(search) ||
       (item.location?.street?.toLowerCase() || "").includes(search)
     ));
 
-    // 2. Filter Kategori
     const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
 
-    // 3. Filter Tanggal Spesifik / Mingguan
     let matchDate = true;
     const planDate = parseISO(plan.date);
     
@@ -129,7 +126,6 @@ const WorkPlanList = () => {
       }
     }
 
-    // 4. Filter Bulan & Tahun (Hanya jika tanggal spesifik tidak dipilih)
     let matchMonthYear = true;
     if (!selectedDate) {
       const m = (planDate.getMonth() + 1).toString();
@@ -147,19 +143,19 @@ const WorkPlanList = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-4">
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-3">
-                    <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Beranda</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="md:hidden"><p>Beranda</p></TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
-              <FileText className="text-blue-600 h-5 w-5 md:h-6 md:w-6" /> Rencana Kerja
-            </h1>
+            <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-3">
+              <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Beranda</span>
+            </Button>
+            <div className="flex flex-col">
+              <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
+                <FileText className="text-blue-600 h-5 w-5 md:h-6 md:w-6" /> Rencana Kerja
+              </h1>
+              {!isLoggedIn && (
+                <Badge variant="outline" className="w-fit text-[9px] bg-amber-50 text-amber-600 border-amber-200 mt-1">
+                  <Eye className="h-2.5 w-2.5 mr-1" /> Mode Lihat Saja
+                </Badge>
+              )}
+            </div>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-8 md:h-10 w-8 md:w-10 bg-white">
@@ -186,16 +182,9 @@ const WorkPlanList = () => {
             </DropdownMenu>
 
             {isLoggedIn ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 px-2 md:px-4 h-8 md:h-10">
-                      <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="md:hidden"><p>Buat Rencana Baru</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+              <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 px-2 md:px-4 h-8 md:h-10">
+                <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
+              </Button>
             ) : (
               <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 h-8 md:h-10 px-2 md:px-4">
                 <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span>
