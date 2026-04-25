@@ -151,40 +151,40 @@ const WorkPlanList = () => {
             </h1>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
+            {/* Dropdown Rekap sekarang Publik */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10">
+                  <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span> <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer">
+                  <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer">
+                  <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer">
+                  <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             {isLoggedIn ? (
-              <>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10">
-                      <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span> <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 opacity-50" />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 px-2 md:px-4 h-8 md:h-10">
+                      <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer">
-                      <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer">
-                      <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer">
-                      <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 px-2 md:px-4 h-8 md:h-10">
-                        <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="md:hidden"><p>Buat Rencana Baru</p></TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              </>
+                  </TooltipTrigger>
+                  <TooltipContent className="md:hidden"><p>Buat Rencana Baru</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             ) : (
               <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 h-8 md:h-10 px-2 md:px-4">
-                <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk untuk Kelola</span>
+                <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span>
               </Button>
             )}
           </div>
