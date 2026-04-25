@@ -10,7 +10,7 @@ import {
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
   LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight
+  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -60,6 +60,7 @@ const Index = () => {
   const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("reports");
   
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
@@ -192,44 +193,58 @@ const Index = () => {
                 </Tooltip>
               )}
 
-              {isLoggedIn ? (
-                <>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
-                        <Printer className="h-4 w-4 md:mr-2" /> 
-                        <span className="hidden md:inline">Cetak</span>
-                        <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
+                    <Printer className="h-4 w-4 md:mr-2" /> 
+                    <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : "Rencana"}</span>
+                    <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {activeTab === "reports" ? (
+                    <>
                       <DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2">
-                        <Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian
+                        <Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2">
-                        <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian
+                        <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2">
-                        <Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan
+                        <Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan
                       </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </>
+                  ) : (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2">
+                        <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2">
+                        <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2">
+                        <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-                  <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
-                    <div className="hidden sm:flex flex-col items-end mr-2">
-                      <p className="text-[10px] font-bold text-slate-900 leading-none">
-                        {isAdminHarian ? 'Admin Harian' : isPimpinan ? 'Pimpinan' : isAdmin ? 'Admin' : 'User'}
-                      </p>
-                      <p className="text-[8px] text-slate-500">{isPimpinan || isAdminHarian ? 'Semua Kategori' : (profile?.category || 'Semua')}</p>
-                    </div>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 md:h-9 md:w-9 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="h-4 w-4 md:h-5 md:w-5" /></Button>
-                      </TooltipTrigger>
-                      <TooltipContent><p>Keluar Sistem</p></TooltipContent>
-                    </Tooltip>
+              {isLoggedIn ? (
+                <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
+                  <div className="hidden sm:flex flex-col items-end mr-2">
+                    <p className="text-[10px] font-bold text-slate-900 leading-none">
+                      {isAdminHarian ? 'Admin Harian' : isPimpinan ? 'Pimpinan' : isAdmin ? 'Admin' : 'User'}
+                    </p>
+                    <p className="text-[8px] text-slate-500">{isPimpinan || isAdminHarian ? 'Semua Kategori' : (profile?.category || 'Semua')}</p>
                   </div>
-                </>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={handleLogout} className="h-8 w-8 md:h-9 md:w-9 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="h-4 w-4 md:h-5 md:w-5" /></Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Keluar Sistem</p></TooltipContent>
+                  </Tooltip>
+                </div>
               ) : (
                 !authLoading && (
                   <Button onClick={() => navigate('/login')} size="sm" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-8 md:h-9 px-2 md:px-4">
@@ -302,7 +317,7 @@ const Index = () => {
           </div>
         </div>
 
-        <Tabs defaultValue="reports" className="w-full space-y-6">
+        <Tabs defaultValue="reports" onValueChange={setActiveTab} className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <TabsList className="grid w-full md:w-[400px] grid-cols-2 h-12 bg-white border shadow-sm p-1">
               <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2">
