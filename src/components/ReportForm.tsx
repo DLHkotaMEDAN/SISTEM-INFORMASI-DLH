@@ -9,18 +9,28 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ShieldAlert } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ClipboardCheck, HelpCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Report, ReportCategory, Task, FuelUsage, Location, Equipment, HeavyEquipment } from '@/types/report';
+import { WorkPlan } from '@/types/workPlan';
 import { medanDistricts } from '@/data/medan-districts';
 import ImageUpload from './ImageUpload';
 import { Badge } from "@/components/ui/badge";
 import { getUnitByCategory } from '@/utils/report-helpers';
 import { reportService } from '@/services/reportService';
+import { workPlanService } from '@/services/workPlanService';
 import { storageService } from '@/services/storageService';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const categories: ReportCategory[] = [
   "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
@@ -99,6 +109,10 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
   const [existingVehicles, setExistingVehicles] = useState<string[]>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]);
+  
+  // State untuk sinkronisasi Rencana Kerja
+  const [matchingWorkPlan, setMatchingWorkPlan] = useState<WorkPlan | null>(null);
+  const [showWorkPlanPrompt, setShowWorkPlanPrompt] = useState(false);
 
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
   const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
@@ -136,7 +150,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   });
 
   const selectedCategory = form.watch("category");
-  const { fields: taskFields, append: appendTask, remove: removeTask } = useFieldArray({ control: form.control, name: "tasks" });
+  const selectedDate = form.watch("date");
+  const { fields: taskFields, append: appendTask, remove: removeTask, replace: replaceTasks } = useFieldArray({ control: form.control, name: "tasks" });
 
   useEffect(() => {
     const fetchVehicles = async () => {
@@ -157,6 +172,27 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     fetchVehicles();
   }, []);
 
+  // Effect untuk mengecek Rencana Kerja yang cocok
+  useEffect(() => {
+    const checkWorkPlan = async () => {
+      if (!isEditing && selectedDate && selectedCategory && selectedCategory !== "") {
+        try {
+          const plans = await workPlanService.getAllWorkPlans();
+          const match = plans.find(p => p.date === selectedDate && p.category === selectedCategory);
+          if (match) {
+            setMatchingWorkPlan(match);
+            setShowWorkPlanPrompt(true);
+          } else {
+            setMatchingWorkPlan(null);
+          }
+        } catch (e) {
+          console.error("Error checking work plan:", e);
+        }
+      }
+    };
+    checkWorkPlan();
+  }, [selectedDate, selectedCategory, isEditing]);
+
   useEffect(() => {
     if (!isEditing && selectedCategory) {
       const tasks = form.getValues("tasks");
@@ -173,6 +209,37 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       form.setValue("tasks", updatedTasks);
     }
   }, [selectedCategory, form, isEditing]);
+
+  const applyWorkPlan = () => {
+    if (!matchingWorkPlan) return;
+
+    const newTasks = matchingWorkPlan.items.map(item => ({
+      description: item.description,
+      location: {
+        street: item.location.street,
+        village: Array.isArray(item.location.village) ? item.location.village : [item.location.village],
+        subDistrict: item.location.subDistrict
+      },
+      photos: { zero: "", fifty: "", hundred: "" },
+      volume: 0,
+      equipment: [],
+      heavyEquipment: item.tools.map(tool => ({
+        type: tool.name,
+        vehicle: "",
+        fuel: { pertamax: 0, dexlite: 0, solar: 0 }
+      })),
+      personnel: {
+        coordinator: item.coordinator,
+        members: item.personnel.members
+      },
+      vehicle: "",
+      remarks: item.basis // Dasar Pengerjaan masuk ke Keterangan Kegiatan
+    }));
+
+    replaceTasks(newTasks);
+    setShowWorkPlanPrompt(false);
+    showSuccess("Data laporan berhasil disinkronkan dengan Rencana Kerja");
+  };
 
   const uploadTaskPhotos = async (tasks: any[]) => {
     const updatedTasks = [...tasks];
@@ -291,7 +358,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Laporan" : "Input Laporan Baru"}</h1>
           <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : <><Save className="mr-2 h-4 w-4" /> Siman</>}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : <><Save className="mr-2 h-4 w-4" /> Simpan</>}
           </Button>
         </div>
 
@@ -541,6 +608,37 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           </Button>
         </div>
       </form>
+
+      {/* Dialog Konfirmasi Sinkronisasi Rencana Kerja */}
+      <Dialog open={showWorkPlanPrompt} onOpenChange={setShowWorkPlanPrompt}>
+        <DialogContent className="sm:max-w-[450px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <ClipboardCheck className="h-6 w-6" /> Sinkronisasi Rencana Kerja
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Ditemukan <strong>Rencana Kerja</strong> untuk kategori <strong>{selectedCategory}</strong> pada tanggal <strong>{selectedDate}</strong>.
+              <br /><br />
+              Apakah Anda ingin mengisi data laporan secara otomatis berdasarkan rencana kerja tersebut?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 space-y-2">
+            <p className="text-[10px] font-bold text-blue-700 uppercase">Data yang akan disinkronkan:</p>
+            <ul className="text-[11px] text-blue-800 space-y-1">
+              <li>• Uraian Kegiatan & Lokasi</li>
+              <li>• Jenis Alat Berat (dari Nama Alat)</li>
+              <li>• Koordinator & Jumlah Anggota</li>
+              <li>• Keterangan Kegiatan (dari Dasar Pengerjaan)</li>
+            </ul>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setShowWorkPlanPrompt(false)}>Tidak, Input Manual</Button>
+            <Button onClick={applyWorkPlan} className="bg-blue-600 hover:bg-blue-700">
+              <HelpCircle className="mr-2 h-4 w-4" /> Ya, Sinkronkan Data
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 };
