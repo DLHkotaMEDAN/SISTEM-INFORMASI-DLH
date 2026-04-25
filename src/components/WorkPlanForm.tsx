@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Users, Wrench, FileText, MessageSquare, ClipboardList, ShieldAlert, Check, HelpCircle } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Users, Wrench, FileText, MessageSquare, ClipboardList, ShieldAlert, Check, HelpCircle, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { WorkPlan, WorkPlanItem } from '@/types/workPlan';
@@ -112,6 +112,11 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showWizard, setShowWizard] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
+  
+  // State untuk Duplikat
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateDate, setDuplicateDate] = useState("");
+  const [isDuplicating, setIsDuplicating] = useState(false);
 
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
@@ -275,6 +280,43 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
     }
   };
 
+  const handleDuplicate = async () => {
+    if (!duplicateDate) {
+      showError("Silakan pilih tanggal baru");
+      return;
+    }
+    
+    setIsDuplicating(true);
+    try {
+      const values = form.getValues();
+      const cleanGlobalTools = values.globalTools?.filter(t => t.name && t.name.trim() !== "") || [];
+      const processedItems = values.items.map(item => {
+        const { uiMode, ...rest } = item;
+        if (isGlobalStyle) {
+          return { ...rest, tools: cleanGlobalTools, coordinator: values.globalCoordinator || "", personnel: { members: values.globalMembers || 0 } };
+        } else {
+          return { ...rest, tools: item.tools.filter(t => t.name && t.name.trim() !== "") };
+        }
+      });
+
+      const duplicateData = { 
+        date: duplicateDate, 
+        category: values.category, 
+        items: processedItems 
+      };
+
+      await workPlanService.createWorkPlan(duplicateData as Omit<WorkPlan, 'id' | 'created_at'>);
+      showSuccess(`Rencana kerja berhasil diduplikat ke tanggal ${duplicateDate}`);
+      setShowDuplicateDialog(false);
+      navigate('/work-plans');
+    } catch (error) {
+      console.error(error);
+      showError("Gagal menduplikat rencana kerja");
+    } finally {
+      setIsDuplicating(false);
+    }
+  };
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-5xl mx-auto pb-20">
@@ -285,9 +327,24 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Rencana Kerja" : "Buat Rencana Kerja Baru"}</h1>
-          <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>
-            {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Simpan
-          </Button>
+          <div className="flex gap-2">
+            {isEditing && (
+              <Button 
+                type="button" 
+                variant="outline" 
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                onClick={() => {
+                  setDuplicateDate(getTomorrowDate());
+                  setShowDuplicateDialog(true);
+                }}
+              >
+                <Copy className="mr-2 h-4 w-4" /> Duplikat
+              </Button>
+            )}
+            <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Simpan
+            </Button>
+          </div>
         </div>
 
         <Card className="border-t-4 border-t-blue-500">
@@ -518,6 +575,42 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setShowWizard(false)}>Batal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Duplikat */}
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Copy className="text-blue-600 h-5 w-5" /> Duplikat Rencana Kerja
+            </DialogTitle>
+            <DialogDescription>
+              Pilih tanggal baru untuk menyalin seluruh data rencana kerja ini.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <FormLabel>Tanggal Baru</FormLabel>
+              <Input 
+                type="date" 
+                value={duplicateDate} 
+                onChange={(e) => setDuplicateDate(e.target.value)}
+                className="h-11"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button variant="ghost" onClick={() => setShowDuplicateDialog(false)} disabled={isDuplicating}>Batal</Button>
+            <Button 
+              onClick={handleDuplicate} 
+              disabled={isDuplicating || !duplicateDate}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isDuplicating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
+              Mulai Duplikat
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
