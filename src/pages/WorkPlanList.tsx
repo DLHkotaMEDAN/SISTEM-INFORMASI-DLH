@@ -55,12 +55,15 @@ const WorkPlanList = () => {
 
   const isLoggedIn = !!session;
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
-  const isUserRestricted = isLoggedIn && profile?.role === 'user' && profile?.category && !isPimpinan;
+  const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
+  
+  // User biasa dibatasi kategori, tapi Admin Harian/Pimpinan/Admin tidak
+  const isUserRestricted = isLoggedIn && profile?.role === 'user' && profile?.category && !isPimpinan && !isAdminHarian;
 
   useEffect(() => {
     loadPlans();
     if (isUserRestricted) setSelectedCategory(profile.category!);
-  }, [profile]);
+  }, [profile, isUserRestricted]);
 
   const loadPlans = async () => {
     try {
