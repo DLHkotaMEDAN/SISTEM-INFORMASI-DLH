@@ -152,62 +152,72 @@ const WorkPlanDailyRecap = () => {
           <tbody>
             {plans.length > 0 ? (
               plans.flatMap((plan, pIdx) => {
-                const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram";
+                const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram" || plan.category === "Tim Babat";
                 
+                const allItems = plan.items;
+                const allTools = isGlobalStyle 
+                  ? Array.from(new Set(plan.items.flatMap(it => it.tools.map(t => JSON.stringify(t))))).map(s => JSON.parse(s))
+                  : [];
+
+                const maxRows = isGlobalStyle 
+                  ? Math.max(allItems.length, allTools.length)
+                  : allItems.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
+
                 if (isGlobalStyle) {
-                  const allItems = plan.items;
-                  const totalRows = allItems.length;
-                  // Ambil semua alat unik dari seluruh item (untuk jaga-jaga data lama)
-                  const allTools = Array.from(new Set(plan.items.flatMap(it => it.tools.map(t => JSON.stringify(t))))).map(s => JSON.parse(s));
+                  return Array.from({ length: maxRows }).map((_, rowIndex) => {
+                    const item = allItems[rowIndex];
+                    const tool = allTools[rowIndex];
 
-                  return allItems.map((item, rowIndex) => (
-                    <tr key={`${plan.id}-${rowIndex}`}>
-                      {rowIndex === 0 && (
-                        <>
-                          <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={totalRows}>{pIdx + 1}</td>
-                          <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={totalRows}>{plan.category}</td>
-                        </>
-                      )}
-                      
-                      <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
-                      <td className="border-2 border-black p-1 align-top break-words">
-                        {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                      </td>
+                    return (
+                      <tr key={`${plan.id}-${rowIndex}`}>
+                        {rowIndex === 0 && (
+                          <>
+                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={maxRows}>{pIdx + 1}</td>
+                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={maxRows}>{plan.category}</td>
+                          </>
+                        )}
+                        
+                        {/* Detail Kegiatan & Lokasi: Spanning jika hanya ada 1 item tapi banyak alat */}
+                        {rowIndex === 0 && allItems.length === 1 ? (
+                          <>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows}>{allItems[0].description}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows}>
+                              {allItems[0].location.street}, {Array.isArray(allItems[0].location.village) ? allItems[0].location.village.join(", ") : allItems[0].location.village}, {allItems[0].location.subDistrict}
+                            </td>
+                          </>
+                        ) : rowIndex < allItems.length ? (
+                          <>
+                            <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
+                            <td className="border-2 border-black p-1 align-top break-words">
+                              {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                            </td>
+                          </>
+                        ) : rowIndex >= allItems.length && allItems.length > 1 ? (
+                          <>
+                            <td className="border-2 border-black p-1"></td>
+                            <td className="border-2 border-black p-1"></td>
+                          </>
+                        ) : null}
 
-                      {rowIndex === 0 && (
-                        <>
-                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={totalRows}>
-                            {allTools.map((t, i) => (
-                              <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                {t.name ? `• ${t.name}` : "-"}
-                              </div>
-                            ))}
-                          </td>
-                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={totalRows}>
-                            {allTools.map((t, i) => (
-                              <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                {t.unit || "-"}
-                              </div>
-                            ))}
-                          </td>
-                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={totalRows}>
-                            {allTools.map((t, i) => (
-                              <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                {t.usage || "-"}
-                              </div>
-                            ))}
-                          </td>
-                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={totalRows}>{plan.items[0].coordinator}</td>
-                          <td className="border-2 border-black p-1 text-center align-top" rowSpan={totalRows}>{plan.items[0].personnel.members}</td>
-                          <td className="border-2 border-black p-1 align-top break-words" rowSpan={totalRows}>{plan.items[0].basis}</td>
-                          {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={totalRows}>{plan.items[0].remarks || "-"}</td>}
-                        </>
-                      )}
-                    </tr>
-                  ));
+                        {/* Alat, Unit, Kegunaan: Sejajar baris demi baris */}
+                        <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
+                        <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
+                        <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+
+                        {rowIndex === 0 && (
+                          <>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].coordinator}</td>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].personnel.members}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows}>{plan.items[0].basis}</td>
+                            {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxRows}>{plan.items[0].remarks || "-"}</td>}
+                          </>
+                        )}
+                      </tr>
+                    );
+                  });
                 } else {
-                  const planTotalRows = plan.items.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
-                  return plan.items.flatMap((item, iIdx) => {
+                  // Logika untuk kategori non-global (Taman Kota, dll)
+                  return allItems.flatMap((item, iIdx) => {
                     const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
                     const itemRowCount = toolsToRender.length;
                     
@@ -215,14 +225,14 @@ const WorkPlanDailyRecap = () => {
                       <tr key={`${plan.id}-${iIdx}-${tIdx}`}>
                         {iIdx === 0 && tIdx === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={planTotalRows}>{pIdx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={planTotalRows}>{plan.category}</td>
+                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={maxRows}>{pIdx + 1}</td>
+                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={maxRows}>{plan.category}</td>
                           </>
                         )}
                         {tIdx === 0 && (
                           <>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.description}</td>
-                            <td className="border-2 border-black p-1 align-top break-words">
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>
                               {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                             </td>
                           </>
