@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,45 +59,47 @@ const WorkPlanList = () => {
   
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && profile?.category && !isPimpinan && !isAdminHarian;
 
-  useEffect(() => {
-    loadPlans();
-    if (isUserRestricted) setSelectedCategory(profile.category!);
-  }, [profile, isUserRestricted]);
-
-  const loadPlans = async () => {
+  const loadPlans = useCallback(async () => {
     try {
       setLoading(true);
       const data = await workPlanService.getAllWorkPlans();
+      console.log("Fetched plans:", data);
       setPlans(data || []);
     } catch (error) {
       console.error("Error loading plans:", error);
-      showError("Gagal memuat rencana kerja");
+      showError("Gagal memuat rencana kerja dari database");
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadPlans();
+  }, [loadPlans]);
+
+  useEffect(() => {
+    if (isUserRestricted && profile?.category) {
+      setSelectedCategory(profile.category);
+    }
+  }, [profile, isUserRestricted]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!isLoggedIn) return;
-    if (isPimpinan) {
-      showError("Akun Pimpinan tidak diizinkan menghapus data");
-      return;
-    }
-    if (window.confirm("Hapus rencana kerja ini?")) {
+    if (!isLoggedIn || isPimpinan) return;
+    if (window.confirm("Hapus rencana kerja ini secara permanen?")) {
       try {
         await workPlanService.deleteWorkPlan(id);
-        setPlans(plans.filter(p => p.id !== id));
-        showSuccess("Rencana kerja dihapus");
+        setPlans(prev => prev.filter(p => p.id !== id));
+        showSuccess("Rencana kerja berhasil dihapus");
       } catch (error) {
-        showError("Gagal menghapus");
+        showError("Gagal menghapus data");
       }
     }
   };
 
   const resetFilters = () => {
     setSearchQuery("");
-    setSelectedCategory(isUserRestricted ? profile.category! : "semua");
+    setSelectedCategory(isUserRestricted ? profile?.category || "semua" : "semua");
     setSelectedDate("");
     setIsWeeklyMode(false);
     setSelectedMonth("semua");
@@ -105,14 +107,17 @@ const WorkPlanList = () => {
   };
 
   const filteredPlans = plans.filter(plan => {
-    const search = searchQuery.toLowerCase();
-    const matchSearch = !search || (plan.items && plan.items.some(item => 
+    // 1. Filter Pencarian (Uraian atau Jalan)
+    const search = searchQuery.toLowerCase().trim();
+    const matchSearch = !search || (Array.isArray(plan.items) && plan.items.some(item => 
       (item.description?.toLowerCase() || "").includes(search) ||
       (item.location?.street?.toLowerCase() || "").includes(search)
     ));
 
+    // 2. Filter Kategori
     const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
 
+    // 3. Filter Tanggal / Minggu
     let matchDate = true;
     const planDate = parseISO(plan.date);
     
@@ -126,6 +131,7 @@ const WorkPlanList = () => {
       }
     }
 
+    // 4. Filter Bulan & Tahun
     let matchMonthYear = true;
     if (!selectedDate) {
       const m = (planDate.getMonth() + 1).toString();
@@ -149,44 +155,52 @@ const WorkPlanList = () => {
             <div className="flex flex-col">
               <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
                 <FileText className="text-blue-600 h-5 w-5 md:h-6 md:w-6" /> Rencana Kerja
+                {!loading && <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700">{filteredPlans.length}</Badge>}
               </h1>
               {!isLoggedIn && (
                 <Badge variant="outline" className="w-fit text-[9px] bg-amber-50 text-amber-600 border-amber-200 mt-1">
-                  <Eye className="h-2.5 w-2.5 mr-1" /> Mode Lihat Saja
+                  <Eye className="h-2.5 w-2.5 mr-1" /> Mode Lihat Saja (Publik)
                 </Badge>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-8 md:h-10 w-8 md:w-10 bg-white">
-              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-8 md:h-10 w-8 md:w-10 bg-white border-slate-200">
+                    <RefreshCw className={cn("h-4 w-4 text-slate-600", loading && "animate-spin")} />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent><p>Segarkan Data</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10">
+                <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10 border-slate-200">
                   <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span> <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2">
                   <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2">
                   <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer">
+                <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2">
                   <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 
             {isLoggedIn ? (
-              <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 px-2 md:px-4 h-8 md:h-10">
+              <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 hover:bg-blue-700 px-2 md:px-4 h-8 md:h-10 shadow-sm">
                 <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
               </Button>
             ) : (
-              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 h-8 md:h-10 px-2 md:px-4">
+              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-8 md:h-10 px-2 md:px-4">
                 <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span>
               </Button>
             )}
@@ -283,24 +297,29 @@ const WorkPlanList = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-slate-500">Memuat data rencana kerja...</div>
+          <div className="flex flex-col items-center justify-center py-32 gap-4">
+            <RefreshCw className="h-10 w-10 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-medium animate-pulse">Menghubungkan ke database...</p>
+          </div>
         ) : filteredPlans.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPlans.map((plan) => (
-              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500 group" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
+              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500 group relative overflow-hidden" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center text-xs text-slate-500 font-medium">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="w-fit text-[10px] bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge>
-                        <div className="flex items-center text-[9px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
-                          <Clock className="h-2.5 w-2.5 mr-1" />
-                          {plan.created_at ? format(parseISO(plan.created_at), 'HH:mm') : '--:--'}
-                        </div>
+                        {plan.created_at && (
+                          <div className="flex items-center text-[9px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
+                            <Clock className="h-2.5 w-2.5 mr-1" />
+                            {format(parseISO(plan.created_at), 'HH:mm')}
+                          </div>
+                        )}
                       </div>
                     </div>
                     {isLoggedIn && (
@@ -336,7 +355,7 @@ const WorkPlanList = () => {
                     <span className="line-clamp-1">{plan.items?.[0]?.location?.street || "Lokasi tidak ditentukan"}</span>
                   </div>
                   <div className="pt-3 border-t flex justify-between items-center text-[10px]">
-                    <span className="text-slate-400 font-medium">{plan.items?.length || 0} Lokasi Kerja</span>
+                    <span className="text-slate-400 font-medium">{Array.isArray(plan.items) ? plan.items.length : 0} Lokasi Kerja</span>
                     <div className="flex items-center text-blue-600 font-bold">Preview Cetak <Printer className="ml-1 h-3 w-3" /></div>
                   </div>
                 </CardContent>
@@ -349,7 +368,7 @@ const WorkPlanList = () => {
               <Search className="text-slate-300 h-6 w-6" />
             </div>
             <p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p>
-            <p className="text-slate-400 text-xs mt-1">Coba ubah filter pencarian atau klik tombol refresh</p>
+            <p className="text-slate-400 text-xs mt-1">Coba ubah filter pencarian atau klik tombol refresh di atas</p>
             <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Semua Filter</Button>
           </div>
         )}
