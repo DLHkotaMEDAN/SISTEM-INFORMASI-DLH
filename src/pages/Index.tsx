@@ -247,12 +247,6 @@ const Index = () => {
                     </TooltipTrigger>
                     <TooltipContent className="md:hidden"><p>Laporan Baru</p></TooltipContent>
                   </Tooltip>
-                  
-                  {isPimpinan && (
-                    <Badge className="bg-amber-100 text-amber-700 border-amber-200 ml-2 hidden md:flex">
-                      <ShieldCheck className="h-3 w-3 mr-1" /> Mode Pantau
-                    </Badge>
-                  )}
                 </>
               ) : (
                 !authLoading && (
