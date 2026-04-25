@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { WorkPlan } from '@/types/workPlan';
+import { WorkPlan, WorkPlanItem } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
@@ -21,6 +21,15 @@ const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
 type SignatureMode = "with-signature" | "without-signature";
+
+interface ResourceGroup {
+  items: WorkPlanItem[];
+  tools: any[];
+  coordinator: string;
+  members: number;
+  basis: string;
+  remarks: string;
+}
 
 const WorkPlanDailyRecap = () => {
   const navigate = useNavigate();
@@ -56,6 +65,38 @@ const WorkPlanDailyRecap = () => {
   const categoriesInPlans = Array.from(new Set(plans.map(p => p.category)));
   const showSignatory4 = categoriesInPlans.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat"].includes(c));
   const showSignatory5 = categoriesInPlans.some(c => ["Tim Pohon", "Tim Siram"].includes(c));
+
+  // Fungsi untuk mengelompokkan item berdasarkan kesamaan sumber daya (Alat + Koordinator + Personil)
+  const groupPlanResources = (plan: WorkPlan): ResourceGroup[] => {
+    const groups: ResourceGroup[] = [];
+    
+    plan.items.forEach((item) => {
+      const itemToolsJson = JSON.stringify(item.tools);
+      
+      // Cari grup terakhir yang memiliki identitas sumber daya yang sama
+      const lastGroup = groups[groups.length - 1];
+      const isSameResource = lastGroup && 
+        JSON.stringify(lastGroup.tools) === itemToolsJson && 
+        lastGroup.coordinator === item.coordinator &&
+        lastGroup.members === item.personnel.members &&
+        lastGroup.basis === item.basis;
+
+      if (isSameResource) {
+        lastGroup.items.push(item);
+      } else {
+        groups.push({
+          items: [item],
+          tools: item.tools,
+          coordinator: item.coordinator,
+          members: item.personnel.members,
+          basis: item.basis,
+          remarks: item.remarks
+        });
+      }
+    });
+    
+    return groups;
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -152,117 +193,77 @@ const WorkPlanDailyRecap = () => {
           <tbody>
             {plans.length > 0 ? (
               plans.flatMap((plan, pIdx) => {
-                const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram" || plan.category === "Tim Babat";
-                
-                const allItems = plan.items;
-                const allTools = isGlobalStyle 
-                  ? Array.from(new Set(plan.items.flatMap(it => it.tools.map(t => JSON.stringify(t))))).map(s => JSON.parse(s))
-                  : [];
+                const resourceGroups = groupPlanResources(plan);
+                const totalPlanRows = resourceGroups.reduce((acc, group) => 
+                  acc + Math.max(group.items.length, group.tools.length, 1), 0
+                );
 
-                const maxRows = isGlobalStyle 
-                  ? Math.max(allItems.length, allTools.length)
-                  : allItems.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
+                let currentPlanRow = 0;
 
-                if (isGlobalStyle) {
-                  return Array.from({ length: maxRows }).map((_, rowIndex) => {
-                    const item = allItems[rowIndex];
-                    const tool = allTools[rowIndex];
+                return resourceGroups.flatMap((group, gIdx) => {
+                  const maxGroupRows = Math.max(group.items.length, group.tools.length, 1);
+                  
+                  return Array.from({ length: maxGroupRows }).map((_, rowIndex) => {
+                    const item = group.items[rowIndex];
+                    const tool = group.tools[rowIndex];
+                    const isFirstInPlan = currentPlanRow === 0;
+                    currentPlanRow++;
 
                     return (
-                      <tr key={`${plan.id}-${rowIndex}`}>
-                        {rowIndex === 0 && (
+                      <tr key={`${plan.id}-${gIdx}-${rowIndex}`}>
+                        {/* Kolom No & Kategori (Span seluruh rencana) */}
+                        {isFirstInPlan && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={maxRows}>{pIdx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={maxRows}>{plan.category}</td>
+                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={totalPlanRows}>{pIdx + 1}</td>
+                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={totalPlanRows}>{plan.category}</td>
                           </>
                         )}
                         
-                        {/* Detail Kegiatan & Lokasi */}
-                        {rowIndex < allItems.length - 1 ? (
+                        {/* Detail Kegiatan & Lokasi (Span per grup jika item lebih sedikit dari alat) */}
+                        {rowIndex < group.items.length - 1 ? (
                           <>
                             <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
                             <td className="border-2 border-black p-1 align-top break-words">
                               {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                             </td>
                           </>
-                        ) : rowIndex === allItems.length - 1 ? (
+                        ) : rowIndex === group.items.length - 1 ? (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{item.description}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{item.description}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>
                               {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                             </td>
                           </>
                         ) : null}
 
-                        {/* Alat, Unit, Kegunaan */}
-                        {rowIndex < allTools.length - 1 ? (
+                        {/* Alat, Unit, Kegunaan (Span per grup jika alat lebih sedikit dari item) */}
+                        {rowIndex < group.tools.length - 1 ? (
                           <>
                             <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
                             <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
                             <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
                           </>
-                        ) : rowIndex === allTools.length - 1 ? (
+                        ) : rowIndex === group.tools.length - 1 || (group.tools.length === 0 && rowIndex === 0) ? (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{tool?.name ? `• ${tool.name}` : ""}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows - rowIndex}>{tool?.unit || ""}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{tool?.usage || ""}</td>
-                          </>
-                        ) : allTools.length === 0 && rowIndex === 0 ? (
-                          <>
-                            <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
-                            <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
-                            <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.name ? `• ${tool.name}` : ""}</td>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows - rowIndex}>{tool?.unit || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.usage || ""}</td>
                           </>
                         ) : null}
 
+                        {/* Koordinator, Personil, Dasar, Keterangan (Span per grup) */}
                         {rowIndex === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].coordinator}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].personnel.members}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows}>{plan.items[0].basis}</td>
-                            {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxRows}>{plan.items[0].remarks || "-"}</td>}
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
+                            {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
                           </>
                         )}
                       </tr>
                     );
                   });
-                } else {
-                  // Logika untuk kategori non-global (Taman Kota, dll)
-                  return allItems.flatMap((item, iIdx) => {
-                    const toolsToRender = item.tools.length > 0 ? item.tools : [{ name: "", unit: "", usage: "" }];
-                    const itemRowCount = toolsToRender.length;
-                    
-                    return toolsToRender.map((tool, tIdx) => (
-                      <tr key={`${plan.id}-${iIdx}-${tIdx}`}>
-                        {iIdx === 0 && tIdx === 0 && (
-                          <>
-                            <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={maxRows}>{pIdx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={maxRows}>{plan.category}</td>
-                          </>
-                        )}
-                        {tIdx === 0 && (
-                          <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.description}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>
-                              {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                            </td>
-                          </>
-                        )}
-                        <td className="border-2 border-black p-1 align-top break-words">{tool.name ? `• ${tool.name}` : "-"}</td>
-                        <td className="border-2 border-black p-1 text-center align-top">{tool.unit || "-"}</td>
-                        <td className="border-2 border-black p-1 align-top break-words">{tool.usage || "-"}</td>
-                        {tIdx === 0 && (
-                          <>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.coordinator}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={itemRowCount}>{item.personnel.members}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowCount}>{item.basis}</td>
-                            {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={itemRowCount}>{item.remarks || "-"}</td>}
-                          </>
-                        )}
-                      </tr>
-                    ));
-                  });
-                }
+                });
               })
             ) : (
               <tr><td colSpan={hasRemarks ? 11 : 10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
