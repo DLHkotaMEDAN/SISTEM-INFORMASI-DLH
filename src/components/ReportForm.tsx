@@ -291,16 +291,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Laporan" : "Input Laporan Baru"}</h1>
           <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>
-            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : <><Save className="mr-2 h-4 w-4" /> Simpan</>}
+            {isSubmitting ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {uploadProgress || "Menyimpan..."}</> : <><Save className="mr-2 h-4 w-4" /> Siman</>}
           </Button>
         </div>
-
-        {isPimpinan && (
-          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-center gap-3 text-amber-800 mb-6">
-            <ShieldAlert className="h-5 w-5 shrink-0" />
-            <p className="text-sm font-medium">Anda masuk sebagai <strong>Pimpinan</strong>. Anda dapat mencoba mengisi formulir, namun tombol <strong>Simpan</strong> dinonaktifkan.</p>
-          </div>
-        )}
 
         <Card className="border-t-4 border-t-blue-500">
           <CardHeader><CardTitle className="text-lg">Informasi Dasar</CardTitle></CardHeader>
