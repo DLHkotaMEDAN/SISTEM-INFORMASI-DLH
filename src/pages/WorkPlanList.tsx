@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, FileText, Trash2, Edit, 
   Printer, Search, FilterX, ArrowLeft, ChevronDown,
-  Table, CalendarDays, Clock, LogIn
+  Table, CalendarDays, Clock, LogIn, RefreshCw
 } from 'lucide-react';
 import { WorkPlan } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
@@ -68,8 +68,9 @@ const WorkPlanList = () => {
     try {
       setLoading(true);
       const data = await workPlanService.getAllWorkPlans();
-      setPlans(data);
+      setPlans(data || []);
     } catch (error) {
+      console.error("Error loading plans:", error);
       showError("Gagal memuat rencana kerja");
     } finally {
       setLoading(false);
@@ -104,13 +105,20 @@ const WorkPlanList = () => {
   };
 
   const filteredPlans = plans.filter(plan => {
-    const planDate = parseISO(plan.date);
-    const matchSearch = plan.items.some(item => 
-      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.location.street.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    // 1. Filter Pencarian
+    const search = searchQuery.toLowerCase();
+    const matchSearch = !search || (plan.items && plan.items.some(item => 
+      (item.description?.toLowerCase() || "").includes(search) ||
+      (item.location?.street?.toLowerCase() || "").includes(search)
+    ));
+
+    // 2. Filter Kategori
     const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
+
+    // 3. Filter Tanggal Spesifik / Mingguan
     let matchDate = true;
+    const planDate = parseISO(plan.date);
+    
     if (selectedDate) {
       if (isWeeklyMode) {
         const start = startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
@@ -120,6 +128,8 @@ const WorkPlanList = () => {
         matchDate = plan.date === selectedDate;
       }
     }
+
+    // 4. Filter Bulan & Tahun (Hanya jika tanggal spesifik tidak dipilih)
     let matchMonthYear = true;
     if (!selectedDate) {
       const m = (planDate.getMonth() + 1).toString();
@@ -128,6 +138,7 @@ const WorkPlanList = () => {
       const matchYear = selectedYear === "semua" || y === selectedYear;
       matchMonthYear = matchMonth && matchYear;
     }
+
     return matchSearch && matchCategory && matchDate && matchMonthYear;
   });
 
@@ -151,7 +162,10 @@ const WorkPlanList = () => {
             </h1>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            {/* Dropdown Rekap sekarang Publik */}
+            <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-8 md:h-10 w-8 md:w-10 bg-white">
+              <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
+            </Button>
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10">
@@ -280,11 +294,11 @@ const WorkPlanList = () => {
         </div>
 
         {loading ? (
-          <div className="text-center py-20">Memuat data...</div>
+          <div className="text-center py-20 text-slate-500">Memuat data rencana kerja...</div>
         ) : filteredPlans.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredPlans.map((plan) => (
-              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
+              <Card key={plan.id} className="hover:shadow-md transition-all cursor-pointer border-l-4 border-l-blue-500 group" onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="flex flex-col gap-1">
@@ -293,19 +307,19 @@ const WorkPlanList = () => {
                         {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
                       </div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="w-fit text-[10px] bg-blue-50 text-blue-700">{plan.category}</Badge>
+                        <Badge variant="outline" className="w-fit text-[10px] bg-blue-50 text-blue-700 border-blue-200">{plan.category}</Badge>
                         <div className="flex items-center text-[9px] text-slate-400 bg-slate-50 px-1.5 py-0.5 rounded border border-slate-100">
                           <Clock className="h-2.5 w-2.5 mr-1" />
-                          {format(parseISO(plan.created_at), 'HH:mm')}
+                          {plan.created_at ? format(parseISO(plan.created_at), 'HH:mm') : '--:--'}
                         </div>
                       </div>
                     </div>
                     {isLoggedIn && (
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className={cn("h-8 w-8", isPimpinan && "opacity-50 cursor-not-allowed")} 
+                          className={cn("h-8 w-8 text-slate-400 hover:text-blue-600", isPimpinan && "opacity-50 cursor-not-allowed")} 
                           disabled={isPimpinan}
                           onClick={(e) => { e.stopPropagation(); if(!isPimpinan) navigate(`/work-plans/edit/${plan.id}`); }}
                         >
@@ -314,7 +328,7 @@ const WorkPlanList = () => {
                         <Button 
                           variant="ghost" 
                           size="icon" 
-                          className={cn("h-8 w-8 text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} 
+                          className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} 
                           disabled={isPimpinan}
                           onClick={(e) => handleDelete(e, plan.id)}
                         >
@@ -323,15 +337,17 @@ const WorkPlanList = () => {
                       </div>
                     )}
                   </div>
-                  <CardTitle className="text-base mt-2 line-clamp-1">{plan.items[0].description}</CardTitle>
+                  <CardTitle className="text-base mt-2 line-clamp-1 group-hover:text-blue-600 transition-colors">
+                    {plan.items?.[0]?.description || "Tanpa Deskripsi"}
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   <div className="text-xs text-slate-600 flex items-start gap-2">
                     <MapPin className="h-3 w-3 mt-0.5 text-red-500 shrink-0" />
-                    <span className="line-clamp-1">{plan.items[0].location.street}</span>
+                    <span className="line-clamp-1">{plan.items?.[0]?.location?.street || "Lokasi tidak ditentukan"}</span>
                   </div>
                   <div className="pt-3 border-t flex justify-between items-center text-[10px]">
-                    <span className="text-slate-400">{plan.items.length} Lokasi Kerja</span>
+                    <span className="text-slate-400 font-medium">{plan.items?.length || 0} Lokasi Kerja</span>
                     <div className="flex items-center text-blue-600 font-bold">Preview Cetak <Printer className="ml-1 h-3 w-3" /></div>
                   </div>
                 </CardContent>
@@ -339,12 +355,12 @@ const WorkPlanList = () => {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed">
+          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
             <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
               <Search className="text-slate-300 h-6 w-6" />
             </div>
             <p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p>
-            <p className="text-slate-400 text-xs mt-1">Coba ubah filter pencarian Anda</p>
+            <p className="text-slate-400 text-xs mt-1">Coba ubah filter pencarian atau klik tombol refresh</p>
             <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Semua Filter</Button>
           </div>
         )}
