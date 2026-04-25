@@ -10,7 +10,7 @@ import {
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   CheckCircle2, FileWarning, Loader2, Database, 
   Eye, HardDrive, AlertTriangle, Users, Info, Clock, Zap, Activity,
-  CalendarDays, BarChart3, TrendingUp
+  CalendarDays, BarChart3, TrendingUp, Globe, Cpu, ArrowUpCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -24,7 +24,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import UserManagement from '@/components/UserManagement';
-import { isSameDay, isSameMonth, parseISO, startOfMonth, startOfDay } from 'date-fns';
+import { isSameDay, isSameMonth, parseISO } from 'date-fns';
 
 const Maintenance = () => {
   const navigate = useNavigate();
@@ -71,7 +71,6 @@ const Maintenance = () => {
     try {
       const now = new Date();
       
-      // 1. Ambil semua data laporan untuk analisis
       const { data: reports, error: dbError, count: reportCount } = await supabase
         .from('reports')
         .select('tasks, date, createdAt', { count: 'exact' });
@@ -86,13 +85,10 @@ const Maintenance = () => {
 
       reports?.forEach(report => {
         const reportDate = parseISO(report.date);
-        const createdDate = report.createdAt ? parseISO(report.createdAt) : reportDate;
 
-        // Hitung statistik laporan
         if (isSameDay(reportDate, now)) reportsToday++;
         if (isSameMonth(reportDate, now)) reportsThisMonth++;
 
-        // Analisis foto dalam tugas
         report.tasks?.forEach((task: any) => {
           let taskPhotoCount = 0;
           ['zero', 'fifty', 'hundred'].forEach(key => {
@@ -104,13 +100,11 @@ const Maintenance = () => {
             }
           });
 
-          // Hitung statistik foto
           if (isSameDay(reportDate, now)) photosToday += taskPhotoCount;
           if (isSameMonth(reportDate, now)) photosThisMonth += taskPhotoCount;
         });
       });
 
-      // 2. Ambil daftar file di storage
       const { data: storageFiles, error: storageError } = await supabase
         .storage
         .from('report-photos')
@@ -210,7 +204,6 @@ const Maintenance = () => {
           </TabsList>
 
           <TabsContent value="storage" className="space-y-6">
-            {/* Statistik Penggunaan Harian & Bulanan */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Card className="bg-white border-l-4 border-l-blue-600 shadow-sm">
                 <CardHeader className="pb-2">
@@ -228,11 +221,6 @@ const Maintenance = () => {
                       <p className="text-[10px] font-bold uppercase text-slate-400">Foto Diunggah</p>
                       <p className="text-2xl font-black text-slate-900">{stats.photosToday}</p>
                     </div>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <p className="text-[10px] text-slate-500 italic">
-                      * Data berdasarkan tanggal laporan yang diinput hari ini.
-                    </p>
                   </div>
                 </CardContent>
               </Card>
@@ -254,11 +242,6 @@ const Maintenance = () => {
                       <p className="text-2xl font-black text-slate-900">{stats.photosThisMonth}</p>
                     </div>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-100">
-                    <p className="text-[10px] text-slate-500 italic">
-                      * Akumulasi penggunaan sumber daya sepanjang bulan ini.
-                    </p>
-                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -277,11 +260,6 @@ const Maintenance = () => {
                     <span>Terpakai: {formatSize(stats.totalStorageSize)}</span>
                     <span>Limit: 1 GB</span>
                   </div>
-                  {isStorageCritical && (
-                    <div className="flex items-center gap-2 text-red-600 text-[10px] font-bold bg-red-50 p-2 rounded border border-red-100">
-                      <AlertTriangle size={12} /> PERINGATAN: Penyimpanan hampir penuh!
-                    </div>
-                  )}
                 </CardContent>
               </Card>
 
@@ -301,22 +279,21 @@ const Maintenance = () => {
               </Card>
             </div>
 
-            {/* Informasi Batasan Supabase Free Tier */}
-            <Card className="bg-white border-l-4 border-l-amber-500 shadow-sm">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-700">
-                  <Info className="h-5 w-5" /> Informasi Batasan Layanan (Supabase Free Tier)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Informasi Batasan Supabase */}
+              <Card className="bg-white border-l-4 border-l-amber-500 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-amber-700">
+                    <Info className="h-5 w-5" /> Batasan Supabase (Free Tier)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
                     <div className="flex items-start gap-3">
                       <div className="bg-amber-100 p-2 rounded-lg shrink-0"><Zap className="h-4 w-4 text-amber-600" /></div>
                       <div>
                         <p className="text-xs font-bold uppercase text-slate-500">Transfer Data (Egress)</p>
                         <p className="text-sm font-medium">Limit: 2 GB / Bulan</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Termasuk download foto saat cetak rekap dan akses API harian.</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
@@ -324,35 +301,61 @@ const Maintenance = () => {
                       <div>
                         <p className="text-xs font-bold uppercase text-slate-500">Pengguna Aktif (MAU)</p>
                         <p className="text-sm font-medium">Limit: 50.000 Pengguna / Bulan</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Jumlah maksimal akun unik yang login dalam satu bulan.</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="space-y-4">
                     <div className="flex items-start gap-3">
                       <div className="bg-amber-100 p-2 rounded-lg shrink-0"><Clock className="h-4 w-4 text-amber-600" /></div>
                       <div>
                         <p className="text-xs font-bold uppercase text-slate-500">Project Pausing</p>
-                        <p className="text-sm font-medium">Status: Aktif (7 Hari Inaktivitas)</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Database akan "tidur" otomatis jika tidak ada akses selama 1 minggu.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-start gap-3">
-                      <div className="bg-amber-100 p-2 rounded-lg shrink-0"><ShieldAlert className="h-4 w-4 text-amber-600" /></div>
-                      <div>
-                        <p className="text-xs font-bold uppercase text-slate-500">Edge Functions</p>
-                        <p className="text-sm font-medium">Limit: 10 Fungsi Aktif</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5">Digunakan untuk fitur "Simpan ke Drive" dan integrasi eksternal.</p>
+                        <p className="text-sm font-medium">7 Hari Inaktivitas</p>
                       </div>
                     </div>
                   </div>
-                </div>
-                <div className="mt-6 p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2 text-amber-800 text-[11px] font-medium">
-                  <AlertTriangle size={14} className="shrink-0" />
-                  PENTING: Jika salah satu limit tercapai, layanan mungkin akan dibatasi atau dihentikan sementara hingga bulan berikutnya.
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+
+              {/* Informasi Batasan Vercel */}
+              <Card className="bg-white border-l-4 border-l-blue-500 shadow-sm">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-base font-bold flex items-center gap-2 text-blue-700">
+                    <Globe className="h-5 w-5" /> Batasan Vercel (Hobby Plan)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg shrink-0"><ArrowUpCircle className="h-4 w-4 text-blue-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Bandwidth</p>
+                        <p className="text-sm font-medium">Limit: 100 GB / Bulan</p>
+                        <p className="text-[10px] text-slate-400">Total data akses pengunjung.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg shrink-0"><Cpu className="h-4 w-4 text-blue-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Build Minutes</p>
+                        <p className="text-sm font-medium">Limit: 6.000 Menit / Bulan</p>
+                        <p className="text-[10px] text-slate-400">Waktu proses update aplikasi.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg shrink-0"><Clock className="h-4 w-4 text-blue-600" /></div>
+                      <div>
+                        <p className="text-xs font-bold uppercase text-slate-500">Function Timeout</p>
+                        <p className="text-sm font-medium">Maksimal 10 Detik</p>
+                        <p className="text-[10px] text-slate-400">Batas waktu proses data berat.</p>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2 text-amber-800 text-[11px] font-medium">
+              <AlertTriangle size={14} className="shrink-0" />
+              PENTING: Jika limit bandwidth atau egress tercapai, layanan mungkin akan ditangguhkan sementara hingga bulan berikutnya.
+            </div>
 
             <Card className="shadow-md border-t-4 border-t-blue-600">
               <CardHeader>
