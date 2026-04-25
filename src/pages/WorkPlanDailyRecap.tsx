@@ -155,28 +155,18 @@ const WorkPlanDailyRecap = () => {
                 const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram" || plan.category === "Tim Babat";
                 
                 const allItems = plan.items;
-                
-                // Untuk Tim Siram/Pohon/Babat, kita kumpulkan pasangan Alat + Koordinator yang unik
-                const resourceRows = isGlobalStyle 
-                  ? plan.items.reduce((acc, item) => {
-                      item.tools.forEach(tool => {
-                        const exists = acc.find(r => r.tool.name === tool.name && r.coordinator === item.coordinator);
-                        if (!exists) {
-                          acc.push({ tool, coordinator: item.coordinator });
-                        }
-                      });
-                      return acc;
-                    }, [] as { tool: any, coordinator: string }[])
+                const allTools = isGlobalStyle 
+                  ? Array.from(new Set(plan.items.flatMap(it => it.tools.map(t => JSON.stringify(t))))).map(s => JSON.parse(s))
                   : [];
 
                 const maxRows = isGlobalStyle 
-                  ? Math.max(allItems.length, resourceRows.length)
+                  ? Math.max(allItems.length, allTools.length)
                   : allItems.reduce((acc, item) => acc + Math.max(item.tools.length, 1), 0);
 
                 if (isGlobalStyle) {
                   return Array.from({ length: maxRows }).map((_, rowIndex) => {
                     const item = allItems[rowIndex];
-                    const resource = resourceRows[rowIndex];
+                    const tool = allTools[rowIndex];
 
                     return (
                       <tr key={`${plan.id}-${rowIndex}`}>
@@ -204,24 +194,21 @@ const WorkPlanDailyRecap = () => {
                           </>
                         ) : null}
 
-                        {/* Alat, Unit, Kegunaan, dan Koordinator: Sejajar baris demi baris */}
-                        {rowIndex < resourceRows.length - 1 ? (
+                        {/* Alat, Unit, Kegunaan */}
+                        {rowIndex < allTools.length - 1 ? (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words">{resource.tool?.name ? `• ${resource.tool.name}` : ""}</td>
-                            <td className="border-2 border-black p-1 text-center align-top">{resource.tool?.unit || ""}</td>
-                            <td className="border-2 border-black p-1 align-top break-words">{resource.tool?.usage || ""}</td>
-                            <td className="border-2 border-black p-1 text-center align-top">{resource.coordinator}</td>
+                            <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
+                            <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
                           </>
-                        ) : rowIndex === resourceRows.length - 1 ? (
+                        ) : rowIndex === allTools.length - 1 ? (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{resource.tool?.name ? `• ${resource.tool.name}` : ""}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows - rowIndex}>{resource.tool?.unit || ""}</td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{resource.tool?.usage || ""}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows - rowIndex}>{resource.coordinator}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{tool?.name ? `• ${tool.name}` : ""}</td>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows - rowIndex}>{tool?.unit || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows - rowIndex}>{tool?.usage || ""}</td>
                           </>
-                        ) : resourceRows.length === 0 && rowIndex === 0 ? (
+                        ) : allTools.length === 0 && rowIndex === 0 ? (
                           <>
-                            <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
                             <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
                             <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
                             <td className="border-2 border-black p-1" rowSpan={maxRows}></td>
@@ -230,6 +217,7 @@ const WorkPlanDailyRecap = () => {
 
                         {rowIndex === 0 && (
                           <>
+                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].coordinator}</td>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxRows}>{plan.items[0].personnel.members}</td>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxRows}>{plan.items[0].basis}</td>
                             {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxRows}>{plan.items[0].remarks || "-"}</td>}
