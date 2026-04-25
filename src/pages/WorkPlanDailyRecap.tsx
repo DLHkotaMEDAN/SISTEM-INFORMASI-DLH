@@ -185,6 +185,12 @@ const WorkPlanDailyRecap = () => {
 
                   return Array.from({ length: maxRows }).map((_, rowIndex) => {
                     const item = allItems[rowIndex];
+                    const tool = allTools[rowIndex];
+
+                    let itemRowSpan = 0;
+                    if (rowIndex < allItems.length) {
+                      itemRowSpan = (rowIndex === allItems.length - 1) ? (maxRows - rowIndex) : 1;
+                    }
 
                     return (
                       <tr key={`${plan.id}-${rowIndex}`}>
@@ -195,40 +201,21 @@ const WorkPlanDailyRecap = () => {
                           </>
                         )}
                         
-                        {item && (
+                        {itemRowSpan > 0 && (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowIndex === allItems.length - 1 ? maxRows - rowIndex : 1}>
-                              {item.description}
-                            </td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={rowIndex === allItems.length - 1 ? maxRows - rowIndex : 1}>
-                              {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>{item?.description || ""}</td>
+                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={itemRowSpan}>
+                              {item ? `${item.location.street}, ${Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, ${item.location.subDistrict}` : ""}
                             </td>
                           </>
                         )}
 
+                        <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
+                        <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
+                        <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+                        
                         {rowIndex === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
-                              {allTools.map((t, i) => (
-                                <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                  {t.name ? `• ${t.name}` : "-"}
-                                </div>
-                              ))}
-                            </td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>
-                              {allTools.map((t, i) => (
-                                <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                  {t.unit || "-"}
-                                </div>
-                              ))}
-                            </td>
-                            <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>
-                              {allTools.map((t, i) => (
-                                <div key={i} className={i > 0 ? "mt-1 border-t border-slate-200 pt-1" : ""}>
-                                  {t.usage || "-"}
-                                </div>
-                              ))}
-                            </td>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].coordinator}</td>
                             <td className="border-2 border-black p-1 text-center align-top" rowSpan={planTotalRows}>{plan.items[0].personnel.members}</td>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={planTotalRows}>{plan.items[0].basis}</td>
