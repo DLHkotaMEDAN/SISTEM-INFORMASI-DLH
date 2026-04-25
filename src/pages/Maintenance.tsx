@@ -10,7 +10,8 @@ import {
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   CheckCircle2, FileWarning, Loader2, Database, 
   Eye, HardDrive, AlertTriangle, Users, Info, Clock, Zap, Activity,
-  CalendarDays, BarChart3, TrendingUp, Globe, Cpu, ArrowUpCircle
+  CalendarDays, BarChart3, TrendingUp, Globe, Cpu, ArrowUpCircle,
+  ExternalLink, BarChart
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -47,7 +48,9 @@ const Maintenance = () => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
 
-  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; 
+  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1GB Supabase
+  const VERCEL_BANDWIDTH_LIMIT = 100 * 1024 * 1024 * 1024; // 100GB Vercel
+  
   const isAdmin = profile?.role === 'admin' || session?.user?.email === 'admin@gmail.com';
 
   useEffect(() => {
@@ -173,7 +176,10 @@ const Maintenance = () => {
   };
 
   const storageUsagePercent = (stats.totalStorageSize / STORAGE_LIMIT_BYTES) * 100;
-  const isStorageCritical = storageUsagePercent > 80;
+  
+  // Estimasi Bandwidth Vercel: (Total Ukuran Foto * Rata-rata 10x View per bulan) + Overhead API
+  const estimatedBandwidthUsed = (stats.totalStorageSize * 10) + (stats.dbRecordCount * 1024 * 50);
+  const bandwidthUsagePercent = (estimatedBandwidthUsed / VERCEL_BANDWIDTH_LIMIT) * 100;
 
   if (!isAdmin) return null;
 
@@ -247,15 +253,15 @@ const Maintenance = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className={cn("bg-white border-t-4", isStorageCritical ? "border-t-red-500" : "border-t-blue-500")}>
+              <Card className={cn("bg-white border-t-4", storageUsagePercent > 80 ? "border-t-red-500" : "border-t-blue-500")}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-bold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Foto)</span>
-                    <Badge variant={isStorageCritical ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge>
+                    <span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Supabase)</span>
+                    <Badge variant={storageUsagePercent > 80 ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Progress value={storageUsagePercent} className={cn("h-2", isStorageCritical ? "bg-red-100" : "bg-blue-100")} />
+                  <Progress value={storageUsagePercent} className={cn("h-2", storageUsagePercent > 80 ? "bg-red-100" : "bg-blue-100")} />
                   <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
                     <span>Terpakai: {formatSize(stats.totalStorageSize)}</span>
                     <span>Limit: 1 GB</span>
@@ -263,18 +269,19 @@ const Maintenance = () => {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white border-t-4 border-t-green-500">
+              <Card className={cn("bg-white border-t-4", bandwidthUsagePercent > 80 ? "border-t-red-500" : "border-t-blue-500")}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-bold flex items-center justify-between">
-                    <span className="flex items-center gap-2"><Database className="h-4 w-4 text-green-500" /> Database Records</span>
+                    <span className="flex items-center gap-2"><Globe className="h-4 w-4 text-blue-500" /> Estimasi Bandwidth (Vercel)</span>
+                    <Badge variant={bandwidthUsagePercent > 80 ? "destructive" : "outline"}>{bandwidthUsagePercent.toFixed(1)}%</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <div className="flex items-end gap-2">
-                    <span className="text-3xl font-black text-slate-900">{stats.dbRecordCount}</span>
-                    <span className="text-slate-400 text-xs mb-1">Laporan Tersimpan</span>
+                  <Progress value={bandwidthUsagePercent} className={cn("h-2", bandwidthUsagePercent > 80 ? "bg-red-100" : "bg-blue-100")} />
+                  <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase">
+                    <span>Estimasi: {formatSize(estimatedBandwidthUsed)}</span>
+                    <span>Limit: 100 GB</span>
                   </div>
-                  <p className="text-[10px] text-slate-500 italic">* Batas database versi gratis adalah 500MB.</p>
                 </CardContent>
               </Card>
             </div>
@@ -316,10 +323,15 @@ const Maintenance = () => {
 
               {/* Informasi Batasan Vercel */}
               <Card className="bg-white border-l-4 border-l-blue-500 shadow-sm">
-                <CardHeader className="pb-2">
+                <CardHeader className="pb-2 flex flex-row items-center justify-between">
                   <CardTitle className="text-base font-bold flex items-center gap-2 text-blue-700">
                     <Globe className="h-5 w-5" /> Batasan Vercel (Hobby Plan)
                   </CardTitle>
+                  <Button variant="ghost" size="sm" className="h-8 text-[10px] font-bold text-blue-600" asChild>
+                    <a href="https://vercel.com/dashboard" target="_blank" rel="noreferrer">
+                      Dashboard Vercel <ExternalLink size={10} className="ml-1" />
+                    </a>
+                  </Button>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-1 gap-4">
@@ -354,7 +366,7 @@ const Maintenance = () => {
 
             <div className="p-3 bg-amber-50 border border-amber-100 rounded-lg flex items-center gap-2 text-amber-800 text-[11px] font-medium">
               <AlertTriangle size={14} className="shrink-0" />
-              PENTING: Jika limit bandwidth atau egress tercapai, layanan mungkin akan ditangguhkan sementara hingga bulan berikutnya.
+              PENTING: Statistik Vercel di atas adalah **estimasi**. Silakan cek Dashboard Vercel untuk data penggunaan yang akurat.
             </div>
 
             <Card className="shadow-md border-t-4 border-t-blue-600">
