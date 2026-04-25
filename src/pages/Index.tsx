@@ -5,17 +5,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
   LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronDown,
-  Table, ClipboardList
+  Table, ClipboardList, EyeOff, ArrowRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
+import { WorkPlan } from '@/types/workPlan';
 import { MadeWithDyad } from "@/components/made-with-dyad";
 import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
+import { workPlanService } from '@/services/workPlanService';
 import { useAuth } from '@/context/AuthContext';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import { cn } from "@/lib/utils";
@@ -54,6 +57,7 @@ const Index = () => {
   const navigate = useNavigate();
   const { session, profile, signOut, loading: authLoading } = useAuth();
   const [reports, setReports] = useState<Report[]>([]);
+  const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -68,17 +72,21 @@ const Index = () => {
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan && !isAdminHarian;
 
   useEffect(() => {
-    loadReports();
+    loadData();
     if (isUserRestricted && profile?.category) {
       setSelectedCategory(profile.category);
     }
   }, [profile, isLoggedIn]);
 
-  const loadReports = async () => {
+  const loadData = async () => {
     try {
       setLoading(true);
-      const data = await reportService.getAllReports();
-      setReports(data);
+      const [reportsData, workPlansData] = await Promise.all([
+        reportService.getAllReports(),
+        workPlanService.getAllWorkPlans()
+      ]);
+      setReports(reportsData);
+      setWorkPlans(workPlansData);
     } catch (error) {
       console.error(error);
       showError("Gagal memuat data");
@@ -98,12 +106,9 @@ const Index = () => {
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteReport = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (isPimpinan) {
-      showError("Akun Pimpinan tidak memiliki izin untuk menghapus data");
-      return;
-    }
+    if (isPimpinan) return;
     if (window.confirm("Hapus laporan ini secara permanen?")) {
       try {
         await reportService.deleteReport(id);
@@ -134,16 +139,28 @@ const Index = () => {
     const matchMonth = selectedMonth === "semua" || m === selectedMonth;
     const matchYear = selectedYear === "semua" || y === selectedYear;
     const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
-
     const restrictionMatch = !isUserRestricted || report.category === profile?.category;
 
     return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
 
-  filteredReports.sort((a, b) => {
-    const dateDiff = new Date(a.date).getTime() - new Date(a.date).getTime();
-    if (dateDiff !== 0) return dateDiff;
-    return sortByCategory(a.category, b.category);
+  const filteredWorkPlans = workPlans.filter(plan => {
+    const search = searchQuery.toLowerCase();
+    const planDate = new Date(plan.date);
+    const m = (planDate.getMonth() + 1).toString();
+    const y = planDate.getFullYear().toString();
+
+    const matchSearch = plan.items?.some(item => 
+      item.description.toLowerCase().includes(search) || 
+      item.location.street.toLowerCase().includes(search)
+    );
+    
+    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+    const matchYear = selectedYear === "semua" || y === selectedYear;
+    const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
+    const restrictionMatch = !isUserRestricted || plan.category === profile?.category;
+
+    return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
 
   return (
@@ -164,16 +181,6 @@ const Index = () => {
 
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
-              {/* Rencana Kerja is now Public */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="outline" size="sm" onClick={() => navigate('/work-plans')} className="bg-blue-50 text-blue-700 border-blue-200 px-2 md:px-3">
-                    <ClipboardList className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rencana Kerja</span>
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent className="md:hidden"><p>Rencana Kerja</p></TooltipContent>
-              </Tooltip>
-
               {isAdmin && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -182,17 +189,6 @@ const Index = () => {
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent className="md:hidden"><p>Maintenance</p></TooltipContent>
-                </Tooltip>
-              )}
-
-              {!isAdminHarian && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/monthly-rekap')} className="bg-purple-50 text-purple-700 border-purple-200 px-2 md:px-3">
-                      <FileBarChart className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Rekap Bulanan</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="md:hidden"><p>Rekap Bulanan</p></TooltipContent>
                 </Tooltip>
               )}
 
@@ -233,19 +229,6 @@ const Index = () => {
                       <TooltipContent><p>Keluar Sistem</p></TooltipContent>
                     </Tooltip>
                   </div>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        onClick={() => navigate('/create')} 
-                        size="sm" 
-                        className="bg-blue-600 hover:bg-blue-700 h-8 md:h-9 px-2 md:px-4 ml-1 hidden md:inline-flex"
-                      >
-                        <Plus className="md:mr-2 h-4 w-4" /> <span className="hidden md:inline">Laporan Baru</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent className="md:hidden"><p>Laporan Baru</p></TooltipContent>
-                  </Tooltip>
                 </>
               ) : (
                 !authLoading && (
@@ -319,81 +302,135 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Tombol Tambah Laporan Khusus Mobile */}
-        {isLoggedIn && (
-          <div className="md:hidden mb-6">
-            <Button 
-              onClick={() => navigate('/create')} 
-              className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-base font-bold shadow-lg shadow-blue-100"
-            >
-              <Plus className="mr-2 h-5 w-5" /> Tambah Laporan Baru
-            </Button>
-          </div>
-        )}
+        <Tabs defaultValue="reports" className="w-full space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <TabsList className="grid w-full md:w-[400px] grid-cols-2 h-12 bg-white border shadow-sm p-1">
+              <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2">
+                <FileText size={16} /> Laporan Harian
+              </TabsTrigger>
+              <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2">
+                <ClipboardList size={16} /> Rencana Kerja
+              </TabsTrigger>
+            </TabsList>
 
-        {loading ? (
-          <div className="text-center py-20 text-slate-500">Memuat data...</div>
-        ) : filteredReports.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredReports.map((report) => (
-              <Card key={report.id} className="group hover:shadow-md transition-all cursor-pointer overflow-hidden border-l-4 border-l-blue-500 relative" onClick={() => navigate(`/report/${report.id}`)}>
-                <CardHeader className="p-4 pb-2">
-                  <div className="flex justify-between items-start">
-                    <div className="flex flex-col gap-1">
-                      <div className="flex items-center text-[10px] text-slate-500 font-medium">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      </div>
-                      <Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge>
-                    </div>
-                    
-                    {isLoggedIn && (
-                      <div className="flex items-center gap-1">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-8 w-8 text-slate-400 hover:text-blue-600" 
-                          onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")}
-                          disabled={isPimpinan}
-                          onClick={(e) => handleDelete(e, report.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                  <CardTitle className="text-base line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">{report.description}</CardTitle>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-3">
-                  <div className="flex items-start gap-2 text-xs text-slate-600">
-                    <MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" />
-                    <span className="line-clamp-2">{report.location.street}, {Array.isArray(report.location.village) ? report.location.village.join(", ") : report.location.village}</span>
-                  </div>
-                  <div className="pt-3 flex justify-between items-center border-t text-[10px]">
-                    <span className="text-slate-400 font-medium">Vol: {report.volume} {getUnitByCategory(report.category)}</span>
-                    <div className="flex items-center text-blue-600 font-bold">Lihat Detail <Eye className="ml-1 h-3 w-3" /></div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
-            <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
-              <Search className="text-slate-300 h-6 w-6" />
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => navigate(isLoggedIn ? '/create' : '/login')} 
+                className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Input Laporan
+              </Button>
+              <Button 
+                onClick={() => navigate(isLoggedIn ? '/work-plans/create' : '/login')} 
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50 h-10 font-bold flex-1 md:flex-none"
+              >
+                <Plus className="mr-2 h-4 w-4" /> Buat Rencana
+              </Button>
             </div>
-            <p className="text-slate-500 font-medium">Tidak ada laporan ditemukan</p>
-            <p className="text-slate-400 text-xs mt-1">Coba ubah filter atau kata kunci pencarian Anda</p>
-            <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Semua Filter</Button>
           </div>
-        )}
+
+          <TabsContent value="reports" className="space-y-4">
+            {loading ? (
+              <div className="text-center py-20 text-slate-500">Memuat data...</div>
+            ) : filteredReports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredReports.map((report) => (
+                  <Card key={report.id} className="group hover:shadow-md transition-all cursor-pointer overflow-hidden border-l-4 border-l-blue-500 relative" onClick={() => navigate(`/report/${report.id}`)}>
+                    <CardHeader className="p-4 pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center text-[10px] text-slate-500 font-medium">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                          <Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge>
+                        </div>
+                        
+                        {isLoggedIn && (
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}><Edit className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => handleDeleteReport(e, report.id)}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
+                        )}
+                      </div>
+                      <CardTitle className="text-base line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">{report.description}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
+                      <div className="flex items-start gap-2 text-xs text-slate-600">
+                        <MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" />
+                        <span className="line-clamp-2">{report.location.street}, {Array.isArray(report.location.village) ? report.location.village.join(", ") : report.location.village}</span>
+                      </div>
+                      <div className="pt-3 flex justify-between items-center border-t text-[10px]">
+                        <span className="text-slate-400 font-medium">Vol: {report.volume} {getUnitByCategory(report.category)}</span>
+                        <div className="flex items-center text-blue-600 font-bold">Lihat Detail <Eye className="ml-1 h-3 w-3" /></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+                <p className="text-slate-500 font-medium">Tidak ada laporan ditemukan</p>
+                <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button>
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="workplans" className="space-y-4">
+            {loading ? (
+              <div className="text-center py-20 text-slate-500">Memuat data...</div>
+            ) : filteredWorkPlans.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredWorkPlans.map((plan) => (
+                  <Card key={plan.id} className={cn(
+                    "group hover:shadow-md transition-all cursor-pointer border-l-4 overflow-hidden relative",
+                    plan.is_visible === false ? "border-l-slate-300 opacity-75" : "border-l-green-500"
+                  )} onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
+                    <CardHeader className="p-4 pb-2">
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center text-[10px] text-slate-500 font-medium">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            {new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-green-50 text-green-700 border-green-200">{plan.category}</Badge>
+                            {plan.is_visible === false && <Badge variant="outline" className="text-[8px] bg-red-50 text-red-600 border-red-100">Sembunyi</Badge>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/print/${plan.id}`); }}><Printer className="h-4 w-4" /></Button>
+                        </div>
+                      </div>
+                      <CardTitle className="text-base line-clamp-1 group-hover:text-green-600 transition-colors mt-2">{plan.items?.[0]?.description || "Rencana Kerja"}</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
+                      <div className="flex items-start gap-2 text-xs text-slate-600">
+                        <MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" />
+                        <span className="line-clamp-1">{plan.items?.[0]?.location?.street || "Lokasi Kerja"}</span>
+                      </div>
+                      <div className="pt-3 flex justify-between items-center border-t text-[10px]">
+                        <span className="text-slate-400 font-medium">{plan.items?.length || 0} Lokasi Kerja</span>
+                        <div className="flex items-center text-green-600 font-bold">Lihat Rencana <ArrowRight className="ml-1 h-3 w-3" /></div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300">
+                <p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p>
+                <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button>
+              </div>
+            )}
+            <div className="flex justify-center pt-4">
+              <Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200">
+                Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
       <MadeWithDyad />
     </div>
