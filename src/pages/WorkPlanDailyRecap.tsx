@@ -20,6 +20,15 @@ const getLogoUrl = (fileName: string) => {
 const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
+const categoryOrder: Record<string, number> = {
+  "Tim Pohon": 1,
+  "Tim Siram": 2,
+  "Tim Babat": 3,
+  "Taman Kota": 4,
+  "Taman Amplas": 5,
+  "Taman Area": 6
+};
+
 type SignatureMode = "with-signature" | "without-signature";
 
 const WorkPlanDailyRecap = () => {
@@ -42,7 +51,14 @@ const WorkPlanDailyRecap = () => {
       setLoading(true);
       const data = await workPlanService.getAllWorkPlans();
       const filtered = data.filter(p => selectedDate === "semua" || p.date === selectedDate);
-      filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || a.category.localeCompare(b.category));
+      
+      // Urutan: Tanggal (desc), lalu Kategori sesuai urutan khusus
+      filtered.sort((a, b) => {
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        return (categoryOrder[a.category] || 99) - (categoryOrder[b.category] || 99);
+      });
+      
       setPlans(filtered);
     } catch (error) {
       console.error(error);
