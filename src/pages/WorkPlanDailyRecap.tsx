@@ -170,10 +170,13 @@ const WorkPlanDailyRecap = () => {
                 const isGlobalStyle = plan.category === "Tim Pohon" || plan.category === "Tim Siram";
                 
                 if (isGlobalStyle) {
-                  // Ambil alat dari item pertama (data baru) atau gabungkan semua (data lama)
-                  let allTools = plan.items[0].tools || [];
-                  if (allTools.length === 0) {
-                    allTools = plan.items.flatMap(it => it.tools || []);
+                  // Cari alat dari semua item untuk memastikan data lama tetap muncul
+                  let allTools = [];
+                  for (const item of plan.items) {
+                    if (item.tools && item.tools.length > 0 && item.tools[0].name) {
+                      allTools = item.tools;
+                      break;
+                    }
                   }
                   
                   const allItems = plan.items;
