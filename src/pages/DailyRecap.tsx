@@ -123,7 +123,7 @@ const DailyRecap = () => {
       });
       
       data.sort((a, b) => {
-        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
+        const dateDiff = new Date(a.date).getTime() - new Date(a.date).getTime();
         if (dateDiff !== 0) return dateDiff;
         return sortByCategory(a.category, b.category);
       });
@@ -481,7 +481,7 @@ const DailyRecap = () => {
         defaultFileName={`Rekap_Harian_DLH_${selectedDate}`}
       />
 
-      <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
+      <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm] overflow-x-auto">
         <div className="pdf-header">
           <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
             <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
@@ -500,7 +500,7 @@ const DailyRecap = () => {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-2 border-black text-[11px]">
+          <table className="w-full min-w-[1600px] border-collapse border-2 border-black text-[11px] table-fixed">
             <colgroup>
               <col style={{ width: '35px' }} />
               <col style={{ width: '70px' }} />
@@ -509,9 +509,9 @@ const DailyRecap = () => {
               <col style={{ width: '110px' }} />
               {photoMode === "with-photo" && (
                 <>
-                  <col style={{ width: '145px' }} />
-                  <col style={{ width: '145px' }} />
-                  <col style={{ width: '145px' }} />
+                  <col style={{ width: '180px' }} />
+                  <col style={{ width: '180px' }} />
+                  <col style={{ width: '180px' }} />
                 </>
               )}
               <col style={{ width: '65px' }} />
@@ -576,9 +576,9 @@ const DailyRecap = () => {
                           <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
                           {photoMode === "with-photo" && (
                             <>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
-                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
+                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[140px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
+                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[140px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
+                              <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[140px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
                             </>
                           )}
                           <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(report.category)}</td>
