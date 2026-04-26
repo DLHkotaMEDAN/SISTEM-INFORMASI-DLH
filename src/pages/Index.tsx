@@ -359,21 +359,23 @@ const Index = () => {
               </TabsTrigger>
             </TabsList>
 
-            <div className="flex gap-2">
-              <Button 
-                onClick={() => navigate(isLoggedIn ? '/create' : '/login')} 
-                className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Input Laporan
-              </Button>
-              <Button 
-                onClick={() => navigate(isLoggedIn ? '/work-plans/create' : '/login')} 
-                variant="outline"
-                className="border-blue-600 text-blue-600 hover:bg-blue-50 h-10 font-bold flex-1 md:flex-none"
-              >
-                <Plus className="mr-2 h-4 w-4" /> Buat Rencana
-              </Button>
-            </div>
+            {isLoggedIn && (
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => navigate('/create')} 
+                  className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Input Laporan
+                </Button>
+                <Button 
+                  onClick={() => navigate('/work-plans/create')} 
+                  variant="outline"
+                  className="border-blue-600 text-blue-600 hover:bg-blue-50 h-10 font-bold flex-1 md:flex-none"
+                >
+                  <Plus className="mr-2 h-4 w-4" /> Buat Rencana
+                </Button>
+              </div>
+            )}
           </div>
 
           <TabsContent value="reports" className="space-y-4">
