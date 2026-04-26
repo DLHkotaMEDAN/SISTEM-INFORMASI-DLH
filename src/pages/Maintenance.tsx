@@ -93,7 +93,6 @@ const Maintenance = () => {
       showSuccess("Data berhasil dipulihkan");
       fetchData();
       
-      // Log Restore
       if (session?.user) {
         await auditLogService.logAction({
           action: 'UPDATE',
@@ -215,9 +214,9 @@ const Maintenance = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8">
+    <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between bg-white/80 backdrop-blur-sm p-4 rounded-xl border shadow-sm">
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="text-blue-600" /> Pemeliharaan Sistem</h1>
           <Button onClick={fetchData} disabled={loading} variant="outline" className="bg-white border-blue-200 text-blue-600">
@@ -226,7 +225,7 @@ const Maintenance = () => {
         </div>
 
         <Tabs defaultValue="storage" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-white border shadow-sm p-1">
+          <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-white/80 backdrop-blur-sm border shadow-sm p-1">
             <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><HardDrive size={16} /> Storage</TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Users size={16} /> Pengguna</TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><History size={16} /> Riwayat</TabsTrigger>
@@ -235,22 +234,22 @@ const Maintenance = () => {
 
           <TabsContent value="storage" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Card className="bg-white border-l-4 border-l-blue-600 shadow-sm">
+              <Card className="bg-white/90 backdrop-blur-sm border-l-4 border-l-blue-600 shadow-sm">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-700"><TrendingUp size={16} /> Aktivitas Hari Ini</CardTitle></CardHeader>
                 <CardContent><div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] font-bold uppercase text-slate-400">Laporan Baru</p><p className="text-2xl font-black text-slate-900">{stats.reportsToday}</p></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Foto Diunggah</p><p className="text-2xl font-black text-slate-900">{stats.photosToday}</p></div></div></CardContent>
               </Card>
-              <Card className="bg-white border-l-4 border-l-purple-600 shadow-sm">
+              <Card className="bg-white/90 backdrop-blur-sm border-l-4 border-l-purple-600 shadow-sm">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-700"><BarChart3 size={16} /> Aktivitas Bulan Ini</CardTitle></CardHeader>
                 <CardContent><div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] font-bold uppercase text-slate-400">Total Laporan</p><p className="text-2xl font-black text-slate-900">{stats.reportsThisMonth}</p></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Total Foto</p><p className="text-2xl font-black text-slate-900">{stats.photosThisMonth}</p></div></div></CardContent>
               </Card>
             </div>
 
-            <Card className={cn("bg-white border-t-4", storageUsagePercent > 80 ? "border-t-red-500" : "border-t-blue-500")}>
+            <Card className={cn("bg-white/90 backdrop-blur-sm border-t-4", storageUsagePercent > 80 ? "border-t-red-500" : "border-t-blue-500")}>
               <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center justify-between"><span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas Storage (Supabase)</span><Badge variant={storageUsagePercent > 80 ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge></CardTitle></CardHeader>
               <CardContent className="space-y-3"><Progress value={storageUsagePercent} className="h-2" /><div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Terpakai: {formatSize(stats.totalStorageSize)}</span><span>Limit: 1 GB</span></div></CardContent>
             </Card>
 
-            <Card className="shadow-md border-t-4 border-t-blue-600">
+            <Card className="shadow-md border-t-4 border-t-blue-600 bg-white/90 backdrop-blur-sm">
               <CardHeader><CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage</CardTitle></CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-wrap gap-3">
@@ -271,10 +270,10 @@ const Maintenance = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="users"><Card className="shadow-md border-t-4 border-t-blue-600"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="text-blue-600" /> Manajemen Pengguna</CardTitle></CardHeader><CardContent><UserManagement /></CardContent></Card></TabsContent>
+          <TabsContent value="users"><Card className="shadow-md border-t-4 border-t-blue-600 bg-white/90 backdrop-blur-sm"><CardHeader><CardTitle className="text-lg flex items-center gap-2"><Users className="text-blue-600" /> Manajemen Pengguna</CardTitle></CardHeader><CardContent><UserManagement /></CardContent></Card></TabsContent>
 
           <TabsContent value="history">
-            <Card className="shadow-md border-t-4 border-t-blue-600">
+            <Card className="shadow-md border-t-4 border-t-blue-600 bg-white/90 backdrop-blur-sm">
               <CardHeader><CardTitle className="text-lg flex items-center gap-2"><History className="text-blue-600" /> Riwayat Aktivitas Pengguna</CardTitle></CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
@@ -323,7 +322,7 @@ const Maintenance = () => {
 
           <TabsContent value="trash">
             <div className="space-y-6">
-              <Card className="shadow-md border-t-4 border-t-red-600">
+              <Card className="shadow-md border-t-4 border-t-red-600 bg-white/90 backdrop-blur-sm">
                 <CardHeader><CardTitle className="text-lg flex items-center gap-2 text-red-700"><FileText size={20} /> Laporan Terhapus</CardTitle></CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -343,7 +342,7 @@ const Maintenance = () => {
                             <td className="px-4 py-3 font-medium">{r.description}</td>
                             <td className="px-4 py-3"><Badge variant="outline">{r.category}</Badge></td>
                             <td className="px-4 py-3 text-right space-x-2">
-                              <Button size="sm" variant="outline" className="text-green-600 border-green-200" onClick={() => handleRestore('REPORT', r.id)}><RotateCcw size={14} className="mr-1" /> Pulihkan</Button>
+                              <Button size="sm" variant="outline" className="text-green-600 border-green-200 bg-white" onClick={() => handleRestore('REPORT', r.id)}><RotateCcw size={14} className="mr-1" /> Pulihkan</Button>
                               <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handlePermanentDelete('REPORT', r.id)}><Trash2 size={14} /></Button>
                             </td>
                           </tr>
@@ -356,7 +355,7 @@ const Maintenance = () => {
                 </CardContent>
               </Card>
 
-              <Card className="shadow-md border-t-4 border-t-red-600">
+              <Card className="shadow-md border-t-4 border-t-red-600 bg-white/90 backdrop-blur-sm">
                 <CardHeader><CardTitle className="text-lg flex items-center gap-2 text-red-700"><ClipboardList size={20} /> Rencana Kerja Terhapus</CardTitle></CardHeader>
                 <CardContent>
                   <div className="overflow-x-auto">
@@ -376,7 +375,7 @@ const Maintenance = () => {
                             <td className="px-4 py-3 font-medium">{p.category}</td>
                             <td className="px-4 py-3">{p.items?.length || 0} Lokasi</td>
                             <td className="px-4 py-3 text-right space-x-2">
-                              <Button size="sm" variant="outline" className="text-green-600 border-green-200" onClick={() => handleRestore('WORK_PLAN', p.id)}><RotateCcw size={14} className="mr-1" /> Pulihkan</Button>
+                              <Button size="sm" variant="outline" className="text-green-600 border-green-200 bg-white" onClick={() => handleRestore('WORK_PLAN', p.id)}><RotateCcw size={14} className="mr-1" /> Pulihkan</Button>
                               <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handlePermanentDelete('WORK_PLAN', p.id)}><Trash2 size={14} /></Button>
                             </td>
                           </tr>
