@@ -121,6 +121,34 @@ const Index = () => {
     }
   };
 
+  const handleToggleWorkPlanVisibility = async (e: React.MouseEvent, plan: WorkPlan) => {
+    e.stopPropagation();
+    if (!isLoggedIn || isPimpinan) return;
+    
+    const newVisibility = plan.is_visible === false ? true : false;
+    try {
+      await workPlanService.updateWorkPlan(plan.id, { is_visible: newVisibility });
+      setWorkPlans(prev => prev.map(p => p.id === plan.id ? { ...p, is_visible: newVisibility } : p));
+      showSuccess(newVisibility ? "Rencana akan muncul di rekap" : "Rencana disembunyikan dari rekap");
+    } catch (error) {
+      showError("Gagal mengubah status visibilitas");
+    }
+  };
+
+  const handleDeleteWorkPlan = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (!isLoggedIn || isPimpinan) return;
+    if (window.confirm("Hapus rencana kerja ini secara permanen?")) {
+      try {
+        await workPlanService.deleteWorkPlan(id);
+        setWorkPlans(prev => prev.filter(p => p.id !== id));
+        showSuccess("Rencana kerja berhasil dihapus");
+      } catch (error) {
+        showError("Gagal menghapus data");
+      }
+    }
+  };
+
   const resetFilters = () => {
     setSelectedMonth("semua");
     setSelectedYear("semua");
@@ -414,9 +442,50 @@ const Index = () => {
                             {plan.is_visible === false && <Badge variant="outline" className="text-[8px] bg-red-50 text-red-600 border-red-100">Sembunyi</Badge>}
                           </div>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/print/${plan.id}`); }}><Printer className="h-4 w-4" /></Button>
-                        </div>
+                        
+                        {isLoggedIn && (
+                          <div className="flex items-center gap-1">
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className={cn(
+                                      "h-8 w-8",
+                                      plan.is_visible === false ? "text-slate-400 hover:text-blue-600" : "text-blue-600 hover:bg-blue-50"
+                                    )}
+                                    onClick={(e) => handleToggleWorkPlanVisibility(e, plan)}
+                                    disabled={isPimpinan}
+                                  >
+                                    {plan.is_visible === false ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent><p>{plan.is_visible === false ? "Tampilkan di Rekap" : "Sembunyikan dari Rekap"}</p></TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className={cn("h-8 w-8 text-slate-400 hover:text-blue-600", isPimpinan && "opacity-50 cursor-not-allowed")} 
+                              disabled={isPimpinan}
+                              onClick={(e) => { e.stopPropagation(); if(!isPimpinan) navigate(`/work-plans/edit/${plan.id}`); }}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} 
+                              disabled={isPimpinan}
+                              onClick={(e) => handleDeleteWorkPlan(e, plan.id)}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/print/${plan.id}`); }}><Printer className="h-4 w-4" /></Button>
+                          </div>
+                        )}
                       </div>
                       <CardTitle className="text-base line-clamp-1 group-hover:text-green-600 transition-colors mt-2">{plan.items?.[0]?.description || "Rencana Kerja"}</CardTitle>
                     </CardHeader>
