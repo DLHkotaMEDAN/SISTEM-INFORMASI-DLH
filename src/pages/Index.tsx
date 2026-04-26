@@ -241,6 +241,9 @@ const Index = () => {
                       <DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2">
                         <Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2">
+                        <FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan
+                      </DropdownMenuItem>
                     </>
                   ) : (
                     <>
