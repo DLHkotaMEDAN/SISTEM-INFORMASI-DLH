@@ -209,7 +209,7 @@ const WorkPlanList = () => {
                 <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
               </Button>
             ) : (
-              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-8 md:h-10 px-2 md:px-4">
+              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-8 md:h-9 px-2 md:px-4">
                 <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span>
               </Button>
             )}
@@ -311,7 +311,7 @@ const WorkPlanList = () => {
                       </div>
                     </div>
                     {isLoggedIn && (
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
