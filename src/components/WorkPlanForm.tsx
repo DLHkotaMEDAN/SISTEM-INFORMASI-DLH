@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Users, Wrench, FileText, MessageSquare, ClipboardList, ShieldAlert, Check, HelpCircle, Copy } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, Loader2, MapPin, Users, Wrench, FileText, MessageSquare, ClipboardList, ShieldAlert, Check, HelpCircle, Copy, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { WorkPlan, WorkPlanItem } from '@/types/workPlan';
@@ -102,7 +102,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
   const [wizardStep, setWizardStep] = useState(1);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
   const [duplicateDate, setDuplicateDate] = useState("");
-  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [isDuplicateMode, setIsDuplicateMode] = useState(false);
 
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
@@ -179,9 +179,10 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
 
       const finalValues = { date: values.date, category: values.category, items: processedItems };
       let result;
-      if (isEditing && initialData) {
+      
+      // Jika isDuplicateMode aktif, kita paksa buat baru meskipun isEditing true
+      if (isEditing && initialData && !isDuplicateMode) {
         result = await workPlanService.updateWorkPlan(initialData.id, finalValues as Partial<WorkPlan>);
-        // Log Edit
         if (session?.user) {
           await auditLogService.logAction({
             action: 'UPDATE',
@@ -195,18 +196,17 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         showSuccess("Rencana Kerja diperbarui!");
       } else {
         result = await workPlanService.createWorkPlan(finalValues as Omit<WorkPlan, 'id' | 'created_at'>);
-        // Log Tambah
         if (session?.user) {
           await auditLogService.logAction({
             action: 'CREATE',
             entityType: 'WORK_PLAN',
             entityId: result.id,
-            details: { title: processedItems[0]?.description, date: values.date, category: values.category },
+            details: { title: isDuplicateMode ? `(Duplikat) ${processedItems[0]?.description}` : processedItems[0]?.description, date: values.date, category: values.category },
             userId: session.user.id,
             username: profile?.username || session.user.email || "User"
           });
         }
-        showSuccess("Rencana Kerja disimpan!");
+        showSuccess(isDuplicateMode ? "Rencana Kerja baru berhasil dibuat dari duplikat!" : "Rencana Kerja disimpan!");
       }
       navigate('/work-plans');
     } catch (error) {
@@ -217,40 +217,17 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
     }
   };
 
-  const handleDuplicate = async () => {
+  const handleDuplicate = () => {
     if (!duplicateDate) { showError("Pilih tanggal"); return; }
-    setIsDuplicating(true);
-    try {
-      const values = form.getValues();
-      const cleanGlobalTools = values.globalTools?.filter(t => t.name && t.name.trim() !== "") || [];
-      const processedItems = values.items.map(item => {
-        const { uiMode, ...rest } = item;
-        if (isGlobalStyle) return { ...rest, tools: cleanGlobalTools, coordinator: values.globalCoordinator || "", personnel: { members: values.globalMembers || 0 } };
-        return { ...rest, tools: item.tools.filter(t => t.name && t.name.trim() !== "") };
-      });
-      const duplicateData = { date: duplicateDate, category: values.category, items: processedItems };
-      const result = await workPlanService.createWorkPlan(duplicateData as Omit<WorkPlan, 'id' | 'created_at'>);
-      
-      // Log Duplikat (CREATE)
-      if (session?.user) {
-        await auditLogService.logAction({
-          action: 'CREATE',
-          entityType: 'WORK_PLAN',
-          entityId: result.id,
-          details: { title: `(Duplikat) ${processedItems[0]?.description}`, date: duplicateDate, category: values.category },
-          userId: session.user.id,
-          username: profile?.username || session.user.email || "User"
-        });
-      }
-
-      showSuccess(`Diduplikat ke ${duplicateDate}`);
-      setShowDuplicateDialog(false);
-      navigate('/work-plans');
-    } catch (error) {
-      showError("Gagal menduplikat");
-    } finally {
-      setIsDuplicating(false);
-    }
+    
+    // Update tanggal di form
+    form.setValue("date", duplicateDate);
+    
+    // Aktifkan mode duplikat (ini akan memaksa onSubmit melakukan CREATE bukannya UPDATE)
+    setIsDuplicateMode(true);
+    
+    showSuccess(`Data disalin ke tanggal ${duplicateDate}. Silakan periksa dan klik Simpan.`);
+    setShowDuplicateDialog(false);
   };
 
   return (
@@ -259,12 +236,26 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         <datalist id="workplan-tools">{Object.keys(toolUsageMapping).map(tool => <option key={tool} value={tool} />)}</datalist>
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-          <h1 className="text-2xl font-bold text-primary">{isEditing ? "Edit Rencana Kerja" : "Buat Rencana Kerja Baru"}</h1>
+          <div className="flex flex-col items-center">
+            <h1 className="text-2xl font-bold text-primary">{isEditing && !isDuplicateMode ? "Edit Rencana Kerja" : "Buat Rencana Kerja Baru"}</h1>
+            {isDuplicateMode && <Badge className="bg-amber-100 text-amber-700 border-amber-200 mt-1 animate-pulse"><Copy size={10} className="mr-1" /> Mode Duplikat: Belum Tersimpan</Badge>}
+          </div>
           <div className="flex gap-2">
-            {isEditing && <Button type="button" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50" onClick={() => { setDuplicateDate(getTomorrowDate()); setShowDuplicateDialog(true); }}><Copy className="mr-2 h-4 w-4" /> Duplikat</Button>}
-            <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} Simpan</Button>
+            {isEditing && !isDuplicateMode && <Button type="button" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50" onClick={() => { setDuplicateDate(getTomorrowDate()); setShowDuplicateDialog(true); }}><Copy className="mr-2 h-4 w-4" /> Duplikat</Button>}
+            <Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700", isPimpinan && "opacity-50 cursor-not-allowed")}>{isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} {isDuplicateMode ? "Simpan Sebagai Baru" : "Simpan"}</Button>
           </div>
         </div>
+
+        {isDuplicateMode && (
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-xl flex items-start gap-3 text-amber-800 shadow-sm">
+            <AlertCircle className="h-5 w-5 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold text-sm">Perhatian: Mode Duplikat Aktif</p>
+              <p className="text-xs opacity-90">Data telah disalin ke tanggal baru. Perubahan yang Anda buat sekarang tidak akan mengubah data asli, melainkan akan disimpan sebagai <strong>Rencana Kerja Baru</strong> saat Anda menekan tombol Simpan.</p>
+            </div>
+          </div>
+        )}
+
         <Card className="border-t-4 border-t-blue-500">
           <CardHeader><CardTitle className="text-lg">Informasi Umum</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -318,10 +309,10 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
           })}
           <Button type="button" variant="outline" className="w-full border-dashed py-8 text-blue-600 font-bold bg-white hover:bg-blue-50" onClick={handleAddClick}><Plus className="mr-2 h-5 w-5" /> Tambah Lokasi Kerja Baru</Button>
         </div>
-        <div className="flex justify-end gap-4"><Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button><Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700 px-8", isPimpinan && "opacity-50 cursor-not-allowed")}>{isSubmitting ? "Menyimpan..." : "Simpan Rencana Kerja"}</Button></div>
+        <div className="flex justify-end gap-4"><Button type="button" variant="outline" onClick={() => navigate(-1)}>Batal</Button><Button type="submit" disabled={isSubmitting || isPimpinan} className={cn("bg-blue-600 hover:bg-blue-700 px-8", isPimpinan && "opacity-50 cursor-not-allowed")}>{isSubmitting ? "Menyimpan..." : isDuplicateMode ? "Simpan Sebagai Baru" : "Simpan Rencana Kerja"}</Button></div>
       </form>
       <Dialog open={showWizard} onOpenChange={setShowWizard}><DialogContent className="sm:max-w-[450px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><HelpCircle className="text-blue-600 h-5 w-5" /> {wizardStep === 1 ? "Alat Operasional" : "Detail Kegiatan"}</DialogTitle><DialogDescription>{wizardStep === 1 ? "Apakah lokasi baru ini menggunakan Alat Operasional yang sama?" : "Apakah Detail Kegiatannya juga sama?"}</DialogDescription></DialogHeader><div className="py-6 flex flex-col gap-3">{wizardStep === 1 ? (<><Button onClick={() => setWizardStep(2)} className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"><Check className="mr-3 h-5 w-5" /> Ya, Alat Sama</Button><Button onClick={() => performAppend('full')} variant="outline" className="h-12 justify-start px-6"><Plus className="mr-3 h-5 w-5" /> Tidak, Alat Berbeda</Button></>) : (<><Button onClick={() => performAppend('location_only')} className="h-12 justify-start px-6 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"><Check className="mr-3 h-5 w-5" /> Ya, Kegiatan Sama</Button><Button onClick={() => performAppend('activity_location')} variant="outline" className="h-12 justify-start px-6"><Plus className="mr-3 h-5 w-5" /> Tidak, Kegiatan Berbeda</Button></>)}</div><DialogFooter><Button variant="ghost" onClick={() => setShowWizard(false)}>Batal</Button></DialogFooter></DialogContent></Dialog>
-      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Rencana Kerja</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data ini.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)} disabled={isDuplicating}>Batal</Button><Button onClick={handleDuplicate} disabled={isDuplicating || !duplicateDate} className="bg-blue-600 hover:bg-blue-700">{isDuplicating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Copy className="h-4 w-4 mr-2" />} Mulai Duplikat</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Rencana Kerja</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data ini ke formulir.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)}>Batal</Button><Button onClick={handleDuplicate} disabled={!duplicateDate} className="bg-blue-600 hover:bg-blue-700"><Copy className="h-4 w-4 mr-2" /> Salin ke Form</Button></DialogFooter></DialogContent></Dialog>
     </Form>
   );
 };
