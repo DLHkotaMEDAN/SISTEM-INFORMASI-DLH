@@ -34,6 +34,7 @@ const Login = () => {
 
     setLoading(true);
     try {
+      // Otomatis menambahkan @gmail.com di belakang username jika belum ada
       const email = username.includes('@') ? username : `${username}@gmail.com`;
       
       const { error } = await supabase.auth.signInWithPassword({
@@ -53,8 +54,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md shadow-2xl border-t-4 border-t-blue-600 bg-white/90 backdrop-blur-md">
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-t-4 border-t-blue-600">
         <CardHeader className="text-center space-y-2 pb-6">
           <div className="space-y-1">
             <CardTitle className="text-xl md:text-2xl font-bold leading-tight">
@@ -76,7 +77,7 @@ const Login = () => {
                   id="username"
                   type="text"
                   placeholder="Ketik username Anda"
-                  className="pl-10 bg-white"
+                  className="pl-10"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={loading}
@@ -92,7 +93,7 @@ const Login = () => {
                   id="password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Ketik kata sandi"
-                  className="pl-10 pr-10 bg-white"
+                  className="pl-10 pr-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={loading}
@@ -110,7 +111,7 @@ const Login = () => {
 
             <Button 
               type="submit" 
-              className="w-full bg-blue-600 hover:bg-blue-700 h-11 font-bold mt-2 shadow-lg shadow-blue-100"
+              className="w-full bg-blue-600 hover:bg-blue-700 h-11 font-bold mt-2"
               disabled={loading}
             >
               {loading ? (

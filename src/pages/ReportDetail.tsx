@@ -20,6 +20,7 @@ const ReportDetail = () => {
   const [loading, setLoading] = useState(true);
 
   const isLoggedIn = !!session;
+  // Menyamakan logika Pimpinan dengan halaman lain (cek role atau email khusus)
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
@@ -45,9 +46,9 @@ const ReportDetail = () => {
   if (!report) return null;
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
+    <div className="min-h-screen bg-slate-100 p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6">
-        <div className="flex items-center justify-between no-print bg-white/80 backdrop-blur-sm p-3 rounded-xl border shadow-sm">
+        <div className="flex items-center justify-between no-print">
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           
           {isLoggedIn ? (
@@ -59,7 +60,6 @@ const ReportDetail = () => {
               )}
               <Button 
                 variant="outline" 
-                className="bg-white"
                 onClick={() => navigate(`/edit/${report.id}`)}
               >
                 <Edit className="mr-2 h-4 w-4" /> Edit
@@ -80,13 +80,13 @@ const ReportDetail = () => {
               </Button>
             </div>
           ) : (
-            <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600 bg-white">
+            <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600">
               <LogIn className="mr-2 h-4 w-4" /> Masuk untuk Edit
             </Button>
           )}
         </div>
 
-        <div id="report-content" className="bg-white border shadow-2xl p-8 space-y-8 rounded-xl">
+        <div id="report-content" className="bg-white border shadow-lg p-8 space-y-8">
           {/* Header Laporan */}
           <div className="border-b-2 border-black pb-4 flex justify-between items-center">
             <div>
