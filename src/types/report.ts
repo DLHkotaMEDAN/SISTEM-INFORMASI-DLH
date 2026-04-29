@@ -7,7 +7,6 @@ export interface FuelUsage {
   pertamax: number;
   dexlite: number;
   solar: number;
-  oli: number; // Menambahkan kategori Oli
   remarks?: string;
 }
 
@@ -15,7 +14,6 @@ export interface HeavyEquipment {
   type: string;
   vehicle?: string;
   fuel: FuelUsage;
-  remarks?: string; // Menambahkan keterangan khusus alat
 }
 
 export interface Personnel {
