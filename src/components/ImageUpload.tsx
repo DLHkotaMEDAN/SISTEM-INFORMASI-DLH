@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useRef } from 'react';
 import { Upload, X, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { compressImage } from '@/utils/image-processor';
@@ -15,6 +15,7 @@ interface ImageUploadProps {
 const ImageUpload = ({ value, onChange, label, disabled = false }: ImageUploadProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = async (file: File) => {
     if (disabled || !file.type.startsWith('image/')) return;
@@ -55,6 +56,12 @@ const ImageUpload = ({ value, onChange, label, disabled = false }: ImageUploadPr
     if (file) handleFile(file);
   };
 
+  const handleAreaClick = () => {
+    if (!value && !isProcessing && !disabled) {
+      fileInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="space-y-2">
       <label className="text-sm font-medium text-slate-700">{label}</label>
@@ -71,7 +78,7 @@ const ImageUpload = ({ value, onChange, label, disabled = false }: ImageUploadPr
           value ? "border-none" : "",
           disabled && "opacity-80 bg-slate-50 cursor-not-allowed"
         )}
-        onClick={() => !value && !isProcessing && !disabled && document.getElementById(`file-${label}`)?.click()}
+        onClick={handleAreaClick}
       >
         {isProcessing ? (
           <div className="flex flex-col items-center gap-2">
@@ -106,7 +113,7 @@ const ImageUpload = ({ value, onChange, label, disabled = false }: ImageUploadPr
           </div>
         )}
         <input
-          id={`file-${label}`}
+          ref={fileInputRef}
           type="file"
           accept="image/*"
           className="hidden"
