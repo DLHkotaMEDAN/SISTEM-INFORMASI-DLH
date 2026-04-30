@@ -10,7 +10,8 @@ import {
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer,
   LogOut, LogIn, FilterX, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw
+  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw,
+  BellRing, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -21,10 +22,13 @@ import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { fuelSpjService } from '@/services/fuelSpjService';
+import { announcementService, Announcement } from '@/services/announcementService';
 import { useAuth } from '@/context/AuthContext';
-import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
+import { getUnitByCategory } from '@/utils/report-helpers';
 import { auditLogService } from '@/services/auditLogService';
 import TrashDialog from '@/components/TrashDialog';
+import AnnouncementDialog from '@/components/AnnouncementDialog';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -63,9 +67,11 @@ const Index = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
   const [spjs, setSpjs] = useState<FuelSpj[]>([]);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
   
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("semua");
@@ -97,6 +103,7 @@ const Index = () => {
 
   useEffect(() => {
     loadData();
+    fetchAnnouncement();
   }, [isLoggedIn, profile]);
 
   const loadData = async () => {
@@ -107,7 +114,7 @@ const Index = () => {
         workPlanService.getAllWorkPlans()
       ];
       
-      if (isAdmin || isSpjBbm) {
+      if (isAdmin || isSpjBbm || isPimpinan) {
         promises.push(fuelSpjService.getAll());
       }
 
@@ -119,6 +126,15 @@ const Index = () => {
       console.error(error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAnnouncement = async () => {
+    try {
+      const data = await announcementService.getActiveAnnouncement();
+      setAnnouncement(data);
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -184,6 +200,7 @@ const Index = () => {
 
   const handleDeleteSpj = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) return;
     if (!confirm("Pindahkan ke tempat sampah?")) return;
     try {
       await fuelSpjService.delete(id);
@@ -244,7 +261,7 @@ const Index = () => {
     return selectedDate ? (matchSearch && matchSpecificDate) : (matchSearch && matchMonth && matchYear);
   });
 
-  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm ? 1 : 0);
+  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm || isPimpinan ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -259,6 +276,18 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
+              {isPimpinan && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => setIsAnnouncementOpen(true)} className="bg-blue-50 text-blue-700 border-blue-200 px-2 md:px-3">
+                      <BellRing className="h-4 w-4 md:mr-2" /> 
+                      <span className="hidden md:inline">Kelola Pesan</span>
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent><p>Kirim Catatan ke Semua User</p></TooltipContent>
+                </Tooltip>
+              )}
+
               {isAdmin && (
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -315,6 +344,8 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {isLoggedIn && <AnnouncementBanner announcement={announcement} />}
+
         <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-4 space-y-1.5">
@@ -368,21 +399,22 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <TabsList className={cn(
               "grid h-12 bg-white border shadow-sm p-1", 
-              activeTabCount === 1 ? "w-[200px] grid-cols-1" : 
-              activeTabCount === 2 ? "w-[400px] grid-cols-2" : 
-              "w-[600px] grid-cols-3"
+              (isAdmin || isPimpinan) ? "w-[600px] grid-cols-3" : 
+              isSpjBbm ? "w-[200px] grid-cols-1" : "w-[400px] grid-cols-2"
             )}>
               {!isSpjBbm && <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger>}
               {!isSpjBbm && <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger>}
-              {(isAdmin || isSpjBbm) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
+              {(isAdmin || isSpjBbm || isPimpinan) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
             </TabsList>
             {isLoggedIn && (
               <div className="flex gap-2">
                 {activeTab === "fuel_spj" ? (
-                  <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
-                    <Plus className="h-4 w-4 md:mr-2" /> 
-                    <span className="hidden md:inline">Input SPJ Baru</span>
-                  </Button>
+                  !isPimpinan && (
+                    <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
+                      <Plus className="h-4 w-4 md:mr-2" /> 
+                      <span className="hidden md:inline">Input SPJ Baru</span>
+                    </Button>
+                  )
                 ) : (
                   <>
                     <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
@@ -447,56 +479,71 @@ const Index = () => {
                 ))}
               </div>
             ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p><Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button></div>}
-            <div className="flex justify-center pt-4"><Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200">Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
-          </TabsContent>
-
-          {(isAdmin || isSpjBbm) && (
-            <TabsContent value="fuel_spj" className="space-y-4">
-              {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredSpjs.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredSpjs.map((spj) => (
-                    <Card key={spj.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-500 group">
-                      <CardHeader className="p-4 pb-2">
-                        <div className="flex justify-between items-start">
-                          <div className="space-y-1">
-                            <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase"><Calendar className="h-3 w-3 mr-1" /> {spj.date}</div>
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">{spj.spj_number}</Badge>
-                          </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        </div>
-                        <CardTitle className="text-base mt-2 flex items-center gap-2"><Truck size={16} className="text-slate-400" /> {spj.vehicle}</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0 space-y-3">
-                        <div className="text-xs text-slate-600 flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" /> <span className="line-clamp-1">{spj.location_street}, {spj.location_village}</span></div>
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t">
-                          <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Users size={12} /> {spj.team}</div>
-                          <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Globe size={12} /> {spj.region}</div>
-                        </div>
-                        <div className="bg-slate-50 p-3 rounded space-y-2 mt-2">
-                          <div className="grid grid-cols-1 gap-1 text-[10px]">
-                            {spj.usage_pertamax > 0 && <div className="flex justify-between"><span>Pertamax:</span><span className="font-black text-blue-600">{formatRupiah(spj.usage_pertamax)}</span></div>}
-                            {spj.usage_dexlite > 0 && <div className="flex justify-between"><span>Dexlite:</span><span className="font-black text-orange-600">{formatRupiah(spj.usage_dexlite)}</span></div>}
-                            {spj.usage_solar > 0 && <div className="flex justify-between"><span>Solar:</span><span className="font-black text-green-600">{formatRupiah(spj.usage_solar)}</span></div>}
-                            {spj.usage_oil > 0 && <div className="flex justify-between border-t pt-1 mt-1"><span>Oli:</span><span className="font-black text-purple-600">{spj.usage_oil} L</span></div>}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada data SPJ BBM ditemukan</p></div>}
+              <div className="flex justify-center pt-4"><Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200">Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
             </TabsContent>
-          )}
-        </Tabs>
+
+            {(isAdmin || isSpjBbm || isPimpinan) && (
+              <TabsContent value="fuel_spj" className="space-y-4">
+                {isPimpinan && (
+                  <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-center gap-2 text-amber-800 text-xs mb-4">
+                    <ShieldCheck className="h-4 w-4 shrink-0" />
+                    <p>Mode Pantau: Anda dapat melihat data SPJ BBM namun tidak dapat menambah, mengubah, atau menghapus data.</p>
+                  </div>
+                )}
+                {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredSpjs.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredSpjs.map((spj) => (
+                      <Card key={spj.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-500 group">
+                        <CardHeader className="p-4 pb-2">
+                          <div className="flex justify-between items-start">
+                            <div className="space-y-1">
+                              <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase"><Calendar className="h-3 w-3 mr-1" /> {spj.date}</div>
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">{spj.spj_number}</Badge>
+                            </div>
+                            {!isPimpinan && (
+                              <div className="flex gap-1">
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
+                              </div>
+                            )}
+                          </div>
+                          <CardTitle className="text-base mt-2 flex items-center gap-2"><Truck size={16} className="text-slate-400" /> {spj.vehicle}</CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0 space-y-3">
+                          <div className="text-xs text-slate-600 flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" /> <span className="line-clamp-1">{spj.location_street}, {spj.location_village}</span></div>
+                          <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+                            <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Users size={12} /> {spj.team}</div>
+                            <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Globe size={12} /> {spj.region}</div>
+                          </div>
+                          <div className="bg-slate-50 p-3 rounded space-y-2 mt-2">
+                            <div className="grid grid-cols-1 gap-1 text-[10px]">
+                              {spj.usage_pertamax > 0 && <div className="flex justify-between"><span>Pertamax:</span><span className="font-black text-blue-600">{formatRupiah(spj.usage_pertamax)}</span></div>}
+                              {spj.usage_dexlite > 0 && <div className="flex justify-between"><span>Dexlite:</span><span className="font-black text-orange-600">{formatRupiah(spj.usage_dexlite)}</span></div>}
+                              {spj.usage_solar > 0 && <div className="flex justify-between"><span>Solar:</span><span className="font-black text-green-600">{formatRupiah(spj.usage_solar)}</span></div>}
+                              {spj.usage_oil > 0 && <div className="flex justify-between border-t pt-1 mt-1"><span>Oli:</span><span className="font-black text-purple-600">{spj.usage_oil} L</span></div>}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
+                ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada data SPJ BBM ditemukan</p></div>}
+              </TabsContent>
+            )}
+          </Tabs>
+        )}
       </main>
       
       <TrashDialog 
         isOpen={isTrashOpen} 
         onClose={() => setIsTrashOpen(false)} 
         onRefresh={loadData} 
+      />
+
+      <AnnouncementDialog 
+        isOpen={isAnnouncementOpen}
+        onClose={() => setIsAnnouncementOpen(false)}
+        onRefresh={fetchAnnouncement}
       />
       
       <MadeWithDyad />
