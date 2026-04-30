@@ -40,10 +40,9 @@ const ProtectedRoute = ({ children, allowedRoles, allowAdminBbm = false }: { chi
   if (!session) return <Navigate to="/login" />;
   
   const isSpjBbm = profile?.role === 'spjbbm' || profile?.category === 'Admin BBM';
-  const isPimpinan = profile?.role === 'pimpinan';
   const hasAllowedRole = allowedRoles && profile && allowedRoles.includes(profile.role);
   
-  if (allowAdminBbm && (isSpjBbm || isPimpinan)) return <>{children}</>;
+  if (allowAdminBbm && isSpjBbm) return <>{children}</>;
   if (allowedRoles && !hasAllowedRole) return <Navigate to="/" />;
   
   return <>{children}</>;
@@ -72,10 +71,10 @@ const App = () => (
             <Route path="/work-plans/monthly-rekap" element={<WorkPlanMonthlyRecap />} />
             
             {/* Fuel SPJ Routes */}
-            <Route path="/fuel-spj" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm', 'pimpinan']} allowAdminBbm={true}><FuelSpjList /></ProtectedRoute>} />
+            <Route path="/fuel-spj" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm']} allowAdminBbm={true}><FuelSpjList /></ProtectedRoute>} />
             <Route path="/fuel-spj/create" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm']} allowAdminBbm={true}><CreateFuelSpj /></ProtectedRoute>} />
             <Route path="/fuel-spj/edit/:id" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm']} allowAdminBbm={true}><EditFuelSpj /></ProtectedRoute>} />
-            <Route path="/fuel-spj/recap" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm', 'pimpinan']} allowAdminBbm={true}><FuelSpjRecap /></ProtectedRoute>} />
+            <Route path="/fuel-spj/recap" element={<ProtectedRoute allowedRoles={['admin', 'spjbbm']} allowAdminBbm={true}><FuelSpjRecap /></ProtectedRoute>} />
             
             {/* Work Plan Creation/Edit */}
             <Route path="/work-plans/create" element={<ProtectedRoute allowedRoles={['admin', 'user', 'pimpinan', 'admin_harian']}><CreateWorkPlan /></ProtectedRoute>} />
