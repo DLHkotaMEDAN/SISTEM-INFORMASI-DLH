@@ -60,15 +60,6 @@ const FuelSpjList = () => {
     }
   };
 
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
   const filteredSpjs = spjs.filter(s => 
     s.spj_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
     s.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -125,13 +116,13 @@ const FuelSpjList = () => {
                     <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Users size={12} /> {spj.team}</div>
                     <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Globe size={12} /> {spj.region}</div>
                   </div>
-                  <div className="bg-slate-50 p-3 rounded space-y-2 mt-2">
-                    <div className="grid grid-cols-1 gap-1 text-[10px]">
-                      {spj.usage_pertamax > 0 && <div className="flex justify-between"><span>Pertamax:</span><span className="font-black text-blue-600">{formatRupiah(spj.usage_pertamax)}</span></div>}
-                      {spj.usage_dexlite > 0 && <div className="flex justify-between"><span>Dexlite:</span><span className="font-black text-orange-600">{formatRupiah(spj.usage_dexlite)}</span></div>}
-                      {spj.usage_solar > 0 && <div className="flex justify-between"><span>Solar:</span><span className="font-black text-green-600">{formatRupiah(spj.usage_solar)}</span></div>}
-                      {spj.usage_oil > 0 && <div className="flex justify-between border-t pt-1 mt-1"><span>Oli:</span><span className="font-black text-purple-600">{spj.usage_oil} L</span></div>}
+                  <div className="bg-slate-50 p-2 rounded flex justify-between items-center text-[10px] font-black">
+                    <div className="flex gap-3">
+                      {spj.usage_pertamax > 0 && <span className="text-blue-600">P: {spj.usage_pertamax}L</span>}
+                      {spj.usage_dexlite > 0 && <span className="text-orange-600">D: {spj.usage_dexlite}L</span>}
+                      {spj.usage_solar > 0 && <span className="text-green-600">S: {spj.usage_solar}L</span>}
                     </div>
+                    {spj.usage_oil > 0 && <span className="text-purple-600">Oli: {spj.usage_oil}L</span>}
                   </div>
                 </CardContent>
               </Card>

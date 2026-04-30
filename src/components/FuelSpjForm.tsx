@@ -87,7 +87,7 @@ const FuelSpjForm = ({ initialData, isEditing = false }: FuelSpjFormProps) => {
         if (session?.user) {
           await auditLogService.logAction({
             action: 'UPDATE',
-            entityType: 'REPORT',
+            entityType: 'REPORT', // Using REPORT as generic entity type for now or update auditLogService
             entityId: initialData.id,
             details: { title: `Update SPJ BBM: ${values.spj_number}`, date: values.date },
             userId: session.user.id,
@@ -142,10 +142,10 @@ const FuelSpjForm = ({ initialData, isEditing = false }: FuelSpjFormProps) => {
           <Card className="border-t-4 border-t-orange-500">
             <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Fuel className="h-5 w-5 text-orange-500" /> Pemakaian BBM & Oli</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="usage_pertamax" render={({ field }) => (<FormItem><FormLabel>Pertamax (Rp)</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">Rp</span><Input type="number" className="pl-9" {...field} /></div></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="usage_dexlite" render={({ field }) => (<FormItem><FormLabel>Dexlite (Rp)</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">Rp</span><Input type="number" className="pl-9" {...field} /></div></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="usage_solar" render={({ field }) => (<FormItem><FormLabel>Solar (Rp)</FormLabel><FormControl><div className="relative"><span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">Rp</span><Input type="number" className="pl-9" {...field} /></div></FormControl><FormMessage /></FormItem>)} />
-              <FormField control={form.control} name="usage_oil" render={({ field }) => (<FormItem><FormLabel>Oli (Liter)</FormLabel><FormControl><div className="relative"><Input type="number" step="0.01" className="pr-8" {...field} /><span className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs">L</span></div></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="usage_pertamax" render={({ field }) => (<FormItem><FormLabel>Pertamax (L)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="usage_dexlite" render={({ field }) => (<FormItem><FormLabel>Dexlite (L)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="usage_solar" render={({ field }) => (<FormItem><FormLabel>Solar (L)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
+              <FormField control={form.control} name="usage_oil" render={({ field }) => (<FormItem><FormLabel>Oli (L)</FormLabel><FormControl><Input type="number" step="0.01" {...field} /></FormControl><FormMessage /></FormItem>)} />
             </CardContent>
           </Card>
 
