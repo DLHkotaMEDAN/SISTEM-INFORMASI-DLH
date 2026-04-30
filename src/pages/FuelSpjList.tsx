@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, Fuel, Trash2, Edit, 
   Search, FilterX, ArrowLeft, Truck, Users, Globe,
-  Loader2, RefreshCw, ShieldCheck
+  Loader2, RefreshCw, FileText
 } from 'lucide-react';
 import { FuelSpj } from '@/types/fuelSpj';
 import { fuelSpjService } from '@/services/fuelSpjService';
@@ -26,16 +26,15 @@ const FuelSpjList = () => {
 
   const isAdmin = profile?.role === 'admin' || session?.user?.email === 'admin@gmail.com';
   const isSpjBbm = profile?.role === 'spjbbm' || session?.user?.email === 'spjbbm@gmail.com';
-  const isPimpinan = profile?.role === 'pimpinan' || session?.user?.email === 'pimpinan@gmail.com';
 
   useEffect(() => {
-    if (!isAdmin && !isSpjBbm && !isPimpinan) {
+    if (!isAdmin && !isSpjBbm) {
       showError("Akses ditolak.");
       navigate('/');
       return;
     }
     loadData();
-  }, [isAdmin, isSpjBbm, isPimpinan]);
+  }, [isAdmin, isSpjBbm]);
 
   const loadData = async () => {
     try {
@@ -51,7 +50,6 @@ const FuelSpjList = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (isPimpinan) return;
     if (!confirm("Pindahkan ke tempat sampah?")) return;
     try {
       await fuelSpjService.delete(id);
@@ -82,21 +80,12 @@ const FuelSpjList = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Beranda</span></Button>
-            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2"><Fuel className="text-blue-600" /> Manajemen SPJ BBM</h1>
+            <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="h-4 w-4 mr-2" /> Beranda</Button>
+            <h1 className="text-2xl font-bold flex items-center gap-2"><Fuel className="text-blue-600" /> Manajemen SPJ BBM</h1>
           </div>
           <div className="flex items-center gap-2">
-            {isPimpinan && (
-              <Badge className="bg-amber-100 text-amber-700 border-amber-200 h-9 px-4 hidden md:flex">
-                <ShieldCheck className="h-4 w-4 mr-2" /> Mode Pantau
-              </Badge>
-            )}
             <Button variant="outline" size="icon" onClick={loadData} disabled={loading}><RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} /></Button>
-            {!isPimpinan && (
-              <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Input SPJ Baru</span>
-              </Button>
-            )}
+            <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700"><Plus className="mr-2 h-4 w-4" /> Input SPJ Baru</Button>
           </div>
         </div>
 
@@ -105,7 +94,7 @@ const FuelSpjList = () => {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <Input placeholder="Cari No. SPJ, Kendaraan, atau Jalan..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
           </div>
-          <Button variant="ghost" onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-red-500"><FilterX className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Reset</span></Button>
+          <Button variant="ghost" onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-red-500"><FilterX className="h-4 w-4 mr-2" /> Reset</Button>
         </div>
 
         {loading ? (
@@ -123,17 +112,15 @@ const FuelSpjList = () => {
                       <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase"><Calendar className="h-3 w-3 mr-1" /> {spj.date}</div>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">{spj.spj_number}</Badge>
                     </div>
-                    {!isPimpinan && (
-                      <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
-                      </div>
-                    )}
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
+                    </div>
                   </div>
                   <CardTitle className="text-base mt-2 flex items-center gap-2"><Truck size={16} className="text-slate-400" /> {spj.vehicle}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
-                  <div className="text-xs text-slate-600 flex items-start gap-2"><MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" /> <span className="line-clamp-1">{spj.location_street}, {spj.location_village}</span></div>
+                  <div className="text-xs text-slate-600 flex items-start gap-2"><MapPin className="h-3 w-3 mt-0.5 text-red-500 shrink-0" /> <span className="line-clamp-1">{spj.location_street}, {spj.location_village}</span></div>
                   <div className="grid grid-cols-2 gap-2 pt-2 border-t">
                     <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Users size={12} /> {spj.team}</div>
                     <div className="text-[10px] font-bold text-slate-500 flex items-center gap-1"><Globe size={12} /> {spj.region}</div>

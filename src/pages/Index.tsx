@@ -10,8 +10,7 @@ import {
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer,
   LogOut, LogIn, FilterX, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw,
-  Megaphone, Send, X, ShieldCheck
+  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -22,9 +21,8 @@ import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { fuelSpjService } from '@/services/fuelSpjService';
-import { announcementService, Announcement } from '@/services/announcementService';
 import { useAuth } from '@/context/AuthContext';
-import { getUnitByCategory } from '@/utils/report-helpers';
+import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import { auditLogService } from '@/services/auditLogService';
 import TrashDialog from '@/components/TrashDialog';
 import { cn } from "@/lib/utils";
@@ -47,15 +45,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/textarea";
 
 const categories: string[] = [
   "semua", "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
@@ -74,15 +63,10 @@ const Index = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
   const [spjs, setSpjs] = useState<FuelSpj[]>([]);
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTrashOpen, setIsTrashOpen] = useState(false);
   
-  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
-  const [noteContent, setNoteContent] = useState("");
-  const [isSavingNote, setIsSavingNote] = useState(false);
-
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
@@ -120,44 +104,21 @@ const Index = () => {
       setLoading(true);
       const promises: Promise<any>[] = [
         reportService.getAllReports(),
-        workPlanService.getAllWorkPlans(),
-        announcementService.getLatest()
+        workPlanService.getAllWorkPlans()
       ];
       
-      if (isAdmin || isSpjBbm || isPimpinan) {
+      if (isAdmin || isSpjBbm) {
         promises.push(fuelSpjService.getAll());
       }
 
       const results = await Promise.all(promises);
       setReports(results[0]);
       setWorkPlans(results[1]);
-      setAnnouncement(results[2]);
-      if (results[3]) setSpjs(results[3]);
+      if (results[2]) setSpjs(results[2]);
     } catch (error) {
       console.error(error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleSaveNote = async () => {
-    if (!session?.user?.id) return;
-    setIsSavingNote(true);
-    try {
-      if (!noteContent.trim()) {
-        await announcementService.clear();
-        setAnnouncement(null);
-        showSuccess("Catatan dibersihkan");
-      } else {
-        const newNote = await announcementService.create(noteContent, session.user.id);
-        setAnnouncement(newNote);
-        showSuccess("Catatan berhasil dikirim ke semua user");
-      }
-      setIsNoteDialogOpen(false);
-    } catch (e) {
-      showError("Gagal menyimpan catatan");
-    } finally {
-      setIsSavingNote(false);
     }
   };
 
@@ -223,7 +184,6 @@ const Index = () => {
 
   const handleDeleteSpj = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (isPimpinan) return;
     if (!confirm("Pindahkan ke tempat sampah?")) return;
     try {
       await fuelSpjService.delete(id);
@@ -284,7 +244,7 @@ const Index = () => {
     return selectedDate ? (matchSearch && matchSpecificDate) : (matchSearch && matchMonth && matchYear);
   });
 
-  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm || isPimpinan ? 1 : 0);
+  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -322,26 +282,24 @@ const Index = () => {
                 </Tooltip>
               )}
 
-              {!isSpjBbm && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
-                      <Printer className="h-4 w-4 md:mr-2" /> 
-                      <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : activeTab === "workplans" ? "Rencana" : "SPJ BBM"}</span>
-                      <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    {activeTab === "reports" ? (
-                      <><DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem></>
-                    ) : activeTab === "workplans" ? (
-                      <><DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem></>
-                    ) : (
-                      <><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=daily&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=weekly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=monthly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=yearly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-purple-600" /> Rekap Tahunan SPJ</DropdownMenuItem></>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
+                    <Printer className="h-4 w-4 md:mr-2" /> 
+                    <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : activeTab === "workplans" ? "Rencana" : "SPJ BBM"}</span>
+                    <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  {activeTab === "reports" ? (
+                    <><DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem></>
+                  ) : activeTab === "workplans" ? (
+                    <><DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem></>
+                  ) : (
+                    <><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=daily&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=weekly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=monthly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=yearly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-purple-600" /> Rekap Tahunan SPJ</DropdownMenuItem></>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
               {isLoggedIn ? (
                 <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
@@ -357,28 +315,6 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* Announcement Banner */}
-        {announcement && (
-          <div className="mb-6 bg-blue-600 text-white p-4 rounded-xl shadow-md flex items-start gap-4 relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform"><Megaphone size={80} /></div>
-            <div className="bg-white/20 p-2 rounded-lg shrink-0"><Megaphone className="h-5 w-5" /></div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] font-bold uppercase tracking-wider opacity-80 mb-1">Catatan Pimpinan</p>
-              <p className="text-sm md:text-base font-medium leading-relaxed">{announcement.content}</p>
-            </div>
-            {isPimpinan && (
-              <Button variant="ghost" size="icon" onClick={() => { setNoteContent(announcement.content); setIsNoteDialogOpen(true); }} className="text-white hover:bg-white/20 shrink-0"><Edit size={18} /></Button>
-            )}
-          </div>
-        )}
-
-        {isPimpinan && !announcement && (
-          <div className="mb-6 border-2 border-dashed border-blue-200 p-4 rounded-xl flex flex-col items-center justify-center gap-2 bg-blue-50/30">
-            <p className="text-xs text-blue-600 font-medium">Belum ada catatan pimpinan aktif.</p>
-            <Button onClick={() => { setNoteContent(""); setIsNoteDialogOpen(true); }} size="sm" className="bg-blue-600"><Plus size={14} className="mr-2" /> Buat Catatan Baru</Button>
-          </div>
-        )}
-
         <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-4 space-y-1.5">
@@ -432,13 +368,15 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <TabsList className={cn(
               "grid h-12 bg-white border shadow-sm p-1", 
-              isAdmin || isPimpinan ? "w-[600px] grid-cols-3" : "w-[400px] grid-cols-2"
+              activeTabCount === 1 ? "w-[200px] grid-cols-1" : 
+              activeTabCount === 2 ? "w-[400px] grid-cols-2" : 
+              "w-[600px] grid-cols-3"
             )}>
-              <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger>
-              <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger>
-              {(isAdmin || isSpjBbm || isPimpinan) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
+              {!isSpjBbm && <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger>}
+              {!isSpjBbm && <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger>}
+              {(isAdmin || isSpjBbm) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
             </TabsList>
-            {isLoggedIn && !isPimpinan && (
+            {isLoggedIn && (
               <div className="flex gap-2">
                 {activeTab === "fuel_spj" ? (
                   <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
@@ -459,12 +397,6 @@ const Index = () => {
                 )}
               </div>
             )}
-            {isPimpinan && (
-              <Button onClick={() => setIsNoteDialogOpen(true)} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-10 font-bold">
-                <Megaphone className="h-4 w-4 md:mr-2" /> 
-                <span className="hidden md:inline">Kelola Catatan Pimpinan</span>
-              </Button>
-            )}
           </div>
 
           <TabsContent value="reports" className="space-y-4">
@@ -475,13 +407,12 @@ const Index = () => {
                     <CardHeader className="p-4 pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col gap-1"><div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" />{new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div><Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge></div>
-                        {isLoggedIn && !isPimpinan && (
+                        {isLoggedIn && (
                           <div className="flex items-center gap-1">
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}><Edit className="h-4 w-4" /></Button>
                             <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => handleDeleteReport(e, report)}><Trash2 className="h-4 w-4" /></Button>
                           </div>
                         )}
-                        {isPimpinan && <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[8px]"><ShieldCheck size={10} className="mr-1" /> Pantau</Badge>}
                       </div>
                       <CardTitle className="text-base line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">{report.description}</CardTitle>
                     </CardHeader>
@@ -500,7 +431,7 @@ const Index = () => {
                     <CardHeader className="p-4 pb-2">
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col gap-1"><div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" />{new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div><div className="flex items-center gap-2"><Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-green-50 text-green-700 border-green-200">{plan.category}</Badge>{plan.is_visible === false && <Badge variant="outline" className="text-[8px] bg-red-50 text-red-600 border-red-100">Sembunyi</Badge>}</div></div>
-                        {isLoggedIn && !isPimpinan && (
+                        {isLoggedIn && (
                           <div className="flex items-center gap-1">
                             <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className={cn("h-8 w-8", plan.is_visible === false ? "text-slate-400 hover:text-blue-600" : "text-blue-600 hover:bg-blue-50")} onClick={(e) => handleToggleWorkPlanVisibility(e, plan)} disabled={isPimpinan}>{plan.is_visible === false ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button></TooltipTrigger><TooltipContent><p>{plan.is_visible === false ? "Tampilkan di Rekap" : "Sembunyikan dari Rekap"}</p></TooltipContent></Tooltip></TooltipProvider>
                             <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-blue-600", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => { e.stopPropagation(); if(!isPimpinan) navigate(`/work-plans/edit/${plan.id}`); }}><Edit className="h-4 w-4" /></Button>
@@ -508,7 +439,6 @@ const Index = () => {
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/print/${plan.id}`); }}><Printer className="h-4 w-4" /></Button>
                           </div>
                         )}
-                        {isPimpinan && <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[8px]"><ShieldCheck size={10} className="mr-1" /> Pantau</Badge>}
                       </div>
                       <CardTitle className="text-base line-clamp-1 group-hover:text-green-600 transition-colors mt-2">{plan.items?.[0]?.description || "Rencana Kerja"}</CardTitle>
                     </CardHeader>
@@ -520,7 +450,7 @@ const Index = () => {
             <div className="flex justify-center pt-4"><Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200">Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
           </TabsContent>
 
-          {(isAdmin || isSpjBbm || isPimpinan) && (
+          {(isAdmin || isSpjBbm) && (
             <TabsContent value="fuel_spj" className="space-y-4">
               {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredSpjs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -532,13 +462,10 @@ const Index = () => {
                             <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase"><Calendar className="h-3 w-3 mr-1" /> {spj.date}</div>
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">{spj.spj_number}</Badge>
                           </div>
-                          {!isPimpinan && (
-                            <div className="flex gap-1">
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
-                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
-                            </div>
-                          )}
-                          {isPimpinan && <Badge variant="outline" className="bg-amber-50 text-amber-600 border-amber-200 text-[8px]"><ShieldCheck size={10} className="mr-1" /> Pantau</Badge>}
+                          <div className="flex gap-1">
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
                         </div>
                         <CardTitle className="text-base mt-2 flex items-center gap-2"><Truck size={16} className="text-slate-400" /> {spj.vehicle}</CardTitle>
                       </CardHeader>
@@ -571,35 +498,6 @@ const Index = () => {
         onClose={() => setIsTrashOpen(false)} 
         onRefresh={loadData} 
       />
-
-      {/* Pimpinan Note Dialog */}
-      <Dialog open={isNoteDialogOpen} onOpenChange={setIsNoteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-blue-600"><Megaphone className="h-5 w-5" /> Kelola Catatan Pimpinan</DialogTitle>
-            <DialogDescription>Pesan ini akan muncul di Dashboard semua pengguna yang login.</DialogDescription>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-bold uppercase text-slate-500">Isi Pesan / Catatan</label>
-              <Textarea 
-                placeholder="Ketik pesan untuk semua user..." 
-                className="min-h-[120px] resize-none"
-                value={noteContent}
-                onChange={(e) => setNoteContent(e.target.value)}
-              />
-              <p className="text-[10px] text-slate-400 italic">* Kosongkan pesan dan simpan untuk menghapus catatan aktif.</p>
-            </div>
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsNoteDialogOpen(false)}>Batal</Button>
-            <Button onClick={handleSaveNote} disabled={isSavingNote} className="bg-blue-600 hover:bg-blue-700">
-              {isSavingNote ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-              Simpan & Kirim
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
       <MadeWithDyad />
     </div>
