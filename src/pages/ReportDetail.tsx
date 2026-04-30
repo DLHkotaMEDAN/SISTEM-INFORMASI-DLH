@@ -20,6 +20,7 @@ const ReportDetail = () => {
   const [loading, setLoading] = useState(true);
 
   const isLoggedIn = !!session;
+  // Menyamakan logika Pimpinan dengan halaman lain (cek role atau email khusus)
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => { if (id) loadReport(id); }, [id]);
@@ -35,15 +36,6 @@ const ReportDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatRupiah = (amount: number) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
   };
 
   const cleanDescription = (desc: string) => {
@@ -154,15 +146,10 @@ const ReportDetail = () => {
                       
                       {task.heavyEquipment?.length > 0 && (
                         <div className="pt-2 border-t">
-                          <p className="font-bold text-[10px] mb-1 flex items-center gap-1"><Fuel size={10} /> BBM (Voucher):</p>
+                          <p className="font-bold text-[10px] mb-1">ALAT BERAT:</p>
                           {task.heavyEquipment.map((he, idx) => (
-                            <div key={idx} className="mb-1 text-[10px] space-y-0.5">
-                              <div className="font-bold text-slate-700">{he.type} {he.vehicle ? `- ${he.vehicle}` : ""}</div>
-                              <div className="grid grid-cols-3 gap-2 text-blue-600">
-                                {he.fuel.pertamax > 0 && <span>P: {formatRupiah(he.fuel.pertamax)}</span>}
-                                {he.fuel.dexlite > 0 && <span>D: {formatRupiah(he.fuel.dexlite)}</span>}
-                                {he.fuel.solar > 0 && <span>S: {formatRupiah(he.fuel.solar)}</span>}
-                              </div>
+                            <div key={idx} className="mb-1 text-[10px]">
+                              {he.type} {he.vehicle ? `- ${he.vehicle}` : ""}
                             </div>
                           ))}
                         </div>
