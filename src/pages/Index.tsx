@@ -11,7 +11,7 @@ import {
   Trash2, Eye, Search, Edit, Cloud, Printer,
   LogOut, LogIn, FilterX, Database, ChevronDown,
   Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw,
-  Megaphone, Send, X, ShieldCheck, Loader2
+  Megaphone, Send, X, ShieldCheck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -24,7 +24,7 @@ import { workPlanService } from '@/services/workPlanService';
 import { fuelSpjService } from '@/services/fuelSpjService';
 import { announcementService, Announcement } from '@/services/announcementService';
 import { useAuth } from '@/context/AuthContext';
-import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
+import { getUnitByCategory } from '@/utils/report-helpers';
 import { auditLogService } from '@/services/auditLogService';
 import TrashDialog from '@/components/TrashDialog';
 import { cn } from "@/lib/utils";
