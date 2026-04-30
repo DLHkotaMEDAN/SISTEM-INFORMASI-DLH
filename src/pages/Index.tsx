@@ -10,7 +10,7 @@ import {
   Plus, FileText, MapPin, Calendar, 
   Trash2, Eye, Search, Edit, Cloud, Printer,
   LogOut, LogIn, FilterX, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw
+  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, Truck, Users, Globe, RefreshCw, Megaphone
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -21,10 +21,13 @@ import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { fuelSpjService } from '@/services/fuelSpjService';
+import { announcementService, Announcement } from '@/services/announcementService';
 import { useAuth } from '@/context/AuthContext';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import { auditLogService } from '@/services/auditLogService';
 import TrashDialog from '@/components/TrashDialog';
+import AnnouncementBanner from '@/components/AnnouncementBanner';
+import AnnouncementDialog from '@/components/AnnouncementDialog';
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -63,9 +66,11 @@ const Index = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
   const [spjs, setSpjs] = useState<FuelSpj[]>([]);
+  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isTrashOpen, setIsTrashOpen] = useState(false);
+  const [isAnnouncementOpen, setIsAnnouncementOpen] = useState(false);
   
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("semua");
@@ -97,6 +102,7 @@ const Index = () => {
 
   useEffect(() => {
     loadData();
+    fetchAnnouncement();
   }, [isLoggedIn, profile]);
 
   const loadData = async () => {
@@ -107,7 +113,7 @@ const Index = () => {
         workPlanService.getAllWorkPlans()
       ];
       
-      if (isAdmin || isSpjBbm) {
+      if (isAdmin || isSpjBbm || isPimpinan) {
         promises.push(fuelSpjService.getAll());
       }
 
@@ -120,6 +126,13 @@ const Index = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchAnnouncement = async () => {
+    try {
+      const data = await announcementService.getLatest();
+      setAnnouncement(data);
+    } catch (e) { console.error(e); }
   };
 
   const handleLogout = async () => {
@@ -184,6 +197,7 @@ const Index = () => {
 
   const handleDeleteSpj = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) return;
     if (!confirm("Pindahkan ke tempat sampah?")) return;
     try {
       await fuelSpjService.delete(id);
@@ -244,7 +258,7 @@ const Index = () => {
     return selectedDate ? (matchSearch && matchSpecificDate) : (matchSearch && matchMonth && matchYear);
   });
 
-  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm ? 1 : 0);
+  const activeTabCount = (!isSpjBbm ? 2 : 0) + (isAdmin || isSpjBbm || isPimpinan ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -282,24 +296,26 @@ const Index = () => {
                 </Tooltip>
               )}
 
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
-                    <Printer className="h-4 w-4 md:mr-2" /> 
-                    <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : activeTab === "workplans" ? "Rencana" : "SPJ BBM"}</span>
-                    <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  {activeTab === "reports" ? (
-                    <><DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem></>
-                  ) : activeTab === "workplans" ? (
-                    <><DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem></>
-                  ) : (
-                    <><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=daily&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=weekly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=monthly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=yearly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-purple-600" /> Rekap Tahunan SPJ</DropdownMenuItem></>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {!isSpjBbm && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3">
+                      <Printer className="h-4 w-4 md:mr-2" /> 
+                      <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : activeTab === "workplans" ? "Rencana" : "SPJ BBM"}</span>
+                      <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    {activeTab === "reports" ? (
+                      <><DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem></>
+                    ) : activeTab === "workplans" ? (
+                      <><DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem></>
+                    ) : (
+                      <><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=daily&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=weekly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=monthly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan SPJ</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/fuel-spj/recap?range=yearly&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-purple-600" /> Rekap Tahunan SPJ</DropdownMenuItem></>
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               {isLoggedIn ? (
                 <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
@@ -315,6 +331,14 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {announcement && (
+          <AnnouncementBanner 
+            content={announcement.content} 
+            author={announcement.author_name} 
+            date={announcement.updated_at} 
+          />
+        )}
+
         <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-4 space-y-1.5">
@@ -368,21 +392,29 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <TabsList className={cn(
               "grid h-12 bg-white border shadow-sm p-1", 
-              activeTabCount === 1 ? "w-[200px] grid-cols-1" : 
-              activeTabCount === 2 ? "w-[400px] grid-cols-2" : 
-              "w-[600px] grid-cols-3"
+              (isAdmin || isPimpinan) ? "w-[600px] grid-cols-3" : 
+              isSpjBbm ? "w-[200px] grid-cols-1" :
+              "w-[400px] grid-cols-2"
             )}>
               {!isSpjBbm && <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger>}
               {!isSpjBbm && <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger>}
-              {(isAdmin || isSpjBbm) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
+              {(isAdmin || isSpjBbm || isPimpinan) && <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Manajemen SPJ BBM</TabsTrigger>}
             </TabsList>
             {isLoggedIn && (
               <div className="flex gap-2">
-                {activeTab === "fuel_spj" ? (
-                  <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
-                    <Plus className="h-4 w-4 md:mr-2" /> 
-                    <span className="hidden md:inline">Input SPJ Baru</span>
+                {isPimpinan && (
+                  <Button onClick={() => setIsAnnouncementOpen(true)} className="bg-amber-600 hover:bg-amber-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
+                    <Megaphone className="h-4 w-4 md:mr-2" /> 
+                    <span className="hidden md:inline">Buat Catatan</span>
                   </Button>
+                )}
+                {activeTab === "fuel_spj" ? (
+                  !isPimpinan && (
+                    <Button onClick={() => navigate('/fuel-spj/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
+                      <Plus className="h-4 w-4 md:mr-2" /> 
+                      <span className="hidden md:inline">Input SPJ Baru</span>
+                    </Button>
+                  )
                 ) : (
                   <>
                     <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none">
@@ -450,7 +482,7 @@ const Index = () => {
             <div className="flex justify-center pt-4"><Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200">Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
           </TabsContent>
 
-          {(isAdmin || isSpjBbm) && (
+          {(isAdmin || isSpjBbm || isPimpinan) && (
             <TabsContent value="fuel_spj" className="space-y-4">
               {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredSpjs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -462,10 +494,12 @@ const Index = () => {
                             <div className="flex items-center text-[10px] text-slate-500 font-bold uppercase"><Calendar className="h-3 w-3 mr-1" /> {spj.date}</div>
                             <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px]">{spj.spj_number}</Badge>
                           </div>
-                          <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
+                          {isLoggedIn && !isPimpinan && (
+                            <div className="flex gap-1">
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-spj/edit/${spj.id}`)}><Edit className="h-4 w-4" /></Button>
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDeleteSpj(e, spj.id)}><Trash2 className="h-4 w-4" /></Button>
+                            </div>
+                          )}
                         </div>
                         <CardTitle className="text-base mt-2 flex items-center gap-2"><Truck size={16} className="text-slate-400" /> {spj.vehicle}</CardTitle>
                       </CardHeader>
@@ -497,6 +531,14 @@ const Index = () => {
         isOpen={isTrashOpen} 
         onClose={() => setIsTrashOpen(false)} 
         onRefresh={loadData} 
+      />
+
+      <AnnouncementDialog 
+        isOpen={isAnnouncementOpen}
+        onClose={() => setIsAnnouncementOpen(false)}
+        onSuccess={fetchAnnouncement}
+        initialContent={announcement?.content}
+        authorName={profile?.username || "Pimpinan"}
       />
       
       <MadeWithDyad />
