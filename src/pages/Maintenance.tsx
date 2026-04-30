@@ -10,7 +10,7 @@ import {
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   Loader2, Database, Users, History,
   FileText, ClipboardList, Pencil, PlusCircle,
-  RotateCcw, AlertTriangle, HardDrive, TrendingUp, BarChart3, Eye
+  RotateCcw, AlertTriangle, HardDrive, TrendingUp, BarChart3, Eye, Fuel, Truck
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -27,6 +27,7 @@ import UserManagement from '@/components/UserManagement';
 import { auditLogService } from '@/services/auditLogService';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
+import { fuelSpjService } from '@/services/fuelSpjService';
 import { format, isSameDay, isSameMonth, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
@@ -39,6 +40,7 @@ const Maintenance = () => {
   const [logs, setLogs] = useState<any[]>([]);
   const [deletedReports, setDeletedReports] = useState<any[]>([]);
   const [deletedWorkPlans, setDeletedWorkPlans] = useState<any[]>([]);
+  const [deletedSpjs, setDeletedSpjs] = useState<any[]>([]);
   
   const [stats, setStats] = useState({ 
     totalStorageCount: 0, 
@@ -70,14 +72,16 @@ const Maintenance = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [logsData, delReports, delPlans] = await Promise.all([
+      const [logsData, delReports, delPlans, delSpjs] = await Promise.all([
         auditLogService.getLogs(),
         reportService.getAllReports('semua', true),
-        workPlanService.getAllWorkPlans('semua', true)
+        workPlanService.getAllWorkPlans('semua', true),
+        fuelSpjService.getAll(true)
       ]);
       setLogs(logsData);
       setDeletedReports(delReports);
       setDeletedWorkPlans(delPlans);
+      setDeletedSpjs(delSpjs);
     } catch (e) {
       console.error(e);
     } finally {
@@ -85,10 +89,11 @@ const Maintenance = () => {
     }
   };
 
-  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
+  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN' | 'FUEL_SPJ', id: string) => {
     try {
       if (type === 'REPORT') await reportService.restoreReport(id);
-      else await workPlanService.restoreWorkPlan(id);
+      else if (type === 'WORK_PLAN') await workPlanService.restoreWorkPlan(id);
+      else await fuelSpjService.restore(id);
       
       showSuccess("Data berhasil dipulihkan");
       fetchData();
@@ -97,7 +102,7 @@ const Maintenance = () => {
       if (session?.user) {
         await auditLogService.logAction({
           action: 'UPDATE',
-          entityType: type,
+          entityType: type === 'FUEL_SPJ' ? 'REPORT' : type,
           entityId: id,
           details: { title: "Data dipulihkan dari tempat sampah" },
           userId: session.user.id,
@@ -109,11 +114,12 @@ const Maintenance = () => {
     }
   };
 
-  const handlePermanentDelete = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
+  const handlePermanentDelete = async (type: 'REPORT' | 'WORK_PLAN' | 'FUEL_SPJ', id: string) => {
     if (!confirm("Hapus permanen? Data tidak bisa dikembalikan lagi.")) return;
     try {
       if (type === 'REPORT') await reportService.hardDeleteReport(id);
-      else await workPlanService.hardDeleteWorkPlan(id);
+      else if (type === 'WORK_PLAN') await workPlanService.hardDeleteWorkPlan(id);
+      else await fuelSpjService.hardDelete(id);
       
       showSuccess("Data dihapus permanen");
       fetchData();
@@ -382,6 +388,39 @@ const Maintenance = () => {
                           </tr>
                         )) : (
                           <tr><td colSpan={4} className="px-4 py-10 text-center text-slate-400 italic">Tempat sampah rencana kerja kosong</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-md border-t-4 border-t-red-600">
+                <CardHeader><CardTitle className="text-lg flex items-center gap-2 text-red-700"><Fuel size={20} /> SPJ BBM Terhapus</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                      <thead className="bg-slate-50 text-[10px] uppercase font-bold text-slate-500">
+                        <tr>
+                          <th className="px-4 py-3">Tanggal</th>
+                          <th className="px-4 py-3">No. SPJ</th>
+                          <th className="px-4 py-3">Kendaraan</th>
+                          <th className="px-4 py-3 text-right">Aksi</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {deletedSpjs.length > 0 ? deletedSpjs.map((s) => (
+                          <tr key={s.id} className="hover:bg-slate-50/50">
+                            <td className="px-4 py-3">{s.date}</td>
+                            <td className="px-4 py-3 font-bold text-blue-600">{s.spj_number}</td>
+                            <td className="px-4 py-3 flex items-center gap-2"><Truck size={14} className="text-slate-400" /> {s.vehicle}</td>
+                            <td className="px-4 py-3 text-right space-x-2">
+                              <Button size="sm" variant="outline" className="text-green-600 border-green-200" onClick={() => handleRestore('FUEL_SPJ', s.id)}><RotateCcw size={14} className="mr-1" /> Pulihkan</Button>
+                              <Button size="sm" variant="ghost" className="text-red-500" onClick={() => handlePermanentDelete('FUEL_SPJ', s.id)}><Trash2 size={14} /></Button>
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={4} className="px-4 py-10 text-center text-slate-400 italic">Tempat sampah SPJ BBM kosong</td></tr>
                         )}
                       </tbody>
                     </table>

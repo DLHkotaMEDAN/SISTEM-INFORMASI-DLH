@@ -13,15 +13,17 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Trash2, RotateCcw, FileText, ClipboardList, 
-  Calendar, MapPin, Loader2, Search 
+  Calendar, MapPin, Loader2, Fuel, Truck
 } from 'lucide-react';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
+import { fuelSpjService } from '@/services/fuelSpjService';
 import { auditLogService } from '@/services/auditLogService';
 import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { Report } from '@/types/report';
 import { WorkPlan } from '@/types/workPlan';
+import { FuelSpj } from '@/types/fuelSpj';
 import { cn } from "@/lib/utils";
 
 interface TrashDialogProps {
@@ -35,12 +37,15 @@ const TrashDialog = ({ isOpen, onClose, onRefresh }: TrashDialogProps) => {
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState<Report[]>([]);
   const [workPlans, setWorkPlans] = useState<WorkPlan[]>([]);
+  const [spjs, setSpjs] = useState<FuelSpj[]>([]);
   const [restoringId, setRestoringId] = useState<string | null>(null);
 
-  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
-  const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
   const isAdmin = profile?.role === 'admin' || (session?.user?.email === 'admin@gmail.com');
-  const isUserRestricted = profile?.role === 'user' && !isPimpinan && !isAdminHarian && !isAdmin;
+  const isSpjBbm = profile?.role === 'spjbbm' || (session?.user?.email === 'spjbbm@gmail.com');
+  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
+  
+  // Logika filter tab: Jika hanya Admin BBM (bukan Admin Utama), sembunyikan Laporan & Rencana
+  const isOnlySpjBbm = isSpjBbm && !isAdmin;
 
   useEffect(() => {
     if (isOpen) {
@@ -51,13 +56,26 @@ const TrashDialog = ({ isOpen, onClose, onRefresh }: TrashDialogProps) => {
   const fetchDeletedData = async () => {
     setLoading(true);
     try {
-      const categoryFilter = isUserRestricted ? profile?.category : 'semua';
-      const [deletedReports, deletedPlans] = await Promise.all([
-        reportService.getAllReports(categoryFilter, true),
-        workPlanService.getAllWorkPlans(categoryFilter, true)
-      ]);
+      const promises: Promise<any>[] = [];
+      
+      if (!isOnlySpjBbm) {
+        promises.push(reportService.getAllReports('semua', true));
+        promises.push(workPlanService.getAllWorkPlans('semua', true));
+      } else {
+        promises.push(Promise.resolve([]));
+        promises.push(Promise.resolve([]));
+      }
+
+      if (isAdmin || isSpjBbm) {
+        promises.push(fuelSpjService.getAll(true));
+      } else {
+        promises.push(Promise.resolve([]));
+      }
+
+      const [deletedReports, deletedPlans, deletedSpjs] = await Promise.all(promises);
       setReports(deletedReports);
       setWorkPlans(deletedPlans);
+      setSpjs(deletedSpjs);
     } catch (error) {
       showError("Gagal memuat data terhapus");
     } finally {
@@ -65,21 +83,23 @@ const TrashDialog = ({ isOpen, onClose, onRefresh }: TrashDialogProps) => {
     }
   };
 
-  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN', id: string, title: string) => {
+  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN' | 'FUEL_SPJ', id: string, title: string) => {
     if (isPimpinan) return;
     setRestoringId(id);
     try {
       if (type === 'REPORT') {
         await reportService.restoreReport(id);
-      } else {
+      } else if (type === 'WORK_PLAN') {
         await workPlanService.restoreWorkPlan(id);
+      } else {
+        await fuelSpjService.restore(id);
       }
 
       // Catat Log
       if (session?.user) {
         await auditLogService.logAction({
           action: 'UPDATE',
-          entityType: type,
+          entityType: type === 'FUEL_SPJ' ? 'REPORT' : type, // Gunakan REPORT untuk SPJ BBM di log sementara
           entityId: id,
           details: { title: `Memulihkan data: ${title}` },
           userId: session.user.id,
@@ -99,94 +119,144 @@ const TrashDialog = ({ isOpen, onClose, onRefresh }: TrashDialogProps) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col p-0 overflow-hidden">
+      <DialogContent className="sm:max-w-[650px] max-h-[85vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="p-6 pb-2">
           <DialogTitle className="flex items-center gap-2 text-red-600">
             <Trash2 className="h-5 w-5" /> Tempat Sampah
           </DialogTitle>
           <DialogDescription>
-            Data yang Anda hapus akan tersimpan di sini. Anda dapat memulihkannya kembali ke daftar utama.
+            Data yang dihapus sementara dapat dipulihkan kembali ke daftar utama.
           </DialogDescription>
         </DialogHeader>
 
-        <Tabs defaultValue="reports" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue={isOnlySpjBbm ? "fuel_spj" : "reports"} className="flex-1 flex flex-col overflow-hidden">
           <div className="px-6">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="reports" className="flex items-center gap-2">
-                <FileText size={14} /> Laporan ({reports.length})
-              </TabsTrigger>
-              <TabsTrigger value="workplans" className="flex items-center gap-2">
-                <ClipboardList size={14} /> Rencana ({workPlans.length})
-              </TabsTrigger>
+            <TabsList className={cn(
+              "grid w-full mb-4",
+              isAdmin ? "grid-cols-3" : isOnlySpjBbm ? "grid-cols-1" : "grid-cols-2"
+            )}>
+              {!isOnlySpjBbm && (
+                <TabsTrigger value="reports" className="flex items-center gap-2">
+                  <FileText size={14} /> Laporan ({reports.length})
+                </TabsTrigger>
+              )}
+              {!isOnlySpjBbm && (
+                <TabsTrigger value="workplans" className="flex items-center gap-2">
+                  <ClipboardList size={14} /> Rencana ({workPlans.length})
+                </TabsTrigger>
+              )}
+              {(isAdmin || isSpjBbm) && (
+                <TabsTrigger value="fuel_spj" className="flex items-center gap-2">
+                  <Fuel size={14} /> SPJ BBM ({spjs.length})
+                </TabsTrigger>
+              )}
             </TabsList>
           </div>
 
           <div className="flex-1 overflow-y-auto px-6 pb-6">
-            <TabsContent value="reports" className="mt-0 space-y-3">
-              {loading ? (
-                <div className="py-10 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Memuat...</div>
-              ) : reports.length > 0 ? (
-                reports.map((report) => (
-                  <div key={report.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate">{report.description}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
-                        <span className="flex items-center gap-1"><Calendar size={10} /> {report.date}</span>
-                        <span className="flex items-center gap-1"><MapPin size={10} /> {report.location.street}</span>
+            {!isOnlySpjBbm && (
+              <TabsContent value="reports" className="mt-0 space-y-3">
+                {loading ? (
+                  <div className="py-10 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Memuat...</div>
+                ) : reports.length > 0 ? (
+                  reports.map((report) => (
+                    <div key={report.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold truncate">{report.description}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                          <span className="flex items-center gap-1"><Calendar size={10} /> {report.date}</span>
+                          <span className="flex items-center gap-1"><MapPin size={10} /> {report.location.street}</span>
+                        </div>
                       </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                        onClick={() => handleRestore('REPORT', report.id, report.description)}
+                        disabled={!!restoringId || isPimpinan}
+                      >
+                        {restoringId === report.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                        Pulihkan
+                      </Button>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
-                      onClick={() => handleRestore('REPORT', report.id, report.description)}
-                      disabled={!!restoringId || isPimpinan}
-                    >
-                      {restoringId === report.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
-                      Pulihkan
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="py-10 text-center text-slate-400 italic text-sm">Tidak ada laporan di tempat sampah</div>
-              )}
-            </TabsContent>
+                  ))
+                ) : (
+                  <div className="py-10 text-center text-slate-400 italic text-sm">Tidak ada laporan di tempat sampah</div>
+                )}
+              </TabsContent>
+            )}
 
-            <TabsContent value="workplans" className="mt-0 space-y-3">
-              {loading ? (
-                <div className="py-10 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Memuat...</div>
-              ) : workPlans.length > 0 ? (
-                workPlans.map((plan) => (
-                  <div key={plan.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold truncate">{plan.items[0]?.description || "Rencana Kerja"}</p>
-                      <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
-                        <span className="flex items-center gap-1"><Calendar size={10} /> {plan.date}</span>
-                        <Badge variant="outline" className="text-[8px] py-0 h-3.5">{plan.category}</Badge>
+            {!isOnlySpjBbm && (
+              <TabsContent value="workplans" className="mt-0 space-y-3">
+                {loading ? (
+                  <div className="py-10 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Memuat...</div>
+                ) : workPlans.length > 0 ? (
+                  workPlans.map((plan) => (
+                    <div key={plan.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold truncate">{plan.items[0]?.description || "Rencana Kerja"}</p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                          <span className="flex items-center gap-1"><Calendar size={10} /> {plan.date}</span>
+                          <Badge variant="outline" className="text-[8px] py-0 h-3.5">{plan.category}</Badge>
+                        </div>
                       </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                        onClick={() => handleRestore('WORK_PLAN', plan.id, plan.items[0]?.description || "Rencana Kerja")}
+                        disabled={!!restoringId || isPimpinan}
+                      >
+                        {restoringId === plan.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                        Pulihkan
+                      </Button>
                     </div>
-                    <Button 
-                      size="sm" 
-                      variant="outline" 
-                      className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
-                      onClick={() => handleRestore('WORK_PLAN', plan.id, plan.items[0]?.description || "Rencana Kerja")}
-                      disabled={!!restoringId || isPimpinan}
-                    >
-                      {restoringId === plan.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
-                      Pulihkan
-                    </Button>
-                  </div>
-                ))
-              ) : (
-                <div className="py-10 text-center text-slate-400 italic text-sm">Tidak ada rencana kerja di tempat sampah</div>
-              )}
-            </TabsContent>
+                  ))
+                ) : (
+                  <div className="py-10 text-center text-slate-400 italic text-sm">Tidak ada rencana kerja di tempat sampah</div>
+                )}
+              </TabsContent>
+            )}
+
+            {(isAdmin || isSpjBbm) && (
+              <TabsContent value="fuel_spj" className="mt-0 space-y-3">
+                {loading ? (
+                  <div className="py-10 text-center text-slate-400"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Memuat...</div>
+                ) : spjs.length > 0 ? (
+                  spjs.map((spj) => (
+                    <div key={spj.id} className="p-3 border rounded-lg bg-slate-50 flex items-center justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-bold truncate flex items-center gap-2">
+                          <Truck size={14} className="text-blue-500" /> {spj.vehicle}
+                        </p>
+                        <div className="flex items-center gap-3 mt-1 text-[10px] text-slate-500">
+                          <span className="flex items-center gap-1 font-bold text-blue-600">{spj.spj_number}</span>
+                          <span className="flex items-center gap-1"><Calendar size={10} /> {spj.date}</span>
+                        </div>
+                      </div>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="shrink-0 text-blue-600 border-blue-200 hover:bg-blue-50 h-8"
+                        onClick={() => handleRestore('FUEL_SPJ', spj.id, spj.spj_number)}
+                        disabled={!!restoringId || isPimpinan}
+                      >
+                        {restoringId === spj.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                        Pulihkan
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="py-10 text-center text-slate-400 italic text-sm">Tidak ada data SPJ BBM di tempat sampah</div>
+                )}
+              </TabsContent>
+            )}
           </div>
         </Tabs>
         
         <div className="p-4 bg-amber-50 border-t border-amber-100 text-[10px] text-amber-800 flex items-start gap-2">
           <RotateCcw size={12} className="mt-0.5 shrink-0" />
-          <p>Hanya Administrator yang dapat menghapus data secara permanen dari sistem. Pengguna hanya dapat memulihkan data yang telah dihapus.</p>
+          <p>Hanya Administrator yang dapat menghapus data secara permanen dari sistem. Pengguna hanya dapat memulihkan data yang telah dihapus sementara.</p>
         </div>
       </DialogContent>
     </Dialog>
