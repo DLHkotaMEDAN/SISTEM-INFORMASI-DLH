@@ -5,7 +5,7 @@ export const getUnitByCategory = (category: ReportCategory | string): string => 
   return "m2";
 };
 
-export const categoryOrder = [
+export const allCategories = [
   "Tim Pohon",
   "Tim Siram",
   "Tim Babat",
@@ -14,11 +14,12 @@ export const categoryOrder = [
   "Taman Amplas"
 ];
 
+export const categoryOrder = allCategories;
+
 export const sortByCategory = (a: string, b: string) => {
   const indexA = categoryOrder.indexOf(a);
   const indexB = categoryOrder.indexOf(b);
   
-  // Jika kategori tidak ditemukan di list, taruh di paling bawah
   const priorityA = indexA === -1 ? 999 : indexA;
   const priorityB = indexB === -1 ? 999 : indexB;
   
