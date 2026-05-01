@@ -10,7 +10,7 @@ import {
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   Loader2, Database, Users, History,
   FileText, ClipboardList, Pencil, PlusCircle,
-  RotateCcw, AlertTriangle, HardDrive, TrendingUp, BarChart3, Eye
+  RotateCcw, AlertTriangle, HardDrive, TrendingUp, BarChart3, Eye, Info, X
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -92,18 +92,6 @@ const Maintenance = () => {
       
       showSuccess("Data berhasil dipulihkan");
       fetchData();
-      
-      // Log Restore
-      if (session?.user) {
-        await auditLogService.logAction({
-          action: 'UPDATE',
-          entityType: type,
-          entityId: id,
-          details: { title: "Data dipulihkan dari tempat sampah" },
-          userId: session.user.id,
-          username: profile?.username || session.user.email || "Admin"
-        });
-      }
     } catch (e) {
       showError("Gagal memulihkan data");
     }
@@ -134,9 +122,10 @@ const Maintenance = () => {
     setAnalyzing(true);
     try {
       const now = new Date();
+      // Ambil SEMUA laporan (termasuk yang di tempat sampah agar fotonya tidak terhapus)
       const { data: reports, error: dbError, count: reportCount } = await supabase
         .from('reports')
-        .select('tasks, date, createdAt', { count: 'exact' });
+        .select('tasks, date, createdAt');
       
       if (dbError) throw dbError;
 
@@ -166,11 +155,14 @@ const Maintenance = () => {
         });
       });
 
-      const { data: storageFiles, error: storageError } = await supabase.storage.from('report-photos').list('', { limit: 1000 });
+      // Ambil daftar file di storage
+      const { data: storageFiles, error: storageError } = await supabase.storage.from('report-photos').list('', { limit: 5000 });
       if (storageError) throw storageError;
 
       let totalSize = 0;
       storageFiles?.forEach(file => { totalSize += file.metadata?.size || 0; });
+      
+      // File dianggap sampah JIKA namanya tidak ada di daftar usedFileNames (database)
       const orphaned = storageFiles?.filter(file => !usedFileNames.has(file.name)) || [];
       
       setOrphanedFiles(orphaned);
@@ -179,13 +171,13 @@ const Maintenance = () => {
         totalStorageSize: totalSize,
         usedInDb: usedFileNames.size,
         orphaned: orphaned.length,
-        dbRecordCount: reportCount || 0,
+        dbRecordCount: reports?.length || 0,
         reportsToday,
         reportsThisMonth,
         photosToday,
         photosThisMonth
       });
-      showSuccess(`Analisis selesai.`);
+      showSuccess(`Analisis selesai. Ditemukan ${orphaned.length} file tidak terpakai.`);
     } catch (error: any) {
       showError("Gagal menganalisis: " + error.message);
     } finally {
@@ -193,15 +185,21 @@ const Maintenance = () => {
     }
   };
 
+  const handlePreview = (fileName: string) => {
+    const { data } = supabase.storage.from('report-photos').getPublicUrl(fileName);
+    setPreviewUrl(data.publicUrl);
+    setPreviewName(fileName);
+  };
+
   const cleanStorage = async () => {
     if (orphanedFiles.length === 0) return;
-    if (!confirm(`Hapus ${orphanedFiles.length} file sampah?`)) return;
+    if (!confirm(`Hapus ${orphanedFiles.length} file sampah? Tindakan ini tidak dapat dibatalkan.`)) return;
     setLoading(true);
     try {
       const fileNamesToDelete = orphanedFiles.map(f => f.name);
       const { error } = await supabase.storage.from('report-photos').remove(fileNamesToDelete);
       if (error) throw error;
-      showSuccess(`${fileNamesToDelete.length} file dihapus.`);
+      showSuccess(`${fileNamesToDelete.length} file berhasil dibersihkan.`);
       await analyzeStorage();
     } catch (error: any) {
       showError("Gagal membersihkan: " + error.message);
@@ -251,20 +249,42 @@ const Maintenance = () => {
             </Card>
 
             <Card className="shadow-md border-t-4 border-t-blue-600">
-              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage</CardTitle></CardHeader>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage</CardTitle>
+                <p className="text-xs text-slate-500">Sistem akan membandingkan file di Storage dengan data di Database. File yang tidak memiliki referensi di database dianggap sebagai file sampah.</p>
+              </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-wrap gap-3">
                   <Button onClick={analyzeStorage} disabled={analyzing || loading} className="bg-blue-600">{analyzing ? "Menganalisis..." : "Mulai Analisis"}</Button>
                   {orphanedFiles.length > 0 && <Button onClick={cleanStorage} disabled={loading} variant="destructive">Hapus {orphanedFiles.length} File Sampah</Button>}
                 </div>
+
                 {orphanedFiles.length > 0 && (
-                  <div className="max-h-[300px] overflow-y-auto border rounded-lg divide-y bg-slate-50">
-                    {orphanedFiles.map((file, i) => (
-                      <div key={i} className="p-3 flex items-center justify-between text-xs hover:bg-blue-50 cursor-pointer">
-                        <div className="flex items-center gap-2"><Eye className="h-3 w-3 text-slate-400" /><span>{file.name}</span></div>
-                        <Badge variant="outline" className="text-[10px]">{formatSize(file.metadata?.size || 0)}</Badge>
-                      </div>
-                    ))}
+                  <div className="space-y-4">
+                    <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-3 text-amber-800 text-xs">
+                      <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                      <p><strong>Mengapa file ini ada?</strong> File sampah biasanya berasal dari foto yang diganti saat edit laporan, laporan yang dihapus permanen, atau kegagalan koneksi saat proses unggah. Klik nama file untuk melihat isinya.</p>
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto border rounded-lg divide-y bg-slate-50">
+                      {orphanedFiles.map((file, i) => (
+                        <div 
+                          key={i} 
+                          className="p-3 flex items-center justify-between text-xs hover:bg-blue-50 cursor-pointer transition-colors group"
+                          onClick={() => handlePreview(file.name)}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 bg-slate-200 rounded flex items-center justify-center text-slate-400 group-hover:bg-blue-100 group-hover:text-blue-500">
+                              <Eye size={14} />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="font-medium text-slate-700">{file.name}</span>
+                              <span className="text-[10px] text-slate-400">Klik untuk preview</span>
+                            </div>
+                          </div>
+                          <Badge variant="outline" className="text-[10px]">{formatSize(file.metadata?.size || 0)}</Badge>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -392,6 +412,30 @@ const Maintenance = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Dialog Preview Gambar */}
+      <Dialog open={!!previewUrl} onOpenChange={(open) => !open && setPreviewUrl(null)}>
+        <DialogContent className="sm:max-w-[500px] p-0 overflow-hidden bg-black/95 border-none">
+          <DialogHeader className="p-4 bg-white/10 backdrop-blur text-white flex flex-row items-center justify-between space-y-0">
+            <DialogTitle className="text-sm font-medium truncate pr-4">{previewName}</DialogTitle>
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-white hover:bg-white/20" onClick={() => setPreviewUrl(null)}>
+              <X size={18} />
+            </Button>
+          </DialogHeader>
+          <div className="aspect-square w-full flex items-center justify-center p-4">
+            {previewUrl && (
+              <img 
+                src={previewUrl} 
+                alt="Preview" 
+                className="max-w-full max-h-full object-contain shadow-2xl rounded-sm"
+              />
+            )}
+          </div>
+          <div className="p-4 bg-white/10 backdrop-blur text-center">
+            <p className="text-[10px] text-white/60 uppercase font-bold tracking-widest">Verifikasi File Sampah</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
