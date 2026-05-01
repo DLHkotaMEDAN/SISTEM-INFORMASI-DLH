@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
-  User, Shield, Tag, Trash2, Search, Loader2, AlertCircle, RefreshCw, Clock
+  User, Shield, Tag, Trash2, Search, Loader2, AlertCircle, RefreshCw, Clock, Mail
 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
@@ -139,7 +139,7 @@ const UserManagement = () => {
           <Table>
             <TableHeader className="bg-slate-50">
               <TableRow>
-                <TableHead className="w-[200px]">Username</TableHead>
+                <TableHead className="w-[200px]">Username / Email</TableHead>
                 <TableHead className="w-[180px]">Role / Peran</TableHead>
                 <TableHead className="w-[220px]">Kategori (Khusus User)</TableHead>
                 <TableHead className="w-[180px]">Update Terakhir</TableHead>
@@ -155,7 +155,10 @@ const UserManagement = () => {
                         <div className="h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 shrink-0">
                           <User size={16} />
                         </div>
-                        <span className="truncate max-w-[150px]">{profile.username || "Tanpa Nama"}</span>
+                        <div className="flex flex-col">
+                          <span className="truncate max-w-[150px] font-bold">{profile.username || "Tanpa Nama"}</span>
+                          <span className="text-[9px] text-slate-400 flex items-center gap-1"><Mail size={10} /> {profile.id.substring(0, 8)}...</span>
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
@@ -224,7 +227,7 @@ const UserManagement = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-slate-400 italic">
-                    Tidak ada pengguna ditemukan
+                    Tidak ada pengguna ditemukan. Pastikan pengguna baru sudah login sekali agar muncul di sini.
                   </TableCell>
                 </TableRow>
               )}
@@ -238,10 +241,9 @@ const UserManagement = () => {
         <div className="space-y-1">
           <p className="font-bold">Catatan Penting:</p>
           <ul className="list-disc ml-4 space-y-1">
-            <li>Daftar ini menampilkan semua pengguna yang memiliki profil di sistem.</li>
-            <li>Perubahan <strong>Role</strong> akan langsung berdampak pada hak akses pengguna tersebut.</li>
-            <li>Role <strong>Admin BBM</strong> hanya dapat mengelola Laporan BBM & Oli.</li>
-            <li>Menghapus profil di sini hanya menghapus data tambahan (role/kategori), bukan akun login Supabase-nya.</li>
+            <li>Jika user baru tidak muncul, minta user tersebut **Login** sekali ke aplikasi.</li>
+            <li>Perubahan **Role** akan langsung berdampak pada hak akses pengguna tersebut.</li>
+            <li>Role **Admin BBM** hanya dapat mengelola Laporan BBM & Oli.</li>
           </ul>
         </div>
       </div>

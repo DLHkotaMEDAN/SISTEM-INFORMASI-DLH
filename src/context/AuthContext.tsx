@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) ensureProfileExists(session.user);
       else setLoading(false);
     });
 
@@ -40,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) fetchProfile(session.user.id);
+      if (session?.user) ensureProfileExists(session.user);
       else {
         setProfile(null);
         setLoading(false);
@@ -50,18 +50,38 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const ensureProfileExists = async (authUser: User) => {
     try {
+      // 1. Coba ambil profil
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', userId)
+        .eq('id', authUser.id)
         .single();
 
-      if (error) throw error;
-      setProfile(data);
+      if (error && error.code === 'PGRST116') {
+        // Profil tidak ditemukan, buat baru
+        const username = authUser.email?.split('@')[0] || 'User Baru';
+        const { data: newProfile, error: createError } = await supabase
+          .from('profiles')
+          .insert([
+            { 
+              id: authUser.id, 
+              username: username, 
+              role: 'user',
+              updated_at: new Date().toISOString()
+            }
+          ])
+          .select()
+          .single();
+
+        if (createError) throw createError;
+        setProfile(newProfile);
+      } else if (data) {
+        setProfile(data);
+      }
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("Error in ensureProfileExists:", error);
     } finally {
       setLoading(false);
     }
