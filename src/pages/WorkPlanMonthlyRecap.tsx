@@ -114,9 +114,10 @@ const WorkPlanMonthlyRecap = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
-      <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2 md:gap-4">
+      <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Grup Filter */}
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4 h-9">
               <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
             </Button>
@@ -128,6 +129,10 @@ const WorkPlanMonthlyRecap = () => {
               <SelectTrigger className="w-[80px] md:w-[100px] h-10 text-xs md:text-sm"><SelectValue placeholder="Tahun" /></SelectTrigger>
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
+          </div>
+
+          {/* Grup Aksi */}
+          <div className="flex items-center justify-end gap-2 border-t md:border-t-0 pt-3 md:pt-0">
             <Select value={signatureMode} onValueChange={(v) => setSignatureMode(v as SignatureMode)}>
               <SelectTrigger className="w-[40px] md:w-[180px] bg-amber-50 border-amber-200 h-10 text-amber-700 font-medium p-0 md:px-3 flex justify-center">
                 <div className="flex items-center gap-2">
@@ -140,21 +145,20 @@ const WorkPlanMonthlyRecap = () => {
                 <SelectItem value="without-signature">Tanpa Tanda Tangan</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex items-center gap-2">
             {isLoggedIn && (
               <Button onClick={() => navigate('/work-plans/create')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-2 md:px-4 h-10">
                 <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Tambah Baru</span>
               </Button>
             )}
             <Button onClick={() => window.print()} className="bg-blue-600 px-2 md:px-4 h-10">
-              <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span>
+              <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak</span>
             </Button>
           </div>
         </div>
       </div>
 
       <div className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
+        {/* ... (konten cetak tetap sama) */}
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
           <img src={LOGO_MEDAN_URL} className="h-20 w-20 object-contain" alt="Logo Medan" />
           <div className="text-center">
@@ -269,8 +273,8 @@ const WorkPlanMonthlyRecap = () => {
 
                         {rowIndex === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
+                            <td className="border-2 border-black p-1 text-center align-top rowSpan={maxGroupRows}">{group.coordinator}</td>
+                            <td className="border-2 border-black p-1 text-center align-top rowSpan={maxGroupRows}">{group.members}</td>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
                             {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
                           </>
