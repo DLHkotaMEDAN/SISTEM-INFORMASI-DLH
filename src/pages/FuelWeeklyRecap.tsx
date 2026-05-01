@@ -40,12 +40,7 @@ const FuelWeeklyRecap = () => {
         const rDate = parseISO(r.date);
         return isWithinInterval(rDate, { start: weekStart, end: weekEnd });
       });
-      // Urutkan berdasarkan tanggal, wilayah, lalu tim
-      filtered.sort((a, b) => 
-        a.date.localeCompare(b.date) || 
-        a.region.localeCompare(b.region) || 
-        a.team.localeCompare(b.team)
-      );
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -58,11 +53,9 @@ const FuelWeeklyRecap = () => {
     const dateSpans: number[] = [];
     const regionSpans: number[] = [];
     const teamSpans: number[] = [];
-    
     let currentDate = "";
     let currentRegionKey = "";
     let currentTeamKey = "";
-    
     let dateCount = 0;
     let dateStartIndex = 0;
     let regionCount = 0;
@@ -79,7 +72,6 @@ const FuelWeeklyRecap = () => {
     })));
 
     flatItems.forEach((item, index) => {
-      // Date Span
       if (item.date !== currentDate) {
         if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
         currentDate = item.date;
@@ -89,8 +81,6 @@ const FuelWeeklyRecap = () => {
         dateCount++;
         dateSpans[index] = 0;
       }
-
-      // Region Span (within same date)
       const regionKey = `${item.date}-${item.region}`;
       if (regionKey !== currentRegionKey) {
         if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
@@ -101,8 +91,6 @@ const FuelWeeklyRecap = () => {
         regionCount++;
         regionSpans[index] = 0;
       }
-
-      // Team Span (within same date and region)
       const teamKey = `${item.date}-${item.region}-${item.team}`;
       if (teamKey !== currentTeamKey) {
         if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
@@ -114,11 +102,9 @@ const FuelWeeklyRecap = () => {
         teamSpans[index] = 0;
       }
     });
-
     if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
     if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
     if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
-
     return { flatItems, dateSpans, regionSpans, teamSpans };
   };
 
@@ -127,18 +113,22 @@ const FuelWeeklyRecap = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/fuel-reports')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-            <div className="relative">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="px-2 md:px-4">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+            </Button>
+            <div className="relative flex-1 md:flex-none">
               <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-[200px]" />
+              <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-full md:w-[200px]" />
             </div>
-            <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-100">
+            <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-100 w-full md:w-auto text-center">
               {format(weekStart, 'dd MMM', { locale: localeId })} - {format(weekEnd, 'dd MMM yyyy', { locale: localeId })}
             </div>
           </div>
-          <Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak</Button>
+          <Button onClick={() => window.print()} className="bg-blue-600 w-full md:w-auto">
+            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+          </Button>
         </div>
       </div>
 
@@ -152,12 +142,10 @@ const FuelWeeklyRecap = () => {
           </div>
           <img src={LOGO_DLH_URL} className="h-20 w-20 object-contain" alt="Logo DLH" />
         </div>
-
         <div className="text-center mb-8">
           <h3 className="text-xl font-bold underline uppercase text-orange-700">REKAP MINGGUAN PEMAKAIAN BBM & OLI</h3>
           <p className="text-lg font-bold">Periode: {format(weekStart, 'dd MMMM', { locale: localeId })} s/d {format(weekEnd, 'dd MMMM yyyy', { locale: localeId })}</p>
         </div>
-
         <table className="w-full border-collapse border-2 border-black text-[10px] table-fixed">
           <thead>
             <tr className="bg-slate-100">
@@ -181,35 +169,15 @@ const FuelWeeklyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  
-                  {dateSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>
-                      {item.date}
-                    </td>
-                  )}
-
-                  {regionSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
-                      {item.region}
-                    </td>
-                  )}
-
-                  {teamSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
-                      {item.team}
-                    </td>
-                  )}
-
+                  {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
+                  {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
                   <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                  <td className="border-2 border-black p-1 break-words">
-                    {item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}
-                  </td>
-                  <td className="border-2 border-black p-1 italic">
-                    {item.item_remarks || item.remarks || "-"}
-                  </td>
+                  <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                  <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
                 </tr>
               ))
             ) : (
@@ -217,7 +185,6 @@ const FuelWeeklyRecap = () => {
             )}
           </tbody>
         </table>
-
         <div className="mt-12 flex justify-end">
           <div className="text-center w-64">
             <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -227,7 +194,6 @@ const FuelWeeklyRecap = () => {
           </div>
         </div>
       </div>
-
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; }

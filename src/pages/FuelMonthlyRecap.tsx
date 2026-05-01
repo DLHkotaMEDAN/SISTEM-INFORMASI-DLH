@@ -45,12 +45,7 @@ const FuelMonthlyRecap = () => {
         return (rDate.getMonth() + 1).toString() === selectedMonth && 
                rDate.getFullYear().toString() === selectedYear;
       });
-      // Urutkan berdasarkan tanggal, wilayah, lalu tim
-      filtered.sort((a, b) => 
-        a.date.localeCompare(b.date) || 
-        a.region.localeCompare(b.region) || 
-        a.team.localeCompare(b.team)
-      );
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -63,11 +58,9 @@ const FuelMonthlyRecap = () => {
     const dateSpans: number[] = [];
     const regionSpans: number[] = [];
     const teamSpans: number[] = [];
-    
     let currentDate = "";
     let currentRegionKey = "";
     let currentTeamKey = "";
-    
     let dateCount = 0;
     let dateStartIndex = 0;
     let regionCount = 0;
@@ -93,7 +86,6 @@ const FuelMonthlyRecap = () => {
         dateCount++;
         dateSpans[index] = 0;
       }
-
       const regionKey = `${item.date}-${item.region}`;
       if (regionKey !== currentRegionKey) {
         if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
@@ -104,7 +96,6 @@ const FuelMonthlyRecap = () => {
         regionCount++;
         regionSpans[index] = 0;
       }
-
       const teamKey = `${item.date}-${item.region}-${item.team}`;
       if (teamKey !== currentTeamKey) {
         if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
@@ -116,11 +107,9 @@ const FuelMonthlyRecap = () => {
         teamSpans[index] = 0;
       }
     });
-
     if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
     if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
     if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
-
     return { flatItems, dateSpans, regionSpans, teamSpans };
   };
 
@@ -129,19 +118,23 @@ const FuelMonthlyRecap = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/fuel-reports')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="px-2 md:px-4">
+              <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
+            </Button>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Bulan" /></SelectTrigger>
+              <SelectTrigger className="w-[130px] md:w-[150px]"><SelectValue placeholder="Bulan" /></SelectTrigger>
               <SelectContent>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
+              <SelectTrigger className="w-[90px] md:w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
               <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
             </Select>
           </div>
-          <Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak</Button>
+          <Button onClick={() => window.print()} className="bg-blue-600 w-full md:w-auto">
+            <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+          </Button>
         </div>
       </div>
 
@@ -155,12 +148,10 @@ const FuelMonthlyRecap = () => {
           </div>
           <img src={LOGO_DLH_URL} className="h-20 w-20 object-contain" alt="Logo DLH" />
         </div>
-
         <div className="text-center mb-8">
           <h3 className="text-xl font-bold underline uppercase text-orange-700">REKAP BULANAN PEMAKAIAN BBM & OLI</h3>
           <p className="text-lg font-bold">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
         </div>
-
         <table className="w-full border-collapse border-2 border-black text-[10px] table-fixed">
           <thead>
             <tr className="bg-slate-100">
@@ -184,35 +175,15 @@ const FuelMonthlyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  
-                  {dateSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>
-                      {item.date}
-                    </td>
-                  )}
-
-                  {regionSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
-                      {item.region}
-                    </td>
-                  )}
-
-                  {teamSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
-                      {item.team}
-                    </td>
-                  )}
-
+                  {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
+                  {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
                   <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                  <td className="border-2 border-black p-1 break-words">
-                    {item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}
-                  </td>
-                  <td className="border-2 border-black p-1 italic">
-                    {item.item_remarks || item.remarks || "-"}
-                  </td>
+                  <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                  <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
                 </tr>
               ))
             ) : (
@@ -220,7 +191,6 @@ const FuelMonthlyRecap = () => {
             )}
           </tbody>
         </table>
-
         <div className="mt-12 flex justify-end">
           <div className="text-center w-64">
             <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
@@ -230,7 +200,6 @@ const FuelMonthlyRecap = () => {
           </div>
         </div>
       </div>
-
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; }
