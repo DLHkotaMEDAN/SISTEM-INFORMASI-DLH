@@ -8,9 +8,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, FileText, MapPin, Calendar, 
-  Trash2, Eye, Search, Edit, Cloud, Printer, FileBarChart,
-  LogOut, LogIn, FilterX, ShieldCheck, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, ShieldAlert
+  Trash2, Eye, Search, Edit, Cloud, Printer,
+  LogOut, LogIn, FilterX, Database, ChevronDown,
+  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, ShieldAlert, Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -21,7 +21,6 @@ import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { useAuth } from '@/context/AuthContext';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
-import { auditLogService } from '@/services/auditLogService';
 import TrashDialog from '@/components/TrashDialog';
 import { cn } from "@/lib/utils";
 import {
@@ -78,15 +77,20 @@ const Index = () => {
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan && !isAdminHarian;
 
   useEffect(() => {
+    // Jika masih loading auth, jangan lakukan apa-apa dulu
+    if (authLoading) return;
+
+    // Jika role adalah admin_bbm, hentikan loading data laporan harian
     if (isAdminBbm) {
       setLoading(false);
       return;
     }
+
     loadData();
     if (isUserRestricted && profile?.category) {
       setSelectedCategory(profile.category);
     }
-  }, [profile, isLoggedIn, isAdminBbm]);
+  }, [profile, isLoggedIn, isAdminBbm, authLoading]);
 
   const loadData = async () => {
     try {
@@ -205,6 +209,15 @@ const Index = () => {
     
     return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50">
+        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+        <p className="text-slate-500 font-medium animate-pulse">Memverifikasi Hak Akses...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50">

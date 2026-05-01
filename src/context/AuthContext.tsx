@@ -17,6 +17,7 @@ interface AuthContextType {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -27,21 +28,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // Jika profil belum ada, buatkan default
+          const { data: newData, error: createError } = await supabase
+            .from('profiles')
+            .insert([{ id: userId, role: 'user', updated_at: new Date().toISOString() }])
+            .select()
+            .single();
+          if (!createError) setProfile(newData);
+        }
+      } else {
+        setProfile(data);
+      }
+    } catch (error) {
+      console.error("Error fetching profile:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    // Get initial session
+    // Ambil session awal
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) ensureProfileExists(session.user);
-      else setLoading(false);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setLoading(false);
+      }
     });
 
-    // Listen for auth changes
+    // Pantau perubahan auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) ensureProfileExists(session.user);
-      else {
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
         setProfile(null);
         setLoading(false);
       }
@@ -50,49 +83,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const ensureProfileExists = async (authUser: User) => {
-    try {
-      // 1. Coba ambil profil
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // Profil tidak ditemukan, buat baru
-        const username = authUser.email?.split('@')[0] || 'User Baru';
-        const { data: newProfile, error: createError } = await supabase
-          .from('profiles')
-          .insert([
-            { 
-              id: authUser.id, 
-              username: username, 
-              role: 'user',
-              updated_at: new Date().toISOString()
-            }
-          ])
-          .select()
-          .single();
-
-        if (createError) throw createError;
-        setProfile(newProfile);
-      } else if (data) {
-        setProfile(data);
-      }
-    } catch (error) {
-      console.error("Error in ensureProfileExists:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const signOut = async () => {
     await supabase.auth.signOut();
   };
 
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ session, user, profile, loading, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
