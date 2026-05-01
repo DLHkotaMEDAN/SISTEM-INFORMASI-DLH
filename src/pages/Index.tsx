@@ -118,7 +118,6 @@ const Index = () => {
       try {
         await reportService.deleteReport(report.id);
         
-        // Catat Log
         if (session?.user) {
           await auditLogService.logAction({
             action: 'DELETE',
@@ -159,7 +158,6 @@ const Index = () => {
       try {
         await workPlanService.deleteWorkPlan(plan.id);
 
-        // Catat Log
         if (session?.user) {
           await auditLogService.logAction({
             action: 'DELETE',
@@ -349,9 +347,6 @@ const Index = () => {
                   <Plus className="h-4 w-4 md:mr-2" /> 
                   <span className="hidden md:inline">
                     {activeTab === "reports" ? "Input Laporan Baru" : "Buat Rencana Baru"}
-                  </span>
-                  <span className="md:hidden ml-1">
-                    {activeTab === "reports" ? "Laporan" : "Rencana"}
                   </span>
                 </Button>
               </div>

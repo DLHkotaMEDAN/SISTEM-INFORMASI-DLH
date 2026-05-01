@@ -250,7 +250,7 @@ const WeeklyRecap = () => {
         }
       });
       if (error) throw error;
-      return data;
+return data;
     } catch (error: any) {
       console.error(error);
       showError("Gagal mengunggah: " + error.message);
