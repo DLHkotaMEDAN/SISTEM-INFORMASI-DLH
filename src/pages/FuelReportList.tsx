@@ -135,26 +135,41 @@ const FuelReportList = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {!isAdminBbm && (
-              <Button variant="ghost" onClick={() => navigate('/')}>
-                <ArrowLeft className="mr-2 h-4 w-4" /> Beranda
-              </Button>
-            )}
-            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
-              <Fuel className="text-orange-600" /> Laporan BBM & Oli
-              {!loading && <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">{filteredReports.length}</Badge>}
-            </h1>
+        {/* Header Section */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 md:gap-4">
+              {!isAdminBbm && (
+                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-9 w-9">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+              )}
+              <div className="flex flex-col">
+                <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
+                  <Fuel className="text-orange-600 h-5 w-5 md:h-6 md:w-6" /> Laporan BBM & Oli
+                  {!loading && <Badge variant="secondary" className="ml-1 bg-orange-100 text-orange-700 text-[10px] md:text-xs">{filteredReports.length}</Badge>}
+                </h1>
+              </div>
+            </div>
+            
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:bg-red-50 rounded-full">
+              <LogOut size={20} />
+            </Button>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Action Buttons Row */}
+          <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-white border-slate-200 h-10 px-2 md:px-4">
-                  <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span> <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
+                <Button variant="outline" className="bg-white border-slate-200 h-10 px-3 flex-1 md:flex-none justify-between md:justify-center">
+                  <div className="flex items-center">
+                    <Printer className="h-4 w-4 mr-2" /> 
+                    <span className="text-xs md:text-sm">Cetak Rekap</span>
+                  </div>
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuContent align="start" className="w-48">
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="cursor-pointer py-2">
                   <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
                 </DropdownMenuItem>
@@ -173,7 +188,7 @@ const FuelReportList = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={loadReports} disabled={loading} className="h-10 w-10 bg-white border-slate-200">
+                  <Button variant="outline" size="icon" onClick={loadReports} disabled={loading} className="h-10 w-10 bg-white border-slate-200 shrink-0">
                     <RefreshCw className={loading ? "animate-spin" : ""} size={18} />
                   </Button>
                 </TooltipTrigger>
@@ -181,25 +196,13 @@ const FuelReportList = () => {
               </Tooltip>
             </TooltipProvider>
 
-            <Button onClick={() => navigate('/fuel-reports/create')} className="bg-blue-600 hover:bg-blue-700 h-10 px-2 md:px-4">
-              <Plus className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Input Baru</span>
+            <Button onClick={() => navigate('/fuel-reports/create')} className="bg-blue-600 hover:bg-blue-700 h-10 px-4 flex-1 md:flex-none font-bold shadow-sm">
+              <Plus className="mr-2 h-4 w-4" /> <span className="text-xs md:text-sm">Input Baru</span>
             </Button>
-
-            <div className="border-l pl-2 ml-1">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-10 w-10 text-red-500 hover:bg-red-50 rounded-full">
-                      <LogOut size={20} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Keluar Sistem</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
           </div>
         </div>
 
+        {/* Filter Section */}
         <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-4 space-y-1.5">
@@ -208,7 +211,7 @@ const FuelReportList = () => {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
                   placeholder="Ketik kata kunci..." 
-                  className="pl-10 bg-slate-50 border-slate-200 h-10" 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
                   value={searchQuery} 
                   onChange={(e) => setSearchQuery(e.target.value)} 
                 />
@@ -221,7 +224,7 @@ const FuelReportList = () => {
                 <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <Input 
                   type="date" 
-                  className="pl-10 bg-slate-50 border-slate-200 h-10" 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
                   value={selectedDate} 
                   onChange={(e) => setSelectedDate(e.target.value)} 
                 />
@@ -231,7 +234,7 @@ const FuelReportList = () => {
             <div className="md:col-span-3 space-y-1.5">
               <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
-                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10 text-sm", selectedDate && "opacity-50")}>
                   <SelectValue placeholder="Pilih Bulan" />
                 </SelectTrigger>
                 <SelectContent>
@@ -244,7 +247,7 @@ const FuelReportList = () => {
             <div className="md:col-span-2 space-y-1.5">
               <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
               <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
-                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10 text-sm", selectedDate && "opacity-50")}>
                   <SelectValue placeholder="Pilih Tahun" />
                 </SelectTrigger>
                 <SelectContent>
@@ -255,15 +258,20 @@ const FuelReportList = () => {
             </div>
 
             <div className="md:col-span-1 flex justify-end">
-              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0">
-                <FilterX className="h-5 w-5" />
+              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-full md:w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0 border border-dashed md:border-none">
+                <FilterX className="h-5 w-5 md:mr-0 mr-2" />
+                <span className="md:hidden text-xs font-bold">Reset Filter</span>
               </Button>
             </div>
           </div>
         </div>
 
+        {/* List Section */}
         {loading ? (
-          <div className="text-center py-20 text-slate-500">Memuat data...</div>
+          <div className="flex flex-col items-center justify-center py-20 gap-3">
+            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            <p className="text-slate-500 font-medium animate-pulse">Memuat data...</p>
+          </div>
         ) : filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map((report) => (
