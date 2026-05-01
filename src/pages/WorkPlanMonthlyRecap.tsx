@@ -114,7 +114,7 @@ const WorkPlanMonthlyRecap = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
-      <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4bg-white rounded-xl shadow-sm border">
+      <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4">
             <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4 h-9">
@@ -144,11 +144,11 @@ const WorkPlanMonthlyRecap = () => {
           <div className="flex items-center gap-2">
             {isLoggedIn && (
               <Button onClick={() => navigate('/work-plans/create')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 px-2 md:px-4 h-10">
-                <Plus className="mr-2 h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Tambah Baru</span>
+                <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Tambah Baru</span>
               </Button>
             )}
             <Button onClick={() => window.print()} className="bg-blue-600 px-2 md:px-4 h-10">
-              <Printer className="mr-2 h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span>
+              <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span>
             </Button>
           </div>
         </div>
