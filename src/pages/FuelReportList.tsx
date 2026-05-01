@@ -15,6 +15,14 @@ import { fuelService } from '@/services/fuelService';
 import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,12 +36,24 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+const months = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
 const FuelReportList = () => {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const [reports, setReports] = useState<FuelReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  
+  // Filter States
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("semua");
+  const [selectedYear, setSelectedYear] = useState("semua");
 
   const isAdminBbm = profile?.role === 'admin_bbm';
   const isAllowed = profile?.role === 'admin' || isAdminBbm;
@@ -82,17 +102,39 @@ const FuelReportList = () => {
     }
   };
 
-  const filteredReports = reports.filter(r => 
-    r.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    r.items?.some(item => item.location.street.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedDate("");
+    setSelectedMonth("semua");
+    setSelectedYear("semua");
+  };
+
+  const filteredReports = reports.filter(r => {
+    const search = searchQuery.toLowerCase();
+    const reportDate = new Date(r.date);
+    const m = (reportDate.getMonth() + 1).toString();
+    const y = reportDate.getFullYear().toString();
+
+    const matchSearch = r.team.toLowerCase().includes(search) ||
+      r.region.toLowerCase().includes(search) ||
+      r.items?.some(item => item.location.street.toLowerCase().includes(search));
+
+    const matchSpecificDate = !selectedDate || r.date === selectedDate;
+    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+    const matchYear = selectedYear === "semua" || y === selectedYear;
+
+    if (selectedDate) {
+      return matchSearch && matchSpecificDate;
+    }
+
+    return matchSearch && matchMonth && matchYear;
+  });
 
   if (!isAllowed) return null;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             {!isAdminBbm && (
@@ -102,6 +144,7 @@ const FuelReportList = () => {
             )}
             <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2">
               <Fuel className="text-orange-600" /> Laporan BBM & Oli
+              {!loading && <Badge variant="secondary" className="ml-2 bg-orange-100 text-orange-700">{filteredReports.length}</Badge>}
             </h1>
           </div>
           <div className="flex items-center gap-2">
@@ -157,14 +200,66 @@ const FuelReportList = () => {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl shadow-sm border flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input placeholder="Cari tim, wilayah, atau lokasi..." className="pl-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="md:col-span-4 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah / Lokasi</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Ketik kata kunci..." 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10" 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tanggal Spesifik</label>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  type="date" 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10" 
+                  value={selectedDate} 
+                  onChange={(e) => setSelectedDate(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-3 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Bulan</SelectItem>
+                  {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
+              <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                  <SelectValue placeholder="Pilih Tahun" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Tahun</SelectItem>
+                  {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-1 flex justify-end">
+              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0">
+                <FilterX className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
-          <Button variant="ghost" onClick={() => setSearchQuery("")} className="text-slate-400 hover:text-red-500">
-            <FilterX className="mr-2 h-4 w-4" /> Reset
-          </Button>
         </div>
 
         {loading ? (
@@ -181,7 +276,7 @@ const FuelReportList = () => {
                     </div>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-reports/edit/${report.id}`)}><Edit size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600" onClick={() => handleDelete(report.id)}><Trash2 size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(report.id)}><Trash2 size={14} /></Button>
                     </div>
                   </div>
                   <CardTitle className="text-base mt-2">{report.team}</CardTitle>
@@ -213,7 +308,12 @@ const FuelReportList = () => {
           </div>
         ) : (
           <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300 text-slate-500">
-            Tidak ada laporan ditemukan
+            <div className="mx-auto w-12 h-12 bg-slate-50 rounded-full flex items-center justify-center mb-3">
+              <Search className="text-slate-300 h-6 w-6" />
+            </div>
+            <p className="font-medium">Tidak ada laporan ditemukan</p>
+            <p className="text-xs mt-1">Coba ubah filter pencarian atau klik tombol reset</p>
+            <Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Semua Filter</Button>
           </div>
         )}
       </div>
