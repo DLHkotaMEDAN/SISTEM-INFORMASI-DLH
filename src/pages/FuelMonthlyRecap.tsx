@@ -45,7 +45,12 @@ const FuelMonthlyRecap = () => {
         return (rDate.getMonth() + 1).toString() === selectedMonth && 
                rDate.getFullYear().toString() === selectedYear;
       });
-      filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region));
+      // Urutkan berdasarkan tanggal, wilayah, lalu tim
+      filtered.sort((a, b) => 
+        a.date.localeCompare(b.date) || 
+        a.region.localeCompare(b.region) || 
+        a.team.localeCompare(b.team)
+      );
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -54,30 +59,72 @@ const FuelMonthlyRecap = () => {
     }
   };
 
-  const getFlatData = () => {
-    const flatItems = reports.flatMap(r => r.items.map(item => ({ ...item, date: r.date, region: r.region, team: r.team, remarks: r.remarks })));
-    const spans: number[] = [];
-    let currentRegion = "";
-    let count = 0;
-    let startIndex = 0;
+  const getTableSpans = () => {
+    const dateSpans: number[] = [];
+    const regionSpans: number[] = [];
+    const teamSpans: number[] = [];
+    
+    let currentDate = "";
+    let currentRegionKey = "";
+    let currentTeamKey = "";
+    
+    let dateCount = 0;
+    let dateStartIndex = 0;
+    let regionCount = 0;
+    let regionStartIndex = 0;
+    let teamCount = 0;
+    let teamStartIndex = 0;
+
+    const flatItems = reports.flatMap(r => r.items.map(item => ({ 
+      ...item, 
+      date: r.date, 
+      region: r.region, 
+      team: r.team, 
+      remarks: r.remarks 
+    })));
 
     flatItems.forEach((item, index) => {
-      const key = `${item.date}-${item.region}`;
-      if (key !== currentRegion) {
-        if (count > 0) spans[startIndex] = count;
-        currentRegion = key;
-        count = 1;
-        startIndex = index;
+      if (item.date !== currentDate) {
+        if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
+        currentDate = item.date;
+        dateCount = 1;
+        dateStartIndex = index;
       } else {
-        count++;
-        spans[index] = 0;
+        dateCount++;
+        dateSpans[index] = 0;
+      }
+
+      const regionKey = `${item.date}-${item.region}`;
+      if (regionKey !== currentRegionKey) {
+        if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
+        currentRegionKey = regionKey;
+        regionCount = 1;
+        regionStartIndex = index;
+      } else {
+        regionCount++;
+        regionSpans[index] = 0;
+      }
+
+      const teamKey = `${item.date}-${item.region}-${item.team}`;
+      if (teamKey !== currentTeamKey) {
+        if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
+        currentTeamKey = teamKey;
+        teamCount = 1;
+        teamStartIndex = index;
+      } else {
+        teamCount++;
+        teamSpans[index] = 0;
       }
     });
-    if (count > 0) spans[startIndex] = count;
-    return { flatItems, spans };
+
+    if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
+    if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
+    if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
+
+    return { flatItems, dateSpans, regionSpans, teamSpans };
   };
 
-  const { flatItems, spans } = getFlatData();
+  const { flatItems, dateSpans, regionSpans, teamSpans } = getTableSpans();
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -137,13 +184,25 @@ const FuelMonthlyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  <td className="border-2 border-black p-1 text-center">{item.date}</td>
-                  {spans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={spans[idx]}>
+                  
+                  {dateSpans[idx] > 0 && (
+                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>
+                      {item.date}
+                    </td>
+                  )}
+
+                  {regionSpans[idx] > 0 && (
+                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
                       {item.region}
                     </td>
                   )}
-                  <td className="border-2 border-black p-1 text-center">{item.team}</td>
+
+                  {teamSpans[idx] > 0 && (
+                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
+                      {item.team}
+                    </td>
+                  )}
+
                   <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
