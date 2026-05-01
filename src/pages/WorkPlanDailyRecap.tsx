@@ -123,7 +123,7 @@ const WorkPlanDailyRecap = () => {
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 md:gap-4">
-            <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4">
+            <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4 h-9">
               <ArrowLeft className="h-4 w-4 md:mr-2" /> 
               <span className="hidden md:inline">Kembali</span>
             </Button>
@@ -286,8 +286,8 @@ const WorkPlanDailyRecap = () => {
 
                         {rowIndex === 0 && (
                           <>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
-                            <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
+                            <td className="border-2 border-black p-1 text-center align-top rowSpan={maxGroupRows}">{group.coordinator}</td>
+                            <td className="border-2 border-black p-1 text-center align-top rowSpan={maxGroupRows}">{group.members}</td>
                             <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
                             {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
                           </>

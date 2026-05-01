@@ -48,27 +48,27 @@ const ReportDetail = () => {
     <div className="min-h-screen bg-slate-100 p-4 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6">
         <div className="flex items-center justify-between no-print">
-          <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-4">
+          <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-4 h-9">
             <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
           </Button>
           
           {isLoggedIn ? (
             <div className="flex gap-2 items-center">
               {isPimpinan && (
-                <Badge className="bg-amber-100 text-amber-700 border-amber-200 h-9 px-2 md:px-4 mr-1 md:mr-2">
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200 h-9 px-2 md:px-4">
                   <ShieldCheck className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Mode Pantau</span>
                 </Badge>
               )}
               <Button 
                 variant="outline" 
                 onClick={() => navigate(`/edit/${report.id}`)}
-                className="px-2 md:px-4"
+                className="px-2 md:px-4 h-9"
               >
                 <Edit className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Edit</span>
               </Button>
               <Button 
                 variant="destructive" 
-                className={cn("px-2 md:px-4", isPimpinan && "opacity-50 cursor-not-allowed")}
+                className={cn("px-2 md:px-4 h-9", isPimpinan && "opacity-50 cursor-not-allowed")}
                 disabled={isPimpinan}
                 onClick={async () => { 
                   if (isPimpinan) return;
@@ -82,7 +82,7 @@ const ReportDetail = () => {
               </Button>
             </div>
           ) : (
-            <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600 px-2 md:px-4">
+            <Button variant="outline" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600 px-2 md:px-4 h-9">
               <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk untuk Edit</span>
             </Button>
           )}

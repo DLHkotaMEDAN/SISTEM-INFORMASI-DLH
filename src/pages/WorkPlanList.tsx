@@ -158,7 +158,7 @@ const WorkPlanList = () => {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 md:gap-4">
-            <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-3">
+            <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-3 h-9">
               <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Beranda</span>
             </Button>
             <div className="flex flex-col">
@@ -177,7 +177,7 @@ const WorkPlanList = () => {
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-8 md:h-10 w-8 md:w-10 bg-white border-slate-200">
+                  <Button variant="outline" size="icon" onClick={loadPlans} disabled={loading} className="h-9 w-9 bg-white border-slate-200">
                     <RefreshCw className={cn("h-4 w-4 text-slate-600", loading && "animate-spin")} />
                   </Button>
                 </TooltipTrigger>
@@ -187,7 +187,7 @@ const WorkPlanList = () => {
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="bg-white px-2 md:px-3 h-8 md:h-10 border-slate-200">
+                <Button variant="outline" className="bg-white px-2 md:px-3 h-9 border-slate-200">
                   <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span> <ChevronDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -205,11 +205,11 @@ const WorkPlanList = () => {
             </DropdownMenu>
 
             {isLoggedIn ? (
-              <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 hover:bg-blue-700 px-2 md:px-4 h-8 md:h-10 shadow-sm">
+              <Button onClick={() => navigate('/work-plans/create')} className="bg-blue-600 hover:bg-blue-700 px-2 md:px-4 h-9 shadow-sm">
                 <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana Baru</span>
               </Button>
             ) : (
-              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-8 md:h-9 px-2 md:px-4">
+              <Button onClick={() => navigate('/login')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-9 px-2 md:px-4">
                 <LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span>
               </Button>
             )}
