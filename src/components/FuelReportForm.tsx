@@ -9,14 +9,26 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Save, Loader2, Fuel, MapPin, Info, Plus, Trash2, MessageSquare } from 'lucide-react';
+import { 
+  ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
+  Plus, Trash2, MessageSquare, HelpCircle, Check, X 
+} from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { FuelReport, FuelType } from '@/types/fuelReport';
 import { fuelService } from '@/services/fuelService';
 import { medanDistricts } from '@/data/medan-districts';
 import { useAuth } from '@/context/AuthContext';
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 const regions = [
   "Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"
@@ -36,6 +48,7 @@ const usageItemSchema = z.object({
   fuel_type: z.string().min(1, "Jenis wajib dipilih"),
   amount: z.coerce.number().min(0, "Jumlah tidak boleh negatif"),
   item_remarks: z.string().optional().default(""),
+  is_location_same: z.boolean().optional().default(false),
   location: z.object({
     street: z.string().min(1, "Jalan wajib diisi"),
     subDistrict: z.string().optional().default(""),
@@ -62,6 +75,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const { profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customTeamMode, setCustomTeamMode] = useState(false);
+  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -77,6 +91,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         fuel_type: "Pertamax", 
         amount: 0,
         item_remarks: "",
+        is_location_same: false,
         location: { street: "", subDistrict: "", village: "" }
       }],
       remarks: "",
@@ -100,6 +115,29 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   };
 
   const vehicleSuggestions = getVehicleSuggestions();
+
+  const handleAddClick = () => {
+    if (selectedTeam === "Tim Pohon" && fields.length > 0) {
+      setShowLocationPrompt(true);
+    } else {
+      performAppend(false);
+    }
+  };
+
+  const performAppend = (isSame: boolean) => {
+    const lastItem = fields[fields.length - 1];
+    const lastLocation = form.getValues(`items.${fields.length - 1}.location`);
+
+    append({ 
+      vehicle_operator: "", 
+      fuel_type: "Pertamax", 
+      amount: 0,
+      item_remarks: "",
+      is_location_same: isSame,
+      location: isSame ? { ...lastLocation } : { street: "", subDistrict: "", village: "" }
+    });
+    setShowLocationPrompt(false);
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (profile?.role !== 'admin') {
@@ -130,9 +168,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
       }
       navigate('/fuel-reports');
     } catch (error: any) {
-      console.error("Database Error:", error);
-      // Menampilkan pesan error spesifik dari Supabase
-      showError(`Gagal simpan: ${error.message || "Cek koneksi atau struktur database"}`);
+      showError(`Gagal simpan: ${error.message || "Terjadi kesalahan database"}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -202,126 +238,80 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         </Card>
 
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold flex items-center gap-2"><Fuel className="text-orange-600" /> Detail Pemakaian & Lokasi</h2>
-            <Button type="button" variant="outline" size="sm" onClick={() => append({ 
-              vehicle_operator: "", 
-              fuel_type: "Pertamax", 
-              amount: 0,
-              item_remarks: "",
-              location: { street: "", subDistrict: "", village: "" }
-            })} className="border-blue-600 text-blue-600">
-              <Plus className="h-4 w-4 mr-1" /> Tambah Pemakaian
-            </Button>
-          </div>
+          <h2 className="text-xl font-bold flex items-center gap-2"><Fuel className="text-orange-600" /> Detail Pemakaian & Lokasi</h2>
 
-          {fields.map((field, index) => (
-            <Card key={field.id} className="border-l-4 border-l-orange-500 relative overflow-hidden">
-              <CardContent className="pt-6 space-y-6">
-                {fields.length > 1 && (
-                  <Button 
-                    type="button" 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute top-2 right-2 text-red-400 hover:text-red-600"
-                    onClick={() => remove(index)}
-                  >
-                    <Trash2 size={18} />
-                  </Button>
-                )}
-                
-                <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-                  <div className="md:col-span-4">
-                    <FormField control={form.control} name={`items.${index}.vehicle_operator`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold">Kendaraan / Alat Operasional</FormLabel>
-                        <FormControl>
-                          <Input 
-                            placeholder="BK 1234 XX / Nama" 
-                            list="vehicle-suggestions"
-                            {...field} 
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
+          {fields.map((field, index) => {
+            const isLocationSame = form.watch(`items.${index}.is_location_same`);
+            return (
+              <Card key={field.id} className="border-l-4 border-l-orange-500 relative overflow-hidden shadow-sm">
+                <CardContent className="pt-6 space-y-6">
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200">Pemakaian #{index + 1}</Badge>
+                    <div className="flex items-center gap-2">
+                      {isLocationSame && <Badge className="bg-green-100 text-green-700 border-green-200"><Check size={10} className="mr-1" /> Lokasi Sama</Badge>}
+                      {fields.length > 1 && (
+                        <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600" onClick={() => remove(index)}><Trash2 size={18} /></Button>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+                    <div className="md:col-span-4">
+                      <FormField control={form.control} name={`items.${index}.vehicle_operator`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs font-bold">Kendaraan / Alat Operasional</FormLabel><FormControl><Input placeholder="BK 1234 XX / Nama" list="vehicle-suggestions" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                    <div className="md:col-span-3">
+                      <FormField control={form.control} name={`items.${index}.fuel_type`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs font-bold">Jenis BBM / Oli</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger></FormControl><SelectContent><SelectItem value="Pertamax">Pertamax (Voucher)</SelectItem><SelectItem value="Dexlite">Dexlite (Voucher)</SelectItem><SelectItem value="Oli">Oli (Liter)</SelectItem></SelectContent></Select></FormItem>
+                      )} />
+                    </div>
+                    <div className="md:col-span-2">
+                      <FormField control={form.control} name={`items.${index}.amount`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs font-bold">{form.watch(`items.${index}.fuel_type`) === "Oli" ? "Jml (L)" : "Voucher (Rp)"}</FormLabel><FormControl><Input type="number" className="h-10" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
+                    <div className="md:col-span-3">
+                      <FormField control={form.control} name={`items.${index}.item_remarks`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-xs font-bold">Keterangan Item</FormLabel><FormControl><Input placeholder="Catatan item..." className="h-10" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                    </div>
                   </div>
 
-                  <div className="md:col-span-3">
-                    <FormField control={form.control} name={`items.${index}.fuel_type`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold">Jenis BBM / Oli</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl><SelectTrigger className="h-10"><SelectValue placeholder="Pilih Jenis" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value="Pertamax">Pertamax (Voucher)</SelectItem>
-                            <SelectItem value="Dexlite">Dexlite (Voucher)</SelectItem>
-                            <SelectItem value="Oli">Oli (Liter)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
+                  {!isLocationSame ? (
+                    <div className="pt-4 border-t border-slate-100 space-y-4">
+                      <div className="flex items-center gap-2 text-[10px] font-black uppercase text-green-600 tracking-wider"><MapPin size={14} /> Lokasi Kerja Item Ini</div>
+                      <FormField control={form.control} name={`items.${index}.location.street`} render={({ field }) => (
+                        <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Nama Jalan</FormLabel><FormControl><Input className="h-9" {...field} /></FormControl><FormMessage /></FormItem>
+                      )} />
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name={`items.${index}.location.subDistrict`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Kecamatan (Opsional)</FormLabel><Select onValueChange={(val) => { field.onChange(val); form.setValue(`items.${index}.location.village`, ""); }} value={field.value}><FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kecamatan" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></FormItem>
+                        )} />
+                        <FormField control={form.control} name={`items.${index}.location.village`} render={({ field }) => (
+                          <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Kelurahan (Opsional)</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!form.watch(`items.${index}.location.subDistrict`) || form.watch(`items.${index}.location.subDistrict`) === " "}><FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kelurahan" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{form.watch(`items.${index}.location.subDistrict`) && form.watch(`items.${index}.location.subDistrict`) !== " " && medanDistricts[form.watch(`items.${index}.location.subDistrict`)]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></FormItem>
+                        )} />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="pt-4 border-t border-dashed border-slate-200 flex items-center justify-between bg-slate-50/50 p-3 rounded-lg">
+                      <div className="flex items-center gap-2 text-xs text-slate-500 italic"><MapPin size={14} className="text-slate-400" /> Lokasi disamakan dengan pemakaian sebelumnya</div>
+                      <Button type="button" variant="ghost" size="sm" className="h-7 text-[10px] text-blue-600" onClick={() => form.setValue(`items.${index}.is_location_same`, false)}>Ubah Lokasi</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })}
 
-                  <div className="md:col-span-2">
-                    <FormField control={form.control} name={`items.${index}.amount`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold">{form.watch(`items.${index}.fuel_type`) === "Oli" ? "Jml (L)" : "Voucher (Rp)"}</FormLabel>
-                        <FormControl><Input type="number" className="h-10" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-
-                  <div className="md:col-span-3">
-                    <FormField control={form.control} name={`items.${index}.item_remarks`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs font-bold">Keterangan Item</FormLabel>
-                        <FormControl><Input placeholder="Catatan item..." className="h-10" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )} />
-                  </div>
-                </div>
-
-                <div className="pt-4 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-[10px] font-black uppercase text-green-600 tracking-wider">
-                    <MapPin size={14} /> Lokasi Kerja Item Ini
-                  </div>
-                  <FormField control={form.control} name={`items.${index}.location.street`} render={({ field }) => (
-                    <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Nama Jalan</FormLabel><FormControl><Input className="h-9" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name={`items.${index}.location.subDistrict`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] uppercase text-slate-500">Kecamatan (Opsional)</FormLabel>
-                        <Select onValueChange={(val) => { field.onChange(val); form.setValue(`items.${index}.location.village`, ""); }} value={field.value}>
-                          <FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kecamatan" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value=" ">Abaikan / Kosong</SelectItem>
-                            {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )} />
-                    <FormField control={form.control} name={`items.${index}.location.village`} render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-[10px] uppercase text-slate-500">Kelurahan (Opsional)</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch(`items.${index}.location.subDistrict`) || form.watch(`items.${index}.location.subDistrict`) === " "}>
-                          <FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kelurahan" /></SelectTrigger></FormControl>
-                          <SelectContent>
-                            <SelectItem value=" ">Abaikan / Kosong</SelectItem>
-                            {form.watch(`items.${index}.location.subDistrict`) && form.watch(`items.${index}.location.subDistrict`) !== " " && medanDistricts[form.watch(`items.${index}.location.subDistrict`)]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                      </FormItem>
-                    )} />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          <Button 
+            type="button" 
+            variant="outline" 
+            className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" 
+            onClick={handleAddClick}
+          >
+            <Plus className="h-5 w-5 mr-2" /> Tambah Pemakaian Baru
+          </Button>
         </div>
 
         <Card>
@@ -333,6 +323,30 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
           </CardContent>
         </Card>
       </form>
+
+      <Dialog open={showLocationPrompt} onOpenChange={setShowLocationPrompt}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-blue-600">
+              <HelpCircle className="h-5 w-5" /> Konfirmasi Lokasi
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Apakah lokasi pemakaian baru ini <strong>sama</strong> dengan lokasi pemakaian sebelumnya?
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 flex flex-col gap-3">
+            <Button onClick={() => performAppend(true)} className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+              <Check className="mr-3 h-5 w-5" /> Ya, Lokasi Sama
+            </Button>
+            <Button onClick={() => performAppend(false)} variant="outline" className="h-12 justify-start px-6">
+              <Plus className="mr-3 h-5 w-5" /> Tidak, Lokasi Berbeda
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowLocationPrompt(false)}>Batal</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Form>
   );
 };
