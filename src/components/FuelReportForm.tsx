@@ -91,7 +91,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const selectedRegion = form.watch("region");
   const selectedTeam = form.watch("team");
 
-  // Logika pilihan kendaraan otomatis
   const getVehicleSuggestions = () => {
     if (selectedRegion === "Wilayah 4 Kota") {
       if (selectedTeam === "Tim Siram") return ["Truk Siram (BK 8128 A)", "Truk Siram (BK 9031 J)"];
@@ -130,8 +129,10 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         showSuccess("Laporan BBM disimpan");
       }
       navigate('/fuel-reports');
-    } catch (error) {
-      showError("Gagal menyimpan data");
+    } catch (error: any) {
+      console.error("Database Error:", error);
+      // Menampilkan pesan error spesifik dari Supabase
+      showError(`Gagal simpan: ${error.message || "Cek koneksi atau struktur database"}`);
     } finally {
       setIsSubmitting(false);
     }
