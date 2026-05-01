@@ -40,12 +40,7 @@ const FuelWeeklyRecap = () => {
         const rDate = parseISO(r.date);
         return isWithinInterval(rDate, { start: weekStart, end: weekEnd });
       });
-      // Urutkan berdasarkan tanggal, wilayah, lalu tim
-      filtered.sort((a, b) => 
-        a.date.localeCompare(b.date) || 
-        a.region.localeCompare(b.region) || 
-        a.team.localeCompare(b.team)
-      );
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -79,7 +74,6 @@ const FuelWeeklyRecap = () => {
     })));
 
     flatItems.forEach((item, index) => {
-      // Date Span
       if (item.date !== currentDate) {
         if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
         currentDate = item.date;
@@ -90,7 +84,6 @@ const FuelWeeklyRecap = () => {
         dateSpans[index] = 0;
       }
 
-      // Region Span (within same date)
       const regionKey = `${item.date}-${item.region}`;
       if (regionKey !== currentRegionKey) {
         if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
@@ -102,7 +95,6 @@ const FuelWeeklyRecap = () => {
         regionSpans[index] = 0;
       }
 
-      // Team Span (within same date and region)
       const teamKey = `${item.date}-${item.region}-${item.team}`;
       if (teamKey !== currentTeamKey) {
         if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
@@ -134,9 +126,6 @@ const FuelWeeklyRecap = () => {
               <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-[200px]" />
             </div>
-            <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-100">
-              {format(weekStart, 'dd MMM', { locale: localeId })} - {format(weekEnd, 'dd MMM yyyy', { locale: localeId })}
-            </div>
           </div>
           <Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak</Button>
         </div>
@@ -163,16 +152,17 @@ const FuelWeeklyRecap = () => {
             <tr className="bg-slate-100">
               <th className="border-2 border-black p-1 w-[30px]" rowSpan={2}>No</th>
               <th className="border-2 border-black p-1 w-[65px]" rowSpan={2}>Tanggal</th>
-              <th className="border-2 border-black p-1 w-[85px]" rowSpan={2}>Wilayah</th>
-              <th className="border-2 border-black p-1 w-[90px]" rowSpan={2}>Tim / Operator</th>
+              <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Wilayah</th>
+              <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>Tim / Operator</th>
               <th className="border-2 border-black p-1 w-auto" rowSpan={2}>Kendaraan / Alat Operasional</th>
               <th className="border-2 border-black p-1" colSpan={3}>Jenis BBM / Oli</th>
-              <th className="border-2 border-black p-1 w-[180px]" rowSpan={2}>Lokasi Kerja</th>
-              <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan</th>
+              <th className="border-2 border-black p-1 w-[110px]" rowSpan={2}>Keterangan Item</th>
+              <th className="border-2 border-black p-1 w-[160px]" rowSpan={2}>Lokasi Kerja</th>
+              <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan Tambahan</th>
             </tr>
             <tr className="bg-slate-50">
-              <th className="border-2 border-black p-1 w-[65px]">Pertamax</th>
-              <th className="border-2 border-black p-1 w-[65px]">Dexlite</th>
+              <th className="border-2 border-black p-1 w-[60px]">Pertamax</th>
+              <th className="border-2 border-black p-1 w-[60px]">Dexlite</th>
               <th className="border-2 border-black p-1 w-[35px]">Oli</th>
             </tr>
           </thead>
@@ -181,39 +171,20 @@ const FuelWeeklyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  
-                  {dateSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>
-                      {item.date}
-                    </td>
-                  )}
-
-                  {regionSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
-                      {item.region}
-                    </td>
-                  )}
-
-                  {teamSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
-                      {item.team}
-                    </td>
-                  )}
-
+                  {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
+                  {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
                   <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                  <td className="border-2 border-black p-1 break-words">
-                    {item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}
-                  </td>
-                  <td className="border-2 border-black p-1 italic">
-                    {item.item_remarks || item.remarks || "-"}
-                  </td>
+                  <td className="border-2 border-black p-1 italic">{item.item_remarks || "-"}</td>
+                  <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 italic align-middle" rowSpan={teamSpans[idx]}>{item.remarks || "-"}</td>)}
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
+              <tr><td colSpan={11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
             )}
           </tbody>
         </table>

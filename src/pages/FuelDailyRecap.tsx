@@ -34,7 +34,6 @@ const FuelDailyRecap = () => {
       setLoading(true);
       const data = await fuelService.getAllReports();
       const filtered = data.filter(r => r.date === selectedDate);
-      // Urutkan berdasarkan wilayah lalu tim agar mudah digabung
       filtered.sort((a, b) => {
         const regionCompare = a.region.localeCompare(b.region);
         if (regionCompare !== 0) return regionCompare;
@@ -48,13 +47,12 @@ const FuelDailyRecap = () => {
     }
   };
 
-  // Hitung rowspan untuk Wilayah dan Tim
   const getTableSpans = () => {
     const regionSpans: number[] = [];
     const teamSpans: number[] = [];
     
     let currentRegion = "";
-    let currentTeamKey = ""; // Gabungan Region + Team agar unik
+    let currentTeamKey = "";
     
     let regionCount = 0;
     let regionStartIndex = 0;
@@ -70,7 +68,6 @@ const FuelDailyRecap = () => {
     })));
 
     flatItems.forEach((item, index) => {
-      // Logika Rowspan Wilayah
       if (item.region !== currentRegion) {
         if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
         currentRegion = item.region;
@@ -81,7 +78,6 @@ const FuelDailyRecap = () => {
         regionSpans[index] = 0;
       }
 
-      // Logika Rowspan Tim (harus dalam wilayah yang sama)
       const teamKey = `${item.region}-${item.team}`;
       if (teamKey !== currentTeamKey) {
         if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
@@ -94,7 +90,6 @@ const FuelDailyRecap = () => {
       }
     });
 
-    // Masukkan sisa hitungan terakhir
     if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
     if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
 
@@ -138,16 +133,17 @@ const FuelDailyRecap = () => {
           <thead>
             <tr className="bg-slate-100">
               <th className="border-2 border-black p-1 w-[30px]" rowSpan={2}>No</th>
-              <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Wilayah</th>
-              <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Tim / Operator</th>
-              <th className="border-2 border-black p-1 w-auto" rowSpan={2} style={{ width: 'max-content' }}>Kendaraan / Alat Operasional</th>
+              <th className="border-2 border-black p-1 w-[90px]" rowSpan={2}>Wilayah</th>
+              <th className="border-2 border-black p-1 w-[90px]" rowSpan={2}>Tim / Operator</th>
+              <th className="border-2 border-black p-1 w-auto" rowSpan={2}>Kendaraan / Alat Operasional</th>
               <th className="border-2 border-black p-1" colSpan={3}>Jenis BBM / Oli</th>
-              <th className="border-2 border-black p-1 w-[200px]" rowSpan={2}>Lokasi Kerja</th>
-              <th className="border-2 border-black p-1 w-[120px]" rowSpan={2}>Keterangan</th>
+              <th className="border-2 border-black p-1 w-[120px]" rowSpan={2}>Keterangan Item</th>
+              <th className="border-2 border-black p-1 w-[180px]" rowSpan={2}>Lokasi Kerja</th>
+              <th className="border-2 border-black p-1 w-[110px]" rowSpan={2}>Keterangan Tambahan</th>
             </tr>
             <tr className="bg-slate-50">
-              <th className="border-2 border-black p-1 w-[70px]">Pertamax</th>
-              <th className="border-2 border-black p-1 w-[70px]">Dexlite</th>
+              <th className="border-2 border-black p-1 w-[65px]">Pertamax</th>
+              <th className="border-2 border-black p-1 w-[65px]">Dexlite</th>
               <th className="border-2 border-black p-1 w-[35px]">Oli</th>
             </tr>
           </thead>
@@ -156,37 +152,19 @@ const FuelDailyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  
-                  {/* Rowspan Wilayah */}
-                  {regionSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
-                      {item.region}
-                    </td>
-                  )}
-                  
-                  {/* Rowspan Tim / Operator */}
-                  {teamSpans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
-                      {item.team}
-                    </td>
-                  )}
-
-                  <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">
-                    {item.vehicle_operator}
-                  </td>
+                  {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
+                  <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                   <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                  <td className="border-2 border-black p-1 break-words">
-                    {item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}
-                  </td>
-                  <td className="border-2 border-black p-1 italic">
-                    {item.item_remarks || item.remarks || "-"}
-                  </td>
+                  <td className="border-2 border-black p-1 italic">{item.item_remarks || "-"}</td>
+                  <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 italic align-middle" rowSpan={teamSpans[idx]}>{item.remarks || "-"}</td>)}
                 </tr>
               ))
             ) : (
-              <tr><td colSpan={9} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tanggal ini</td></tr>
+              <tr><td colSpan={10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tanggal ini</td></tr>
             )}
           </tbody>
         </table>
@@ -207,7 +185,6 @@ const FuelDailyRecap = () => {
           .no-print { display: none !important; }
           .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
           @page { size: landscape; margin: 1cm; }
-          table { width: 100% !important; }
         }
       `}} />
     </div>
