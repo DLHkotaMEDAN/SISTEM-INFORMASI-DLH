@@ -341,12 +341,18 @@ const Index = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <TabsList className="grid w-full md:w-[400px] grid-cols-2 h-12 bg-white border shadow-sm p-1"><TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger><TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger></TabsList>
             {isLoggedIn && (
-              <div className="flex gap-2">
-                <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm flex-1 md:flex-none px-2 md:px-4">
-                  <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Input Laporan</span>
-                </Button>
-                <Button onClick={() => navigate('/work-plans/create')} variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-10 font-bold flex-1 md:flex-none px-2 md:px-4">
-                  <Plus className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Buat Rencana</span>
+              <div className="flex">
+                <Button 
+                  onClick={() => navigate(activeTab === "reports" ? '/create' : '/work-plans/create')} 
+                  className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm w-full md:w-auto px-2 md:px-6"
+                >
+                  <Plus className="h-4 w-4 md:mr-2" /> 
+                  <span className="hidden md:inline">
+                    {activeTab === "reports" ? "Input Laporan Baru" : "Buat Rencana Baru"}
+                  </span>
+                  <span className="md:hidden ml-1">
+                    {activeTab === "reports" ? "Laporan" : "Rencana"}
+                  </span>
                 </Button>
               </div>
             )}
