@@ -132,65 +132,69 @@ const FuelWeeklyRecap = () => {
         </div>
       </div>
 
-      <div className="print-area bg-white p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
+      <div className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
-          <img src={LOGO_MEDAN_URL} className="h-20 w-20 object-contain" alt="Logo Medan" />
+          <img src={LOGO_MEDAN_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo Medan" />
           <div className="text-center">
-            <h1 className="text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
-            <h2 className="text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
-            <p className="text-xs italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
+            <h1 className="text-sm md:text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
+            <h2 className="text-base md:text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
+            <p className="text-[8px] md:text-xs italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
           </div>
-          <img src={LOGO_DLH_URL} className="h-20 w-20 object-contain" alt="Logo DLH" />
+          <img src={LOGO_DLH_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo DLH" />
         </div>
         <div className="text-center mb-8">
-          <h3 className="text-xl font-bold underline uppercase text-orange-700">REKAP MINGGUAN PEMAKAIAN BBM & OLI</h3>
-          <p className="text-lg font-bold">Periode: {format(weekStart, 'dd MMMM', { locale: localeId })} s/d {format(weekEnd, 'dd MMMM yyyy', { locale: localeId })}</p>
+          <h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP MINGGUAN PEMAKAIAN BBM & OLI</h3>
+          <p className="text-sm md:text-lg font-bold">Periode: {format(weekStart, 'dd MMMM', { locale: localeId })} s/d {format(weekEnd, 'dd MMMM yyyy', { locale: localeId })}</p>
         </div>
-        <table className="w-full border-collapse border-2 border-black text-[10px] table-fixed">
-          <thead>
-            <tr className="bg-slate-100">
-              <th className="border-2 border-black p-1 w-[30px]" rowSpan={2}>No</th>
-              <th className="border-2 border-black p-1 w-[65px]" rowSpan={2}>Tanggal</th>
-              <th className="border-2 border-black p-1 w-[85px]" rowSpan={2}>Wilayah</th>
-              <th className="border-2 border-black p-1 w-[90px]" rowSpan={2}>Tim / Operator</th>
-              <th className="border-2 border-black p-1 w-auto" rowSpan={2}>Kendaraan / Alat Operasional</th>
-              <th className="border-2 border-black p-1" colSpan={3}>Jenis BBM / Oli</th>
-              <th className="border-2 border-black p-1 w-[180px]" rowSpan={2}>Lokasi Kerja</th>
-              <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Keterangan</th>
-            </tr>
-            <tr className="bg-slate-50">
-              <th className="border-2 border-black p-1 w-[65px]">Pertamax</th>
-              <th className="border-2 border-black p-1 w-[65px]">Dexlite</th>
-              <th className="border-2 border-black p-1 w-[35px]">Oli</th>
-            </tr>
-          </thead>
-          <tbody>
-            {flatItems.length > 0 ? (
-              flatItems.map((item, idx) => (
-                <tr key={idx}>
-                  <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
-                  {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
-                  {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
-                  <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">{item.vehicle_operator}</td>
-                  <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                  <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                  <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                  <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
-                  <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
-                </tr>
-              ))
-            ) : (
-              <tr><td colSpan={10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
-            )}
-          </tbody>
-        </table>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[10px] table-fixed">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border-2 border-black p-1 w-[35px]" rowSpan={2}>No</th>
+                <th className="border-2 border-black p-1 w-[70px]" rowSpan={2}>Tanggal</th>
+                <th className="border-2 border-black p-1 w-[90px]" rowSpan={2}>Wilayah</th>
+                <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Tim / Operator</th>
+                <th className="border-2 border-black p-1 w-auto" rowSpan={2}>Kendaraan / Alat Operasional</th>
+                <th className="border-2 border-black p-1" colSpan={3}>Jenis BBM / Oli</th>
+                <th className="border-2 border-black p-1 w-[200px]" rowSpan={2}>Lokasi Kerja</th>
+                <th className="border-2 border-black p-1 w-[120px]" rowSpan={2}>Keterangan</th>
+              </tr>
+              <tr className="bg-slate-50">
+                <th className="border-2 border-black p-1 w-[75px]">Pertamax</th>
+                <th className="border-2 border-black p-1 w-[75px]">Dexlite</th>
+                <th className="border-2 border-black p-1 w-[40px]">Oli</th>
+              </tr>
+            </thead>
+            <tbody>
+              {flatItems.length > 0 ? (
+                flatItems.map((item, idx) => (
+                  <tr key={idx}>
+                    <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
+                    {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
+                    {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                    {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
+                    <td className="border-2 border-black p-1 whitespace-normal font-medium">{item.vehicle_operator}</td>
+                    <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
+                    <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
+                    <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
+                    <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                    <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan={10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
         <div className="mt-12 flex justify-end">
           <div className="text-center w-64">
-            <p>Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p className="font-bold mt-1">Administrator Sistem</p>
-            <div className="h-20"></div>
-            <p className="font-bold underline">( ............................................ )</p>
+            <p className="text-xs md:text-sm">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+            <p className="font-bold mt-1 text-xs md:text-sm">Administrator Sistem</p>
+            <div className="h-16 md:h-20"></div>
+            <p className="font-bold underline text-xs md:text-sm">( ............................................ )</p>
           </div>
         </div>
       </div>
@@ -200,6 +204,8 @@ const FuelWeeklyRecap = () => {
           .no-print { display: none !important; }
           .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
           @page { size: landscape; margin: 1cm; }
+          .overflow-x-auto { overflow: visible !important; }
+          table { width: 100% !important; min-width: 0 !important; }
         }
       `}} />
     </div>
