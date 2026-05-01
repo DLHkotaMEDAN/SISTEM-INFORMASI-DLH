@@ -29,6 +29,7 @@ import WorkPlanMonthlyRecap from "./pages/WorkPlanMonthlyRecap";
 import FuelReportList from "./pages/FuelReportList";
 import CreateFuelReport from "./pages/CreateFuelReport";
 import EditFuelReport from "./pages/EditFuelReport";
+import FuelRecap from "./pages/FuelRecap";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
             <Route path="/fuel-reports" element={<AdminRoute><FuelReportList /></AdminRoute>} />
             <Route path="/fuel-reports/create" element={<AdminRoute><CreateFuelReport /></AdminRoute>} />
             <Route path="/fuel-reports/edit/:id" element={<AdminRoute><EditFuelReport /></AdminRoute>} />
+            <Route path="/fuel-reports/recap" element={<AdminRoute><FuelRecap /></AdminRoute>} />
             
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />

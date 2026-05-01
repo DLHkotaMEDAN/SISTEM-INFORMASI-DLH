@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, Fuel, Trash2, Edit, 
-  Search, FilterX, ArrowLeft, RefreshCw, Truck, User, ChevronRight, MessageSquare
+  Search, FilterX, ArrowLeft, RefreshCw, Printer, MessageSquare
 } from 'lucide-react';
 import { FuelReport } from '@/types/fuelReport';
 import { fuelService } from '@/services/fuelService';
@@ -73,6 +73,9 @@ const FuelReportList = () => {
             <h1 className="text-2xl font-bold flex items-center gap-2"><Fuel className="text-orange-600" /> Laporan BBM & Oli</h1>
           </div>
           <div className="flex gap-2">
+            <Button variant="outline" onClick={() => navigate('/fuel-reports/recap')} className="bg-white border-slate-200 text-slate-700">
+              <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
+            </Button>
             <Button variant="outline" size="icon" onClick={loadReports} disabled={loading}><RefreshCw className={loading ? "animate-spin" : ""} size={18} /></Button>
             <Button onClick={() => navigate('/fuel-reports/create')} className="bg-blue-600 hover:bg-blue-700"><Plus className="mr-2 h-4 w-4" /> Input Baru</Button>
           </div>
