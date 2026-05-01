@@ -34,8 +34,12 @@ const FuelDailyRecap = () => {
       setLoading(true);
       const data = await fuelService.getAllReports();
       const filtered = data.filter(r => r.date === selectedDate);
-      // Urutkan berdasarkan wilayah agar mudah digabung
-      filtered.sort((a, b) => a.region.localeCompare(b.region));
+      // Urutkan berdasarkan wilayah lalu tim agar mudah digabung
+      filtered.sort((a, b) => {
+        const regionCompare = a.region.localeCompare(b.region);
+        if (regionCompare !== 0) return regionCompare;
+        return a.team.localeCompare(b.team);
+      });
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -44,31 +48,60 @@ const FuelDailyRecap = () => {
     }
   };
 
-  // Hitung rowspan untuk Wilayah
-  const getRegionSpans = () => {
-    const spans: number[] = [];
+  // Hitung rowspan untuk Wilayah dan Tim
+  const getTableSpans = () => {
+    const regionSpans: number[] = [];
+    const teamSpans: number[] = [];
+    
     let currentRegion = "";
-    let count = 0;
-    let startIndex = 0;
+    let currentTeamKey = ""; // Gabungan Region + Team agar unik
+    
+    let regionCount = 0;
+    let regionStartIndex = 0;
+    
+    let teamCount = 0;
+    let teamStartIndex = 0;
 
-    const flatItems = reports.flatMap(r => r.items.map(item => ({ ...item, region: r.region, team: r.team, remarks: r.remarks })));
+    const flatItems = reports.flatMap(r => r.items.map(item => ({ 
+      ...item, 
+      region: r.region, 
+      team: r.team, 
+      remarks: r.remarks 
+    })));
 
     flatItems.forEach((item, index) => {
+      // Logika Rowspan Wilayah
       if (item.region !== currentRegion) {
-        if (count > 0) spans[startIndex] = count;
+        if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
         currentRegion = item.region;
-        count = 1;
-        startIndex = index;
+        regionCount = 1;
+        regionStartIndex = index;
       } else {
-        count++;
-        spans[index] = 0;
+        regionCount++;
+        regionSpans[index] = 0;
+      }
+
+      // Logika Rowspan Tim (harus dalam wilayah yang sama)
+      const teamKey = `${item.region}-${item.team}`;
+      if (teamKey !== currentTeamKey) {
+        if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
+        currentTeamKey = teamKey;
+        teamCount = 1;
+        teamStartIndex = index;
+      } else {
+        teamCount++;
+        teamSpans[index] = 0;
       }
     });
-    if (count > 0) spans[startIndex] = count;
-    return { flatItems, spans };
+
+    // Masukkan sisa hitungan terakhir
+    if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
+    if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
+
+    return { flatItems, regionSpans, teamSpans };
   };
 
-  const { flatItems, spans } = getRegionSpans();
+  const { flatItems, regionSpans, teamSpans } = getTableSpans();
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -123,13 +156,21 @@ const FuelDailyRecap = () => {
               flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  {spans[idx] > 0 && (
-                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={spans[idx]}>
+                  
+                  {/* Rowspan Wilayah */}
+                  {regionSpans[idx] > 0 && (
+                    <td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>
                       {item.region}
                     </td>
                   )}
-                  {spans[idx] === undefined && null}
-                  <td className="border-2 border-black p-1 text-center">{item.team}</td>
+                  
+                  {/* Rowspan Tim / Operator */}
+                  {teamSpans[idx] > 0 && (
+                    <td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>
+                      {item.team}
+                    </td>
+                  )}
+
                   <td className="border-2 border-black p-1 whitespace-nowrap overflow-visible font-medium">
                     {item.vehicle_operator}
                   </td>
