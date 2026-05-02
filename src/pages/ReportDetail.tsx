@@ -11,6 +11,7 @@ import { reportService } from '@/services/reportService';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import PimpinanNoteSection from '@/components/PimpinanNoteSection';
 
 const ReportDetail = () => {
   const { id } = useParams();
@@ -35,6 +36,12 @@ const ReportDetail = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveNote = async (note: string) => {
+    if (!report) return;
+    await reportService.updateReport(report.id, { pimpinan_note: note });
+    setReport({ ...report, pimpinan_note: note });
   };
 
   const cleanDescription = (desc: string) => {
@@ -87,6 +94,12 @@ const ReportDetail = () => {
             </Button>
           )}
         </div>
+
+        {/* Seksi Catatan Pimpinan */}
+        <PimpinanNoteSection 
+          initialNote={report.pimpinan_note} 
+          onSave={handleSaveNote} 
+        />
 
         <div id="report-content" className="bg-white border shadow-lg p-8 space-y-8">
           <div className="border-b-2 border-black pb-4 flex justify-between items-center">

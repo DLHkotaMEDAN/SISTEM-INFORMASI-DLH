@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, Fuel, Trash2, Edit, 
   Search, FilterX, ArrowLeft, RefreshCw, Printer, ChevronDown,
-  Table, FileText, CalendarDays, LogOut
+  Table, FileText, CalendarDays, LogOut, Eye, MessageSquare
 } from 'lucide-react';
 import { FuelReport } from '@/types/fuelReport';
 import { fuelService } from '@/services/fuelService';
@@ -50,7 +50,6 @@ const FuelReportList = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   
-  // Filter States
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
@@ -91,7 +90,8 @@ const FuelReportList = () => {
     }
   };
 
-  const handleDelete = async (id: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
     if (!confirm("Hapus laporan ini?")) return;
     try {
       await fuelService.deleteReport(id);
@@ -135,7 +135,6 @@ const FuelReportList = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header Section */}
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-4">
@@ -157,7 +156,6 @@ const FuelReportList = () => {
             </Button>
           </div>
 
-          {/* Action Buttons Row */}
           <div className="flex flex-wrap items-center gap-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -202,7 +200,6 @@ const FuelReportList = () => {
           </div>
         </div>
 
-        {/* Filter Section */}
         <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             <div className="md:col-span-4 space-y-1.5">
@@ -266,7 +263,6 @@ const FuelReportList = () => {
           </div>
         </div>
 
-        {/* List Section */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
             <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
@@ -275,19 +271,22 @@ const FuelReportList = () => {
         ) : filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map((report) => (
-              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-orange-500">
+              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-orange-500 cursor-pointer group" onClick={() => navigate(`/fuel-reports/${report.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
+                        {report.pimpinan_note && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[8px]"><MessageSquare size={8} className="mr-1" /> Ada Catatan</Badge>}
+                      </div>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={() => navigate(`/fuel-reports/edit/${report.id}`)}><Edit size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={() => handleDelete(report.id)}><Trash2 size={14} /></Button>
+                    <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/edit/${report.id}`); }}><Edit size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
                     </div>
                   </div>
-                  <CardTitle className="text-base mt-2">{report.team}</CardTitle>
+                  <CardTitle className="text-base mt-2 group-hover:text-orange-600 transition-colors">{report.team}</CardTitle>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-3">
                   <div className="space-y-3 pt-2">
@@ -306,9 +305,10 @@ const FuelReportList = () => {
                         </div>
                       </div>
                     ))}
-                    {report.items?.length > 2 && (
-                      <p className="text-[10px] text-center text-blue-600 font-medium italic">+{report.items.length - 2} item lainnya...</p>
-                    )}
+                    <div className="pt-2 border-t flex justify-between items-center text-[10px]">
+                      <span className="text-slate-400 italic">Klik untuk detail & catatan</span>
+                      <div className="flex items-center text-blue-600 font-bold">Lihat <Eye className="ml-1 h-3 w-3" /></div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

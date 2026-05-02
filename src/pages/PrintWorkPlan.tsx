@@ -7,6 +7,7 @@ import { workPlanService } from '@/services/workPlanService';
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import PimpinanNoteSection from '@/components/PimpinanNoteSection';
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -36,6 +37,12 @@ const PrintWorkPlan = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSaveNote = async (note: string) => {
+    if (!plan) return;
+    await workPlanService.updateWorkPlan(plan.id, { pimpinan_note: note });
+    setPlan({ ...plan, pimpinan_note: note });
   };
 
   if (loading) return <div className="p-20 text-center">Menyiapkan dokumen...</div>;
@@ -77,6 +84,13 @@ const PrintWorkPlan = () => {
             <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak</span>
           </Button>
         </div>
+      </div>
+
+      <div className="max-w-[1200px] mx-auto mb-6">
+        <PimpinanNoteSection 
+          initialNote={plan.pimpinan_note} 
+          onSave={handleSaveNote} 
+        />
       </div>
 
       <div className="print-container bg-white p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">

@@ -66,6 +66,7 @@ export interface Report {
   fuel: FuelUsage;
   personnel: Personnel;
   remarks: string;
+  pimpinan_note?: string; // Field baru untuk penilaian pimpinan
   createdAt: string;
   unit: string;
   volume: number;

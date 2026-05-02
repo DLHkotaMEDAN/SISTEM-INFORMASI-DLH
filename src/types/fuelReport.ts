@@ -7,7 +7,7 @@ export interface FuelUsageItem {
   fuel_type: FuelType;
   amount: number;
   item_remarks?: string;
-  is_location_same?: boolean; // Flag untuk menandai lokasi sama dengan item sebelumnya
+  is_location_same?: boolean;
   location: {
     street: string;
     subDistrict?: string;
@@ -22,6 +22,7 @@ export interface FuelReport {
   team: string;
   items: FuelUsageItem[];
   remarks: string;
+  pimpinan_note?: string; // Field baru untuk penilaian pimpinan
   created_at?: string;
   deleted_at?: string | null;
 }

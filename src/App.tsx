@@ -29,6 +29,7 @@ import WorkPlanMonthlyRecap from "./pages/WorkPlanMonthlyRecap";
 import FuelReportList from "./pages/FuelReportList";
 import CreateFuelReport from "./pages/CreateFuelReport";
 import EditFuelReport from "./pages/EditFuelReport";
+import FuelReportDetail from "./pages/FuelReportDetail";
 import FuelDailyRecap from "./pages/FuelDailyRecap";
 import FuelWeeklyRecap from "./pages/FuelWeeklyRecap";
 import FuelMonthlyRecap from "./pages/FuelMonthlyRecap";
@@ -42,7 +43,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Memuat...</div>;
   if (!session) return <Navigate to="/login" />;
   
-  // Admin BBM tidak boleh akses Laporan Harian & Rencana Kerja
   if (profile?.role === 'admin_bbm') return <Navigate to="/fuel-reports" />;
   
   return <>{children}</>;
@@ -54,7 +54,6 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Memuat...</div>;
   if (!session) return <Navigate to="/login" />;
   
-  // Admin Utama & Admin BBM boleh akses
   const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_bbm' || session?.user?.email === 'admin@gmail.com';
   if (!isAllowed) return <Navigate to="/" />;
   
@@ -85,10 +84,11 @@ const App = () => (
             <Route path="/work-plans/create" element={<ProtectedRoute><CreateWorkPlan /></ProtectedRoute>} />
             <Route path="/work-plans/edit/:id" element={<ProtectedRoute><EditWorkPlan /></ProtectedRoute>} />
             
-            {/* Fuel Report Routes - Admin & Admin BBM Only */}
+            {/* Fuel Report Routes */}
             <Route path="/fuel-reports" element={<AdminRoute><FuelReportList /></AdminRoute>} />
             <Route path="/fuel-reports/create" element={<AdminRoute><CreateFuelReport /></AdminRoute>} />
             <Route path="/fuel-reports/edit/:id" element={<AdminRoute><EditFuelReport /></AdminRoute>} />
+            <Route path="/fuel-reports/:id" element={<AdminRoute><FuelReportDetail /></AdminRoute>} />
             <Route path="/fuel-reports/daily-rekap" element={<AdminRoute><FuelDailyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/weekly-rekap" element={<AdminRoute><FuelWeeklyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/monthly-rekap" element={<AdminRoute><FuelMonthlyRecap /></AdminRoute>} />
