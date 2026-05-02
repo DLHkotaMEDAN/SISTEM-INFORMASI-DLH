@@ -75,7 +75,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const { profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customTeamMode, setCustomTeamMode] = useState(false);
-  const [showLocationPrompt, setShowLocationPrompt] = useState(false);
+  const [showLocationPrompt, setshowLocationPrompt] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -118,7 +118,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
 
   const handleAddClick = () => {
     if (selectedTeam === "Tim Pohon" && fields.length > 0) {
-      setShowLocationPrompt(true);
+      setshowLocationPrompt(true);
     } else {
       performAppend(false);
     }
@@ -135,7 +135,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
       is_location_same: isSame,
       location: isSame ? { ...lastLocation } : { street: "", subDistrict: "", village: "" }
     });
-    setShowLocationPrompt(false);
+    setshowLocationPrompt(false);
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -214,7 +214,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
 
             <FormField control={form.control} name="team" render={({ field }) => (
               <FormItem>
-                <FormLabel>Tim / Operator Utama</FormLabel>
+                <FormLabel>Tim / Operator</FormLabel>
                 <Select onValueChange={(val) => { 
                   if (val === "custom") { setCustomTeamMode(true); field.onChange(""); }
                   else { setCustomTeamMode(false); field.onChange(val); }
@@ -324,7 +324,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         </Card>
       </form>
 
-      <Dialog open={showLocationPrompt} onOpenChange={setShowLocationPrompt}>
+      <Dialog open={showLocationPrompt} onOpenChange={setshowLocationPrompt}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-blue-600">
@@ -343,7 +343,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             </Button>
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setShowLocationPrompt(false)}>Batal</Button>
+            <Button variant="ghost" onClick={() => setshowLocationPrompt(false)}>Batal</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
