@@ -53,18 +53,14 @@ const FuelWeeklyRecap = () => {
   };
 
   const getTableSpans = () => {
+    const noSpans: number[] = [];
     const dateSpans: number[] = [];
     const regionSpans: number[] = [];
     const teamSpans: number[] = [];
-    let currentDate = "";
+    let currentNo = 0;
+    let lastDate = "";
     let currentRegionKey = "";
     let currentTeamKey = "";
-    let dateCount = 0;
-    let dateStartIndex = 0;
-    let regionCount = 0;
-    let regionStartIndex = 0;
-    let teamCount = 0;
-    let teamStartIndex = 0;
 
     const flatItems = reports.flatMap(r => r.items.map(item => ({ 
       ...item, 
@@ -75,43 +71,48 @@ const FuelWeeklyRecap = () => {
     })));
 
     flatItems.forEach((item, index) => {
-      if (item.date !== currentDate) {
-        if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
-        currentDate = item.date;
-        dateCount = 1;
-        dateStartIndex = index;
+      // No & Date Span (Berdasarkan Tanggal)
+      if (item.date !== lastDate) {
+        currentNo++;
+        lastDate = item.date;
+        const sameDateItems = flatItems.filter(it => it.date === item.date);
+        noSpans[index] = sameDateItems.length;
+        dateSpans[index] = sameDateItems.length;
       } else {
-        dateCount++;
+        noSpans[index] = 0;
         dateSpans[index] = 0;
       }
+
+      // Region Span
       const regionKey = `${item.date}-${item.region}`;
       if (regionKey !== currentRegionKey) {
-        if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
+        const sameRegionItems = flatItems.filter(it => it.date === item.date && it.region === item.region);
+        regionSpans[index] = sameRegionItems.length;
         currentRegionKey = regionKey;
-        regionCount = 1;
-        regionStartIndex = index;
       } else {
-        regionCount++;
         regionSpans[index] = 0;
       }
+
+      // Team Span
       const teamKey = `${item.date}-${item.region}-${item.team}`;
       if (teamKey !== currentTeamKey) {
-        if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
+        const sameTeamItems = flatItems.filter(it => it.date === item.date && it.region === item.region && it.team === item.team);
+        teamSpans[index] = sameTeamItems.length;
         currentTeamKey = teamKey;
-        teamCount = 1;
-        teamStartIndex = index;
       } else {
-        teamCount++;
         teamSpans[index] = 0;
       }
     });
-    if (dateCount > 0) dateSpans[dateStartIndex] = dateCount;
-    if (regionCount > 0) regionSpans[regionStartIndex] = regionCount;
-    if (teamCount > 0) teamSpans[teamStartIndex] = teamCount;
-    return { flatItems, dateSpans, regionSpans, teamSpans };
+
+    return { flatItems, noSpans, dateSpans, regionSpans, teamSpans };
   };
 
-  const { flatItems, dateSpans, regionSpans, teamSpans } = getTableSpans();
+  const { flatItems, noSpans, dateSpans, regionSpans, teamSpans } = getTableSpans();
+
+  // Hitung Total
+  const totalPertamax = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? item.amount : 0), 0);
+  const totalDexlite = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? item.amount : 0), 0);
+  const totalOli = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Oli' ? item.amount : 0), 0);
 
   const handleExportExcel = async () => {
     if (flatItems.length === 0) {
@@ -158,9 +159,15 @@ const FuelWeeklyRecap = () => {
         cell.font = { bold: true };
       });
 
-      flatItems.forEach((item, idx) => {
+      let currentNo = 0;
+      let lastDate = "";
+      flatItems.forEach((item) => {
+        if (item.date !== lastDate) {
+          currentNo++;
+          lastDate = item.date;
+        }
         const row = worksheet.addRow({
-          no: idx + 1,
+          no: item.date === lastDate && flatItems.find(it => it.date === item.date) === item ? currentNo : '',
           date: item.date,
           region: item.region,
           team: item.team,
@@ -176,6 +183,19 @@ const FuelWeeklyRecap = () => {
           cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
           cell.alignment = { vertical: 'middle', wrapText: true };
         });
+      });
+
+      // Baris Total Excel
+      const totalRow = worksheet.addRow({
+        vehicle: 'TOTAL PEMAKAIAN:',
+        pertamax: totalPertamax,
+        dexlite: totalDexlite,
+        oli: totalOli
+      });
+      totalRow.eachCell(cell => {
+        cell.font = { bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+        cell.border = { top: { style: 'medium' }, left: { style: 'thin' }, bottom: { style: 'medium' }, right: { style: 'thin' } };
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -252,20 +272,40 @@ const FuelWeeklyRecap = () => {
             </thead>
             <tbody>
               {flatItems.length > 0 ? (
-                flatItems.map((item, idx) => (
-                  <tr key={idx}>
-                    <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                    {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
-                    {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
-                    {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
-                    <td className="border-2 border-black p-1 whitespace-normal font-medium">{item.vehicle_operator}</td>
-                    <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                    <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                    <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                    <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
-                    <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
+                <>
+                  {(() => {
+                    let currentNo = 0;
+                    let lastDate = "";
+                    return flatItems.map((item, idx) => {
+                      if (item.date !== lastDate) {
+                        currentNo++;
+                        lastDate = item.date;
+                      }
+                      return (
+                        <tr key={idx}>
+                          {noSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={noSpans[idx]}>{currentNo}</td>)}
+                          {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={dateSpans[idx]}>{item.date}</td>)}
+                          {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
+                          {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
+                          <td className="border-2 border-black p-1 whitespace-normal font-medium">{item.vehicle_operator}</td>
+                          <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
+                          <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
+                          <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
+                          <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
+                          <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
+                        </tr>
+                      );
+                    });
+                  })()}
+                  {/* Baris Total */}
+                  <tr className="bg-slate-100 font-black">
+                    <td className="border-2 border-black p-1 text-right" colSpan={5}>TOTAL PEMAKAIAN:</td>
+                    <td className="border-2 border-black p-1 text-right">{totalPertamax.toLocaleString('id-ID')}</td>
+                    <td className="border-2 border-black p-1 text-right">{totalDexlite.toLocaleString('id-ID')}</td>
+                    <td className="border-2 border-black p-1 text-center">{totalOli}</td>
+                    <td className="border-2 border-black p-1" colSpan={2}></td>
                   </tr>
-                ))
+                </>
               ) : (
                 <tr><td colSpan={10} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
               )}
