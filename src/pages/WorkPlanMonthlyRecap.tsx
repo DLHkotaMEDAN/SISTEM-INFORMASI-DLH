@@ -112,6 +112,94 @@ const WorkPlanMonthlyRecap = () => {
     return groups;
   };
 
+  const renderPlanRows = (plan: WorkPlan, pIdx: number) => {
+    const isNoActivity = plan.items[0]?.description === "TIDAK ADA RENCANA KERJA/ KEGIATAN";
+    if (isNoActivity) {
+      return (
+        <tr key={plan.id}>
+          <td className="border-2 border-black p-1 text-center align-top font-bold">{pIdx + 1}</td>
+          <td className="border-2 border-black p-1 text-center align-top text-[8px]">{format(parseISO(plan.date), 'dd/MM/yy')}</td>
+          <td className="border-2 border-black p-1 text-center font-bold align-top">{plan.category}</td>
+          <td colSpan={8} className="border-2 border-black p-4 text-center font-black text-sm tracking-widest">
+            TIDAK ADA RENCANA KERJA/ KEGIATAN
+          </td>
+          {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words">{plan.items[0]?.remarks || "-"}</td>}
+        </tr>
+      );
+    }
+
+    const resourceGroups = groupPlanResources(plan);
+    const totalPlanRows = resourceGroups.reduce((acc, group) => 
+      acc + Math.max(group.items.length, group.tools.length, 1), 0
+    );
+
+    let currentPlanRow = 0;
+
+    return resourceGroups.flatMap((group, gIdx) => {
+      const maxGroupRows = Math.max(group.items.length, group.tools.length, 1);
+      
+      return Array.from({ length: maxGroupRows }).map((_, rowIndex) => {
+        const item = group.items[rowIndex];
+        const tool = group.tools[rowIndex];
+        const isFirstInPlan = currentPlanRow === 0;
+        currentPlanRow++;
+
+        return (
+          <tr key={`${plan.id}-${gIdx}-${rowIndex}`}>
+            {isFirstInPlan && (
+              <>
+                <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={totalPlanRows}>{pIdx + 1}</td>
+                <td className="border-2 border-black p-1 text-center align-top text-[8px]" rowSpan={totalPlanRows}>
+                  {format(parseISO(plan.date), 'dd/MM/yy')}
+                </td>
+                <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={totalPlanRows}>{plan.category}</td>
+              </>
+            )}
+            
+            {rowIndex < group.items.length - 1 ? (
+              <>
+                <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
+                <td className="border-2 border-black p-1 align-top break-words">
+                  {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                </td>
+              </>
+            ) : rowIndex === group.items.length - 1 ? (
+              <>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{item.description}</td>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>
+                  {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
+                </td>
+              </>
+            ) : null}
+
+            {rowIndex < group.tools.length - 1 ? (
+              <>
+                <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
+                <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
+                <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
+              </>
+            ) : rowIndex === group.tools.length - 1 || (group.tools.length === 0 && rowIndex === 0) ? (
+              <>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.name ? `• ${tool.name}` : ""}</td>
+                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows - rowIndex}>{tool?.unit || ""}</td>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.usage || ""}</td>
+              </>
+            ) : null}
+
+            {rowIndex === 0 && (
+              <>
+                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
+                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
+                {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
+              </>
+            )}
+          </tr>
+        );
+      });
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
@@ -172,134 +260,58 @@ const WorkPlanMonthlyRecap = () => {
         </div>
 
         <div className="overflow-x-auto print:overflow-visible">
-          <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed print:w-full print:min-w-0">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="border-2 border-black p-1 w-[25px]">No</th>
-                <th className="border-2 border-black p-1 w-[55px]">Hari/Tgl</th>
-                <th className="border-2 border-black p-1 w-[55px]">Tim/Kec</th>
-                <th className="border-2 border-black p-1 w-[110px]">Detail Kegiatan</th>
-                <th className="border-2 border-black p-1 w-[120px]">Lokasi</th>
-                <th className="border-2 border-black p-1 w-[110px]">Alat Operasional</th>
-                <th className="border-2 border-black p-1 w-[25px]">Unit</th>
-                <th className="border-2 border-black p-1 w-[90px]">Kegunaan</th>
-                <th className="border-2 border-black p-1 w-[75px]">Koordinator</th>
-                <th className="border-2 border-black p-1 w-[35px]">Pers</th>
-                <th className="border-2 border-black p-1 w-[90px]">Dasar Pengerjaan</th>
-                {hasRemarks && <th className="border-2 border-black p-1 w-[90px]">Keterangan</th>}
-              </tr>
-            </thead>
-            <tbody>
-              {plans.length > 0 ? (
-                plans.flatMap((plan, pIdx) => {
-                  const isNoActivity = plan.items[0]?.description === "TIDAK ADA RENCANA KERJA/ KEGIATAN";
-                  if (isNoActivity) {
-                    return (
-                      <tr key={plan.id}>
-                        <td className="border-2 border-black p-1 text-center align-top font-bold">
-                          {pIdx + 1}
-                        </td>
-                        <td className="border-2 border-black p-1 text-center align-top text-[8px]">
-                          {format(parseISO(plan.date), 'dd/MM/yy')}
-                        </td>
-                        <td className="border-2 border-black p-1 text-center font-bold align-top">{plan.category}</td>
-                        <td colSpan={8} className="border-2 border-black p-4 text-center font-black text-sm tracking-widest">
-                          TIDAK ADA RENCANA KERJA/ KEGIATAN
-                        </td>
-                        {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words">{plan.items[0]?.remarks || "-"}</td>}
-                      </tr>
-                    );
-                  }
+          {plans.length > 0 ? (
+            <>
+              <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed print:w-full print:min-w-0">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="border-2 border-black p-1 w-[25px]">No</th>
+                    <th className="border-2 border-black p-1 w-[55px]">Hari/Tgl</th>
+                    <th className="border-2 border-black p-1 w-[55px]">Tim/Kec</th>
+                    <th className="border-2 border-black p-1 w-[110px]">Detail Kegiatan</th>
+                    <th className="border-2 border-black p-1 w-[120px]">Lokasi</th>
+                    <th className="border-2 border-black p-1 w-[110px]">Alat Operasional</th>
+                    <th className="border-2 border-black p-1 w-[25px]">Unit</th>
+                    <th className="border-2 border-black p-1 w-[90px]">Kegunaan</th>
+                    <th className="border-2 border-black p-1 w-[75px]">Koordinator</th>
+                    <th className="border-2 border-black p-1 w-[35px]">Pers</th>
+                    <th className="border-2 border-black p-1 w-[90px]">Dasar Pengerjaan</th>
+                    {hasRemarks && <th className="border-2 border-black p-1 w-[90px]">Keterangan</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {plans.slice(0, -1).map((plan, pIdx) => renderPlanRows(plan, pIdx))}
+                </tbody>
+              </table>
 
-                  const resourceGroups = groupPlanResources(plan);
-                  const totalPlanRows = resourceGroups.reduce((acc, group) => 
-                    acc + Math.max(group.items.length, group.tools.length, 1), 0
-                  );
+              <div className="keep-together">
+                <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed print:w-full print:min-w-0 border-t-0">
+                  <tbody>
+                    {renderPlanRows(plans[plans.length - 1], plans.length - 1)}
+                  </tbody>
+                </table>
 
-                  let currentPlanRow = 0;
-
-                  return resourceGroups.flatMap((group, gIdx) => {
-                    const maxGroupRows = Math.max(group.items.length, group.tools.length, 1);
-                    
-                    return Array.from({ length: maxGroupRows }).map((_, rowIndex) => {
-                      const item = group.items[rowIndex];
-                      const tool = group.tools[rowIndex];
-                      const isFirstInPlan = currentPlanRow === 0;
-                      currentPlanRow++;
-
-                      return (
-                        <tr key={`${plan.id}-${gIdx}-${rowIndex}`}>
-                          {isFirstInPlan && (
-                            <>
-                              <td className="border-2 border-black p-1 text-center align-top font-bold" rowSpan={totalPlanRows}>{pIdx + 1}</td>
-                              <td className="border-2 border-black p-1 text-center align-top text-[8px]" rowSpan={totalPlanRows}>
-                                {format(parseISO(plan.date), 'dd/MM/yy')}
-                              </td>
-                              <td className="border-2 border-black p-1 text-center font-bold align-top" rowSpan={totalPlanRows}>{plan.category}</td>
-                            </>
-                          )}
-                          
-                          {rowIndex < group.items.length - 1 ? (
-                            <>
-                              <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
-                              <td className="border-2 border-black p-1 align-top break-words">
-                                {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                              </td>
-                            </>
-                          ) : rowIndex === group.items.length - 1 ? (
-                            <>
-                              <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{item.description}</td>
-                              <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>
-                                {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
-                              </td>
-                            </>
-                          ) : null}
-
-                          {rowIndex < group.tools.length - 1 ? (
-                            <>
-                              <td className="border-2 border-black p-1 align-top break-words">{tool?.name ? `• ${tool.name}` : ""}</td>
-                              <td className="border-2 border-black p-1 text-center align-top">{tool?.unit || ""}</td>
-                              <td className="border-2 border-black p-1 align-top break-words">{tool?.usage || ""}</td>
-                            </>
-                          ) : rowIndex === group.tools.length - 1 || (group.tools.length === 0 && rowIndex === 0) ? (
-                            <>
-                              <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.name ? `• ${tool.name}` : ""}</td>
-                              <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows - rowIndex}>{tool?.unit || ""}</td>
-                              <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{tool?.usage || ""}</td>
-                            </>
-                          ) : null}
-
-                          {rowIndex === 0 && (
-                            <>
-                              <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
-                              <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
-                              <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
-                              {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
-                            </>
-                          )}
-                        </tr>
-                      );
-                    });
-                  });
-                })
-              ) : (
+                {signatureMode === "with-signature" && (
+                  <div className="pdf-footer mt-12">
+                    <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+                    <div className="grid grid-cols-4 gap-4 text-[11px] leading-normal">
+                      <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p>{showSignatory4 && !showSignatory5 && (<><p className="font-bold">Kepala Koordinator Taman</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold">Koordinator Tim Pohon & Siram</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory4 && showSignatory5 && (<><p className="font-bold">Koordinator Taman & Tim Pohon/Siram</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}</div><div>{showSignatory4 && !showSignatory5 && (<><p className="font-bold underline">Tiurmaida Silitonga</p><p>NIP. 19690507 200701 2 042</p></>)}{showSignatory5 && !showSignatory4 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}{showSignatory4 && showSignatory5 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}</div></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed">
+              <tbody>
                 <tr><td colSpan={hasRemarks ? 12 : 11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
-              )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
         </div>
-
-        {signatureMode === "with-signature" && (
-          <div className="pdf-footer mt-12">
-            <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-            <div className="grid grid-cols-4 gap-4 text-[11px] leading-normal">
-              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p>{showSignatory4 && !showSignatory5 && (<><p className="font-bold">Kepala Koordinator Taman</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory5 && !showSignatory4 && (<><p className="font-bold">Koordinator Tim Pohon & Siram</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}{showSignatory4 && showSignatory5 && (<><p className="font-bold">Koordinator Taman & Tim Pohon/Siram</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}</div><div>{showSignatory4 && !showSignatory5 && (<><p className="font-bold underline">Tiurmaida Silitonga</p><p>NIP. 19690507 200701 2 042</p></>)}{showSignatory5 && !showSignatory4 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}{showSignatory4 && showSignatory5 && (<div className="flex justify-around gap-2"><div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div></div>)}</div></div>
-            </div>
-          </div>
-        )}
       </div>
 
       <style dangerouslySetInnerHTML={{ __html: `
@@ -318,6 +330,7 @@ const WorkPlanMonthlyRecap = () => {
           @page { size: A3 landscape; margin: 1.5cm; }
           .overflow-x-auto { overflow: visible !important; }
           table { width: 100% !important; }
+          .keep-together { page-break-inside: avoid; break-inside: avoid; }
           ::-webkit-scrollbar { display: none; }
         }
       `}} />
