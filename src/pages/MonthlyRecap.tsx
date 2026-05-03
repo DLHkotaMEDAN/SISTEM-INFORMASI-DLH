@@ -281,7 +281,7 @@ const MonthlyRecap = () => {
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
       worksheet.addRow([]);
       
-      const headerRow = worksheet.addRow(columns.map(c => c.header));<dyad-write path="src/pages/MonthlyRecap.tsx" description="Melanjutkan pembaruan logika tanda tangan koordinator pada Rekap Bulanan Laporan Kegiatan">
+      const headerRow = worksheet.addRow(columns.map(c => c.header));
       headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
         cell.border = { top: { style: 'medium' }, left: { style: 'medium' }, bottom: { style: 'medium' }, right: { style: 'medium' } };
