@@ -43,7 +43,6 @@ const toolUsageMapping: Record<string, string> = {
 const categoryCoordinatorMapping: Record<string, string> = {
   "Tim Pohon": "Budi",
   "Tim Babat": "Muhammad Fadri Saragih",
-  "Tim Siram": "M. Irwan Syahputra, SE",
   "Taman Kota": "Mhd. Said",
   "Taman Amplas": "Erwinsyah",
   "Taman Area": "Ismail Siregar",
@@ -53,9 +52,6 @@ const defaultActivityMapping: Record<string, string> = {
   "Taman Kota": "Perawatan dan Pembersihan Taman Media ",
   "Taman Area": "Perawatan dan Pembersihan Taman Media ",
   "Taman Amplas": "Perawatan dan Pembersihan Taman Media ",
-  "Tim Babat": "Perawatan dan Pembersihan Taman Media ",
-  "Tim Siram": "Penyiraman Tanaman Median Jalan ",
-  "Tim Pohon": "Pemangkasan Pohon ",
 };
 
 const toolCoordinatorMapping: Record<string, string> = {
@@ -247,6 +243,7 @@ const WorkPlanForm = ({ initialData, isEditing = false }: { initialData?: WorkPl
         });
       }
 
+      // JANGAN kirim has_no_activity ke database karena kolomnya tidak ada
       const finalValues = { 
         date: values.date, 
         category: values.category, 

@@ -149,10 +149,6 @@ const WorkPlanDailyRecap = () => {
         const isFirstInPlan = currentPlanRow === 0;
         currentPlanRow++;
 
-        // Fallback jika data kosong
-        const displayDesc = item?.description || (rowIndex === 0 ? "Perawatan dan Pembersihan Taman Media" : "-");
-        const displayStreet = item?.location?.street || (rowIndex === 0 ? "Lokasi Kerja" : "-");
-
         return (
           <tr key={`${plan.id}-${gIdx}-${rowIndex}`}>
             {isFirstInPlan && (
@@ -164,16 +160,16 @@ const WorkPlanDailyRecap = () => {
             
             {rowIndex < group.items.length - 1 ? (
               <>
-                <td className="border-2 border-black p-1 align-top break-words">{displayDesc}</td>
+                <td className="border-2 border-black p-1 align-top break-words">{item.description}</td>
                 <td className="border-2 border-black p-1 align-top break-words">
-                  {displayStreet}, {item?.location?.village ? (Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village) : "-"}, {item?.location?.subDistrict || "-"}
+                  {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                 </td>
               </>
             ) : rowIndex === group.items.length - 1 ? (
               <>
-                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{displayDesc}</td>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>{item.description}</td>
                 <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows - rowIndex}>
-                  {displayStreet}, {item?.location?.village ? (Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village) : "-"}, {item?.location?.subDistrict || "-"}
+                  {item.location.street}, {Array.isArray(item.location.village) ? item.location.village.join(", ") : item.location.village}, {item.location.subDistrict}
                 </td>
               </>
             ) : null}
@@ -194,9 +190,9 @@ const WorkPlanDailyRecap = () => {
 
             {rowIndex === 0 && (
               <>
-                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator || "-"}</td>
-                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members || 0}</td>
-                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis || "-"}</td>
+                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.coordinator}</td>
+                <td className="border-2 border-black p-1 text-center align-top" rowSpan={maxGroupRows}>{group.members}</td>
+                <td className="border-2 border-black p-1 align-top break-words" rowSpan={maxGroupRows}>{group.basis}</td>
                 {hasRemarks && <td className="border-2 border-black p-1 italic align-top break-words" rowSpan={maxGroupRows}>{group.remarks || "-"}</td>}
               </>
             )}
