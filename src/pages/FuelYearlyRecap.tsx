@@ -292,9 +292,10 @@ const FuelYearlyRecap = () => {
         <div className="mt-12 flex justify-end">
           <div className="text-center w-64">
             <p className="text-xs md:text-sm">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p className="font-bold mt-1 text-xs md:text-sm">Administrator Sistem</p>
+            <p className="font-bold mt-1 text-xs md:text-sm">Koordinator Laporan BBM</p>
             <div className="h-16 md:h-20"></div>
-            <p className="font-bold underline text-xs md:text-sm">( ............................................ )</p>
+            <p className="font-bold underline text-xs md:text-sm">Ardiansyah Siregar</p>
+            <p className="text-[10px] md:text-xs">NIP. 19860404 201001 1 015</p>
           </div>
         </div>
       </div>
