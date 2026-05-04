@@ -167,13 +167,9 @@ const FuelMonthlyRecap = () => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.font = { bold: true };
       });
-
-      let currentNo = 0;
-      let lastDate = "";
       flatItems.forEach((item) => {
-        if (item.date !== lastDate) { currentNo++; lastDate = item.date; }
         const row = worksheet.addRow({
-          no: item.date === lastDate && flatItems.find(it => it.date === item.date) === item ? currentNo : '',
+          no: item.date === flatItems.find(it => it.date === item.date)?.date ? '' : '',
           date: format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId }),
           region: item.region,
           team: item.team,
@@ -271,7 +267,7 @@ const FuelMonthlyRecap = () => {
                           {dateSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight" rowSpan={dateSpans[idx]}>{format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId })}</td>)}
                           {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle whitespace-normal break-words leading-tight" rowSpan={regionSpans[idx]}>{item.region}</td>)}
                           {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight" rowSpan={teamSpans[idx]}>{item.team}</td>)}
-                          <td className="border-2 border-black p-1 whitespace-normal font-medium">{item.vehicle_operator}</td>
+                          <td className="border-2 border-black p-1 whitespace-normal break-words font-medium">{item.vehicle_operator}</td>
                           <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                           <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                           <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
@@ -297,13 +293,13 @@ const FuelMonthlyRecap = () => {
           </table>
         </div>
 
-        <div className="mt-12 flex justify-end">
-          <div className="text-center w-64">
-            <p className="text-xs md:text-sm">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p className="font-bold mt-1 text-xs md:text-sm">Koordinator Laporan BBM</p>
-            <div className="h-16 md:h-20"></div>
-            <p className="font-bold underline text-xs md:text-sm">Ardiansyah Siregar</p>
-            <p className="text-[10px] md:text-xs">NIP. 19860404 201001 1 015</p>
+        <div className="mt-12">
+          <div className="flex justify-end mb-4 text-[10px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+          <div className="grid grid-cols-4 gap-4 text-[10px] leading-normal">
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Koordinator Laporan BBM</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></div></div>
           </div>
         </div>
       </div>

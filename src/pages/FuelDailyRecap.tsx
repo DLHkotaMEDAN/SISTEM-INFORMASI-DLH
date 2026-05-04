@@ -95,7 +95,6 @@ const FuelDailyRecap = () => {
 
   const { flatItems, regionSpans, teamSpans } = getTableSpans();
 
-  // Hitung Total
   const totalPertamax = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? item.amount : 0), 0);
   const totalDexlite = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? item.amount : 0), 0);
   const totalOli = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Oli' ? item.amount : 0), 0);
@@ -109,7 +108,6 @@ const FuelDailyRecap = () => {
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Rekap Harian BBM');
-
       const columns = [
         { header: 'No', key: 'no', width: 5 },
         { header: 'Wilayah', key: 'region', width: 15 },
@@ -121,23 +119,16 @@ const FuelDailyRecap = () => {
         { header: 'Lokasi Kerja', key: 'location', width: 40 },
         { header: 'Keterangan', key: 'remarks', width: 30 },
       ];
-
       worksheet.columns = columns;
-
-      // Header Instansi
       worksheet.mergeCells('A1:I1');
       worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN - DINAS LINGKUNGAN HIDUP';
       worksheet.getCell('A1').font = { bold: true, size: 14 };
       worksheet.getCell('A1').alignment = { horizontal: 'center' };
-
       worksheet.mergeCells('A2:I2');
       worksheet.getCell('A2').value = `REKAP HARIAN PEMAKAIAN BBM & OLI - TANGGAL: ${selectedDate}`;
       worksheet.getCell('A2').font = { bold: true, size: 12 };
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
-
-      worksheet.addRow([]); // Baris kosong
-
-      // Header Tabel
+      worksheet.addRow([]);
       const headerRow = worksheet.addRow(columns.map(c => c.header));
       headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
@@ -145,8 +136,6 @@ const FuelDailyRecap = () => {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.font = { bold: true };
       });
-
-      // Data
       flatItems.forEach((item, idx) => {
         const row = worksheet.addRow({
           no: idx + 1,
@@ -159,26 +148,13 @@ const FuelDailyRecap = () => {
           location: `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`,
           remarks: item.item_remarks || item.remarks || "-"
         });
-
         row.eachCell(cell => {
           cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
           cell.alignment = { vertical: 'middle', wrapText: true };
         });
       });
-
-      // Baris Total Excel
-      const totalRow = worksheet.addRow({
-        vehicle: 'TOTAL PEMAKAIAN:',
-        pertamax: totalPertamax,
-        dexlite: totalDexlite,
-        oli: totalOli
-      });
-      totalRow.eachCell(cell => {
-        cell.font = { bold: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
-        cell.border = { top: { style: 'medium' }, left: { style: 'thin' }, bottom: { style: 'medium' }, right: { style: 'thin' } };
-      });
-
+      const totalRow = worksheet.addRow({ vehicle: 'TOTAL PEMAKAIAN:', pertamax: totalPertamax, dexlite: totalDexlite, oli: totalOli });
+      totalRow.eachCell(cell => { cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } }; cell.border = { top: { style: 'medium' }, left: { style: 'thin' }, bottom: { style: 'medium' }, right: { style: 'thin' } }; });
       const buffer = await workbook.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Rekap_Harian_BBM_DLH_${selectedDate}.xlsx`);
       dismissToast(toastId);
@@ -195,39 +171,20 @@ const FuelDailyRecap = () => {
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="px-2 md:px-4">
-              <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
-            </Button>
-            <div className="relative flex-1 md:flex-none">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-full md:w-[200px]" />
-            </div>
+            <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="px-2 md:px-4"><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
+            <div className="relative flex-1 md:flex-none"><CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" /><Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-full md:w-[200px]" /></div>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={handleExportExcel} className="bg-white border-green-600 text-green-600 hover:bg-green-50">
-              <Table className="mr-2 h-4 w-4" /> Rekap Excel
-            </Button>
-            <Button onClick={() => window.print()} className="bg-blue-600">
-              <Printer className="mr-2 h-4 w-4" /> Cetak Rekap
-            </Button>
-          </div>
+          <div className="flex gap-2"><Button variant="outline" onClick={handleExportExcel} className="bg-white border-green-600 text-green-600 hover:bg-green-50"><Table className="mr-2 h-4 w-4" /> Rekap Excel</Button><Button onClick={() => window.print()} className="bg-blue-600"><Printer className="mr-2 h-4 w-4" /> Cetak Rekap</Button></div>
         </div>
       </div>
 
       <div className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
           <img src={LOGO_MEDAN_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo Medan" />
-          <div className="text-center">
-            <h1 className="text-sm md:text-xl font-bold uppercase">Pemerintah Kota Medan</h1>
-            <h2 className="text-base md:text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2>
-            <p className="text-[8px] md:text-xs italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
-          </div>
+          <div className="text-center"><h1 className="text-sm md:text-xl font-bold uppercase">Pemerintah Kota Medan</h1><h2 className="text-base md:text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2><p className="text-[8px] md:text-xs italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p></div>
           <img src={LOGO_DLH_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo DLH" />
         </div>
-        <div className="text-center mb-8">
-          <h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP HARIAN PEMAKAIAN BBM & OLI</h3>
-          <p className="text-sm md:text-lg font-bold">Tanggal: {format(new Date(selectedDate), 'dd MMMM yyyy', { locale: localeId })}</p>
-        </div>
+        <div className="text-center mb-8"><h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP HARIAN PEMAKAIAN BBM & OLI</h3><p className="text-sm md:text-lg font-bold">Tanggal: {format(new Date(selectedDate), 'dd MMMM yyyy', { locale: localeId })}</p></div>
         
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1000px] border-collapse border-2 border-black text-[10px] table-fixed">
@@ -255,7 +212,7 @@ const FuelDailyRecap = () => {
                       <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
                       {regionSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={regionSpans[idx]}>{item.region}</td>)}
                       {teamSpans[idx] > 0 && (<td className="border-2 border-black p-1 text-center align-middle" rowSpan={teamSpans[idx]}>{item.team}</td>)}
-                      <td className="border-2 border-black p-1 whitespace-normal font-medium">{item.vehicle_operator}</td>
+                      <td className="border-2 border-black p-1 whitespace-normal break-words font-medium">{item.vehicle_operator}</td>
                       <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                       <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
                       <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
@@ -263,7 +220,6 @@ const FuelDailyRecap = () => {
                       <td className="border-2 border-black p-1 italic">{item.item_remarks || item.remarks || "-"}</td>
                     </tr>
                   ))}
-                  {/* Baris Total */}
                   <tr className="bg-slate-100 font-black">
                     <td className="border-2 border-black p-1 text-right" colSpan={4}>TOTAL PEMAKAIAN:</td>
                     <td className="border-2 border-black p-1 text-right">{totalPertamax.toLocaleString('id-ID')}</td>
@@ -279,13 +235,13 @@ const FuelDailyRecap = () => {
           </table>
         </div>
 
-        <div className="mt-12 flex justify-end">
-          <div className="text-center w-64">
-            <p className="text-xs md:text-sm">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
-            <p className="font-bold mt-1 text-xs md:text-sm">Koordinator Laporan BBM</p>
-            <div className="h-16 md:h-20"></div>
-            <p className="font-bold underline text-xs md:text-sm">Ardiansyah Siregar</p>
-            <p className="text-[10px] md:text-xs">NIP. 19860404 201001 1 015</p>
+        <div className="mt-12">
+          <div className="flex justify-end mb-4 text-[10px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+          <div className="grid grid-cols-4 gap-4 text-[10px] leading-normal">
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+            <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Koordinator Laporan BBM</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></div></div>
           </div>
         </div>
       </div>
