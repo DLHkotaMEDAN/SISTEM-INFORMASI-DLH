@@ -104,8 +104,8 @@ const FuelDailyRecap = () => {
       if (visibleColumns.region) columns.push({ header: 'Wilayah', key: 'region', width: 15 });
       if (visibleColumns.team) columns.push({ header: 'Tim / Operator', key: 'team', width: 20 });
       if (visibleColumns.vehicle) columns.push({ header: 'Kendaraan / Alat Operasional', key: 'vehicle', width: 30 });
-      if (visibleColumns.pertamax) columns.push({ header: 'Pertamax (Rp)', key: 'pertamax', width: 15 });
-      if (visibleColumns.dexlite) columns.push({ header: 'Dexlite (Rp)', key: 'dexlite', width: 15 });
+      if (visibleColumns.pertamax) columns.push({ header: 'Pertamax (Rp)', key: 'pertamax', width: 17 });
+      if (visibleColumns.dexlite) columns.push({ header: 'Dexlite (Rp)', key: 'dexlite', width: 17 });
       if (visibleColumns.oli) columns.push({ header: 'Oli (L)', key: 'oli', width: 6 });
       if (visibleColumns.location) columns.push({ header: 'Lokasi Kerja', key: 'location', width: 40 });
       if (visibleColumns.remarks) columns.push({ header: 'Keterangan', key: 'remarks', width: 30 });
@@ -246,8 +246,8 @@ const FuelDailyRecap = () => {
               {visibleColumns.region && <col style={{ width: '100px' }} />}
               {visibleColumns.team && <col style={{ width: '100px' }} />}
               {visibleColumns.vehicle && <col style={{ width: 'auto' }} />}
-              {visibleColumns.pertamax && <col style={{ width: '75px' }} />}
-              {visibleColumns.dexlite && <col style={{ width: '75px' }} />}
+              {visibleColumns.pertamax && <col style={{ width: '85px' }} />}
+              {visibleColumns.dexlite && <col style={{ width: '85px' }} />}
               {visibleColumns.oli && <col style={{ width: '30px' }} />}
               {visibleColumns.location && <col style={{ width: '200px' }} />}
               {visibleColumns.remarks && <col style={{ width: '120px' }} />}

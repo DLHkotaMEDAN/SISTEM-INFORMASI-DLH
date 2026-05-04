@@ -108,8 +108,8 @@ const FuelWeeklyRecap = () => {
       if (visibleColumns.region) columns.push({ header: 'Wilayah', key: 'region', width: 15 });
       if (visibleColumns.team) columns.push({ header: 'Tim / Operator', key: 'team', width: 20 });
       if (visibleColumns.vehicle) columns.push({ header: 'Kendaraan', key: 'vehicle', width: 25 });
-      if (visibleColumns.pertamax) columns.push({ header: 'Pertamax (Rp)', key: 'pertamax', width: 12 });
-      if (visibleColumns.dexlite) columns.push({ header: 'Dexlite (Rp)', key: 'dexlite', width: 12 });
+      if (visibleColumns.pertamax) columns.push({ header: 'Pertamax (Rp)', key: 'pertamax', width: 14 });
+      if (visibleColumns.dexlite) columns.push({ header: 'Dexlite (Rp)', key: 'dexlite', width: 14 });
       if (visibleColumns.oli) columns.push({ header: 'Oli (L)', key: 'oli', width: 6 });
       if (visibleColumns.item_remarks) columns.push({ header: 'Ket. Item', key: 'item_remarks', width: 20 });
       if (visibleColumns.location) columns.push({ header: 'Lokasi Kerja', key: 'location', width: 35 });
@@ -242,8 +242,8 @@ const FuelWeeklyRecap = () => {
               </tr>
               {bbmColCount > 0 && (
                 <tr className="bg-slate-50">
-                  {visibleColumns.pertamax && <th className="border-2 border-black p-1 w-[70px]">Pertamax</th>}
-                  {visibleColumns.dexlite && <th className="border-2 border-black p-1 w-[70px]">Dexlite</th>}
+                  {visibleColumns.pertamax && <th className="border-2 border-black p-1 w-[80px]">Pertamax</th>}
+                  {visibleColumns.dexlite && <th className="border-2 border-black p-1 w-[80px]">Dexlite</th>}
                   {visibleColumns.oli && <th className="border-2 border-black p-1 w-[30px]">Oli</th>}
                 </tr>
               )}
