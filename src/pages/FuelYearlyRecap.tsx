@@ -6,13 +6,17 @@ import { fuelService } from '@/services/fuelService';
 import { FuelReport } from '@/types/fuelReport';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, Table, Filter } from 'lucide-react';
+import { ArrowLeft, Printer, Table, Filter, Settings2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
+import { useAuth } from '@/context/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -27,10 +31,26 @@ const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur
 
 const FuelYearlyRecap = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
   const [reports, setReports] = useState<FuelReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedRegion, setSelectedRegion] = useState("semua");
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
+    region: true,
+    team: true,
+    vehicle: true,
+    pertamax: true,
+    dexlite: true,
+    oli: true,
+    item_remarks: true,
+    location: true,
+    remarks: true
+  });
+
+  const isAdmin = profile?.role === 'admin';
 
   useEffect(() => {
     loadData();
@@ -54,50 +74,44 @@ const FuelYearlyRecap = () => {
   };
 
   const getFilteredItems = () => {
-    const flat = reports.flatMap(r => r.items.map(item => ({ 
-      ...item, 
-      date: r.date, 
-      region: r.region, 
-      team: r.team, 
-      remarks: r.remarks,
-      reportId: r.id
-    })));
-    
+    const flat = reports.flatMap(r => r.items.map(item => ({ ...item, date: r.date, region: r.region, team: r.team, remarks: r.remarks, reportId: r.id })));
     if (selectedRegion === "semua") return flat;
     return flat.filter(item => item.region === selectedRegion);
   };
 
   const flatItems = getFilteredItems();
 
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
+  };
+
   const handleExportExcel = async () => {
-    if (flatItems.length === 0) {
-      showError("Tidak ada data untuk diekspor");
-      return;
-    }
+    if (flatItems.length === 0) { showError("Tidak ada data untuk diekspor"); return; }
     const toastId = showLoading("Menyiapkan file Excel...");
     try {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('Rekap Tahunan BBM');
-      const columns = [
-        { header: 'No', key: 'no', width: 5 },
-        { header: 'Tanggal', key: 'date', width: 15 },
-        { header: 'Wilayah', key: 'region', width: 15 },
-        { header: 'Tim / Operator', key: 'team', width: 20 },
-        { header: 'Kendaraan / Alat Operasional', key: 'vehicle', width: 25 },
-        { header: 'Pertamax (Rp)', key: 'pertamax', width: 12 },
-        { header: 'Dexlite (Rp)', key: 'dexlite', width: 12 },
-        { header: 'Oli (L)', key: 'oli', width: 8 },
-        { header: 'Keterangan Item', key: 'item_remarks', width: 20 },
-        { header: 'Lokasi Kerja', key: 'location', width: 35 },
-        { header: 'Keterangan Tambahan', key: 'remarks', width: 25 },
-      ];
+      const columns: any[] = [{ header: 'No', key: 'no', width: 5 }];
+      if (visibleColumns.date) columns.push({ header: 'Tanggal', key: 'date', width: 15 });
+      if (visibleColumns.region) columns.push({ header: 'Wilayah', key: 'region', width: 15 });
+      if (visibleColumns.team) columns.push({ header: 'Tim', key: 'team', width: 20 });
+      if (visibleColumns.vehicle) columns.push({ header: 'Kendaraan', key: 'vehicle', width: 25 });
+      if (visibleColumns.pertamax) columns.push({ header: 'Pertamax', key: 'pertamax', width: 12 });
+      if (visibleColumns.dexlite) columns.push({ header: 'Dexlite', key: 'dexlite', width: 12 });
+      if (visibleColumns.oli) columns.push({ header: 'Oli', key: 'oli', width: 8 });
+      if (visibleColumns.item_remarks) columns.push({ header: 'Ket. Item', key: 'item_remarks', width: 20 });
+      if (visibleColumns.location) columns.push({ header: 'Lokasi', key: 'location', width: 35 });
+      if (visibleColumns.remarks) columns.push({ header: 'Ket. Umum', key: 'remarks', width: 25 });
+      
       worksheet.columns = columns;
-      worksheet.mergeCells('A1:K1');
+      const lastColLetter = String.fromCharCode(64 + columns.length);
+      worksheet.mergeCells(`A1:${lastColLetter}1`);
       worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN - DINAS LINGKUNGAN HIDUP';
       worksheet.getCell('A1').font = { bold: true, size: 14 };
       worksheet.getCell('A1').alignment = { horizontal: 'center' };
-      worksheet.mergeCells('A2:K2');
-      worksheet.getCell('A2').value = `REKAP TAHUNAN PEMAKAIAN BBM & OLI - TAHUN: ${selectedYear} (${selectedRegion.toUpperCase()})`;
+      
+      worksheet.mergeCells(`A2:${lastColLetter}2`);
+      worksheet.getCell('A2').value = `REKAP TAHUNAN BBM - TAHUN: ${selectedYear}`;
       worksheet.getCell('A2').font = { bold: true, size: 12 };
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
       worksheet.addRow([]);
@@ -110,32 +124,26 @@ const FuelYearlyRecap = () => {
         cell.font = { bold: true };
       });
 
-      flatItems.forEach((item) => {
-        const row = worksheet.addRow({
-          date: format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId }),
-          region: item.region,
-          team: item.team,
-          vehicle: item.vehicle_operator,
-          pertamax: item.fuel_type === 'Pertamax' ? item.amount : 0,
-          dexlite: item.fuel_type === 'Dexlite' ? item.amount : 0,
-          oli: item.fuel_type === 'Oli' ? item.amount : 0,
-          item_remarks: item.item_remarks || "-",
-          location: `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`,
-          remarks: item.remarks || "-"
-        });
+      flatItems.forEach((item, idx) => {
+        const rowData: any = { no: idx + 1 };
+        if (visibleColumns.date) rowData.date = format(parseISO(item.date), 'dd/MM/yy');
+        if (visibleColumns.region) rowData.region = item.region;
+        if (visibleColumns.team) rowData.team = item.team;
+        if (visibleColumns.vehicle) rowData.vehicle = item.vehicle_operator;
+        if (visibleColumns.pertamax) rowData.pertamax = item.fuel_type === 'Pertamax' ? item.amount : 0;
+        if (visibleColumns.dexlite) rowData.dexlite = item.fuel_type === 'Dexlite' ? item.amount : 0;
+        if (visibleColumns.oli) rowData.oli = item.fuel_type === 'Oli' ? item.amount : 0;
+        if (visibleColumns.item_remarks) rowData.item_remarks = item.item_remarks || "-";
+        if (visibleColumns.location) rowData.location = `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`;
+        if (visibleColumns.remarks) rowData.remarks = item.remarks || "-";
+
+        const row = worksheet.addRow(rowData);
         row.eachCell(cell => {
           cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
           cell.alignment = { vertical: 'middle', wrapText: true };
         });
       });
 
-      const totalPertamax = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? item.amount : 0), 0);
-      const totalDexlite = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? item.amount : 0), 0);
-      const totalOli = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Oli' ? item.amount : 0), 0);
-
-      const totalRow = worksheet.addRow({ vehicle: 'TOTAL PEMAKAIAN:', pertamax: totalPertamax, dexlite: totalDexlite, oli: totalOli });
-      totalRow.eachCell(cell => { cell.font = { bold: true }; cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } }; cell.border = { top: { style: 'medium' }, left: { style: 'thin' }, bottom: { style: 'medium' }, right: { style: 'thin' } }; });
-      
       const buffer = await workbook.xlsx.writeBuffer();
       saveAs(new Blob([buffer]), `Rekap_Tahunan_BBM_DLH_${selectedYear}.xlsx`);
       dismissToast(toastId);
@@ -147,7 +155,6 @@ const FuelYearlyRecap = () => {
     }
   };
 
-  // Logika pengelompokan untuk tampilan cetak
   const groupedByRegion: Record<string, any[]> = {};
   flatItems.forEach(item => {
     if (!groupedByRegion[item.region]) groupedByRegion[item.region] = [];
@@ -157,6 +164,9 @@ const FuelYearlyRecap = () => {
   const totalPertamaxAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? item.amount : 0), 0);
   const totalDexliteAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? item.amount : 0), 0);
   const totalOliAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Oli' ? item.amount : 0), 0);
+
+  const bbmColCount = (visibleColumns.pertamax ? 1 : 0) + (visibleColumns.dexlite ? 1 : 0) + (visibleColumns.oli ? 1 : 0);
+  const leadingCols = 1 + (visibleColumns.date ? 1 : 0) + (visibleColumns.region ? 1 : 0) + (visibleColumns.team ? 1 : 0) + (visibleColumns.vehicle ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
@@ -173,7 +183,25 @@ const FuelYearlyRecap = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2"><Button variant="outline" onClick={handleExportExcel} className="bg-white border-green-600 text-green-600 hover:bg-green-50"><Table className="mr-2 h-4 w-4" /> Rekap Excel</Button><Button onClick={() => window.print()} className="bg-blue-600 w-full md:w-auto"><Printer className="mr-2 h-4 w-4" /> Cetak Rekap</Button></div>
+          <div className="flex gap-2">
+            {isAdmin && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50"><Settings2 className="mr-2 h-4 w-4" /> Pilih Kolom</Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-56 p-3" align="end">
+                  <div className="space-y-2">
+                    <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tampilkan Kolom:</p>
+                    {Object.entries({ date: "Tanggal", region: "Wilayah", team: "Tim", vehicle: "Kendaraan", pertamax: "Pertamax", dexlite: "Dexlite", oli: "Oli", item_remarks: "Ket. Item", location: "Lokasi", remarks: "Ket. Umum" }).map(([key, label]) => (
+                      <div key={key} className="flex items-center space-x-2"><Checkbox id={`col-${key}`} checked={visibleColumns[key as keyof typeof visibleColumns]} onCheckedChange={() => toggleColumn(key as keyof typeof visibleColumns)} /><Label htmlFor={`col-${key}`} className="text-sm cursor-pointer">{label}</Label></div>
+                    ))}
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            <Button variant="outline" onClick={handleExportExcel} className="bg-white border-green-600 text-green-600 hover:bg-green-50"><Table className="mr-2 h-4 w-4" /> Rekap Excel</Button>
+            <Button onClick={() => window.print()} className="bg-blue-600 w-full md:w-auto"><Printer className="mr-2 h-4 w-4" /> Cetak Rekap</Button>
+          </div>
         </div>
       </div>
 
@@ -187,36 +215,25 @@ const FuelYearlyRecap = () => {
         
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed">
-            <colgroup>
-              <col style={{ width: '30px' }} />
-              <col style={{ width: '58px' }} />
-              <col style={{ width: '75px' }} />
-              <col style={{ width: '85px' }} />
-              <col style={{ width: 'auto' }} />
-              <col style={{ width: '70px' }} />
-              <col style={{ width: '70px' }} />
-              <col style={{ width: '25px' }} />
-              <col style={{ width: '90px' }} />
-              <col style={{ width: '180px' }} />
-              <col style={{ width: '120px' }} />
-            </colgroup>
             <thead>
               <tr className="bg-slate-100">
-                <th className="border-2 border-black p-1" rowSpan={2}>No</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Tanggal</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Wilayah</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Tim / Operator</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Kendaraan / Alat Operasional</th>
-                <th className="border-2 border-black p-1" colSpan={3}>Jenis BBM / Oli</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Keterangan Item</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Lokasi Kerja</th>
-                <th className="border-2 border-black p-1" rowSpan={2}>Keterangan Tambahan</th>
+                <th className="border-2 border-black p-1 w-[30px]" rowSpan={bbmColCount > 0 ? 2 : 1}>No</th>
+                {visibleColumns.date && <th className="border-2 border-black p-1 w-[60px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tanggal</th>}
+                {visibleColumns.region && <th className="border-2 border-black p-1 w-[80px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Wilayah</th>}
+                {visibleColumns.team && <th className="border-2 border-black p-1 w-[100px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tim / Operator</th>}
+                {visibleColumns.vehicle && <th className="border-2 border-black p-1 w-auto" rowSpan={bbmColCount > 0 ? 2 : 1}>Kendaraan / Alat Operasional</th>}
+                {bbmColCount > 0 && <th className="border-2 border-black p-1" colSpan={bbmColCount}>Jenis BBM / Oli</th>}
+                {visibleColumns.item_remarks && <th className="border-2 border-black p-1 w-[100px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Ket. Item</th>}
+                {visibleColumns.location && <th className="border-2 border-black p-1 w-[180px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Lokasi Kerja</th>}
+                {visibleColumns.remarks && <th className="border-2 border-black p-1 w-[120px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Ket. Umum</th>}
               </tr>
-              <tr className="bg-slate-50">
-                <th className="border-2 border-black p-1">Pertamax</th>
-                <th className="border-2 border-black p-1">Dexlite</th>
-                <th className="border-2 border-black p-1">Oli</th>
-              </tr>
+              {bbmColCount > 0 && (
+                <tr className="bg-slate-50">
+                  {visibleColumns.pertamax && <th className="border-2 border-black p-1 w-[70px]">Pertamax</th>}
+                  {visibleColumns.dexlite && <th className="border-2 border-black p-1 w-[70px]">Dexlite</th>}
+                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[30px]">Oli</th>}
+                </tr>
+              )}
             </thead>
             <tbody>
               {Object.keys(groupedByRegion).length > 0 ? (
@@ -231,40 +248,40 @@ const FuelYearlyRecap = () => {
                         {items.map((item, idx) => (
                           <tr key={`${regionName}-${idx}`}>
                             <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                            <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId })}</td>
-                            {idx === 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle whitespace-normal break-words leading-tight" rowSpan={items.length}>{item.region}</td>)}
-                            <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{item.team}</td>
-                            <td className="border-2 border-black p-1 whitespace-normal break-words font-medium">{item.vehicle_operator}</td>
-                            <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                            <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>
-                            <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>
-                            <td className="border-2 border-black p-1 italic break-words">{item.item_remarks || "-"}</td>
-                            <td className="border-2 border-black p-1 break-words">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}{item.location.village && item.location.village !== " " ? `, ${item.location.village}` : ""}</td>
-                            <td className="border-2 border-black p-1 italic align-middle break-words">{item.remarks || "-"}</td>
+                            {visibleColumns.date && <td className="border-2 border-black p-1 text-center leading-tight">{format(parseISO(item.date), 'dd/MM/yy')}</td>}
+                            {visibleColumns.region && idx === 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={items.length}>{item.region}</td>)}
+                            {visibleColumns.team && <td className="border-2 border-black p-1 text-center align-middle">{item.team}</td>}
+                            {visibleColumns.vehicle && <td className="border-2 border-black p-1 whitespace-normal break-words font-medium leading-tight">{item.vehicle_operator}</td>}
+                            {visibleColumns.pertamax && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.dexlite && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>}
+                            {visibleColumns.item_remarks && <td className="border-2 border-black p-1 italic">{item.item_remarks || "-"}</td>}
+                            {visibleColumns.location && <td className="border-2 border-black p-1 break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
+                            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle break-words">{item.remarks || "-"}</td>}
                           </tr>
                         ))}
                         {selectedRegion === "semua" && (
                           <tr className="bg-slate-50 font-bold italic">
-                            <td className="border-2 border-black p-1 text-right" colSpan={5}>SUB-TOTAL {regionName.toUpperCase()}:</td>
-                            <td className="border-2 border-black p-1 text-right">{subPertamax.toLocaleString('id-ID')}</td>
-                            <td className="border-2 border-black p-1 text-right">{subDexlite.toLocaleString('id-ID')}</td>
-                            <td className="border-2 border-black p-1 text-center">{subOli}</td>
-                            <td className="border-2 border-black p-1" colSpan={3}></td>
+                            <td className="border-2 border-black p-1 text-right" colSpan={leadingCols}>SUB-TOTAL {regionName.toUpperCase()}:</td>
+                            {visibleColumns.pertamax && <td className="border-2 border-black p-1 text-right">{subPertamax.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.dexlite && <td className="border-2 border-black p-1 text-right">{subDexlite.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{subOli}</td>}
+                            <td className="border-2 border-black p-1" colSpan={(visibleColumns.item_remarks ? 1 : 0) + (visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
                           </tr>
                         )}
                       </React.Fragment>
                     );
                   })}
                   <tr className="bg-slate-100 font-black text-sm">
-                    <td className="border-2 border-black p-2 text-right" colSpan={5}>TOTAL KESELURUHAN:</td>
-                    <td className="border-2 border-black p-2 text-right">{totalPertamaxAll.toLocaleString('id-ID')}</td>
-                    <td className="border-2 border-black p-2 text-right">{totalDexliteAll.toLocaleString('id-ID')}</td>
-                    <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>
-                    <td className="border-2 border-black p-2" colSpan={3}></td>
+                    <td className="border-2 border-black p-2 text-right" colSpan={leadingCols}>TOTAL KESELURUHAN:</td>
+                    {visibleColumns.pertamax && <td className="border-2 border-black p-2 text-right">{totalPertamaxAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.dexlite && <td className="border-2 border-black p-2 text-right">{totalDexliteAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.oli && <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>}
+                    <td className="border-2 border-black p-2" colSpan={(visibleColumns.item_remarks ? 1 : 0) + (visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
                   </tr>
                 </>
               ) : (
-                <tr><td colSpan={11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tahun ini</td></tr>
+                <tr><td colSpan={11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
               )}
             </tbody>
           </table>
