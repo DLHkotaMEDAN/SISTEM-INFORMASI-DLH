@@ -138,7 +138,7 @@ const FuelWeeklyRecap = () => {
 
       flatItems.forEach((item, idx) => {
         const rowData: any = { no: idx + 1 };
-        if (visibleColumns.date) rowData.date = format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId });
+        if (visibleColumns.date) rowData.date = format(parseISO(item.date), 'dd/MM/yy');
         if (visibleColumns.region) rowData.region = item.region;
         if (visibleColumns.team) rowData.team = item.team;
         if (visibleColumns.vehicle) rowData.vehicle = item.vehicle_operator;
@@ -232,7 +232,7 @@ const FuelWeeklyRecap = () => {
               <col style={{ width: '35px' }} />
               {visibleColumns.date && <col style={{ width: '55px' }} />}
               {visibleColumns.region && <col style={{ width: '80px' }} />}
-              {visibleColumns.team && <col style={{ width: '90px' }} />}
+              {visibleColumns.team && <col style={{ width: '75px' }} />}
               {visibleColumns.vehicle && <col style={{ width: '125px' }} />}
               {visibleColumns.pertamax && <col style={{ width: '90px' }} />}
               {visibleColumns.dexlite && <col style={{ width: '90px' }} />}

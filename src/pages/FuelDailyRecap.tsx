@@ -244,7 +244,7 @@ const FuelDailyRecap = () => {
             <colgroup>
               <col style={{ width: '35px' }} />
               {visibleColumns.region && <col style={{ width: '100px' }} />}
-              {visibleColumns.team && <col style={{ width: '90px' }} />}
+              {visibleColumns.team && <col style={{ width: '75px' }} />}
               {visibleColumns.vehicle && <col style={{ width: '125px' }} />}
               {visibleColumns.pertamax && <col style={{ width: '85px' }} />}
               {visibleColumns.dexlite && <col style={{ width: '85px' }} />}
