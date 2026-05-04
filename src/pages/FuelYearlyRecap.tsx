@@ -127,15 +127,28 @@ const FuelYearlyRecap = () => {
         cell.font = { bold: true };
       });
 
+      let totalPertamax = 0;
+      let totalDexlite = 0;
+      let totalOli = 0;
+
       flatItems.forEach((item, idx) => {
         const rowData: any = { no: idx + 1 };
         if (visibleColumns.date) rowData.date = format(parseISO(item.date), 'dd/MM/yy');
         if (visibleColumns.region) rowData.region = item.region;
         if (visibleColumns.team) rowData.team = item.team;
         if (visibleColumns.vehicle) rowData.vehicle = item.vehicle_operator;
-        if (visibleColumns.pertamax) rowData.pertamax = item.fuel_type === 'Pertamax' ? item.amount : 0;
-        if (visibleColumns.dexlite) rowData.dexlite = item.fuel_type === 'Dexlite' ? item.amount : 0;
-        if (visibleColumns.oli) rowData.oli = item.fuel_type === 'Oli' ? item.amount : 0;
+        
+        const pAmt = item.fuel_type === 'Pertamax' ? item.amount : 0;
+        const dAmt = item.fuel_type === 'Dexlite' ? item.amount : 0;
+        const oAmt = item.fuel_type === 'Oli' ? item.amount : 0;
+        
+        totalPertamax += pAmt;
+        totalDexlite += dAmt;
+        totalOli += oAmt;
+
+        if (visibleColumns.pertamax) rowData.pertamax = pAmt;
+        if (visibleColumns.dexlite) rowData.dexlite = dAmt;
+        if (visibleColumns.oli) rowData.oli = oAmt;
         if (visibleColumns.item_remarks) rowData.item_remarks = item.item_remarks || "-";
         if (visibleColumns.location) rowData.location = `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`;
         if (visibleColumns.remarks) rowData.remarks = item.remarks || "-";
@@ -145,6 +158,25 @@ const FuelYearlyRecap = () => {
           cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
           cell.alignment = { vertical: 'middle', wrapText: true };
         });
+      });
+
+      // Baris Total Keseluruhan
+      const leadingColsCount = 1 + (visibleColumns.date ? 1 : 0) + (visibleColumns.region ? 1 : 0) + (visibleColumns.team ? 1 : 0) + (visibleColumns.vehicle ? 1 : 0);
+      const totalRowData: any = {};
+      totalRowData.no = 'TOTAL KESELURUHAN:';
+      if (visibleColumns.pertamax) totalRowData.pertamax = totalPertamax;
+      if (visibleColumns.dexlite) totalRowData.dexlite = totalDexlite;
+      if (visibleColumns.oli) totalRowData.oli = totalOli;
+
+      const totalRow = worksheet.addRow(totalRowData);
+      worksheet.mergeCells(totalRow.number, 1, totalRow.number, leadingColsCount);
+      
+      totalRow.eachCell((cell, colNumber) => {
+        cell.font = { bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
+        cell.border = { top: { style: 'medium' }, left: { style: 'medium' }, bottom: { style: 'medium' }, right: { style: 'medium' } };
+        if (colNumber === 1) cell.alignment = { horizontal: 'right' };
+        else cell.alignment = { horizontal: 'center' };
       });
 
       const buffer = await workbook.xlsx.writeBuffer();
@@ -235,7 +267,7 @@ const FuelYearlyRecap = () => {
               <col style={{ width: '35px' }} />
               {visibleColumns.date && <col style={{ width: '55px' }} />}
               {visibleColumns.region && <col style={{ width: '80px' }} />}
-              {visibleColumns.team && <col style={{ width: '75px' }} />}
+              {visibleColumns.team && <col style={{ width: '90px' }} />}
               {visibleColumns.vehicle && <col style={{ width: '125px' }} />}
               {visibleColumns.pertamax && <col style={{ width: '110px' }} />}
               {visibleColumns.dexlite && <col style={{ width: '110px' }} />}
