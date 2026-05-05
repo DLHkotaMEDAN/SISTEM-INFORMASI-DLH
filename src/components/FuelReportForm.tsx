@@ -342,7 +342,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50" 
             onClick={handleAddClick}
           >
-            <Plus className="h-5 w-5 mr-2" /> Tambah Pemakaian Baru
+            <Plus className="h-5 w-5 mr-2" /> Tambah Pemakaian atau Lokasi baru
           </Button>
         </div>
 
