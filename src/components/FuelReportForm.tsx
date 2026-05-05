@@ -282,7 +282,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-4">
                         <FormField control={form.control} name={`items.${index}.vehicle_operator`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-xs font-bold">Kendaraan / Alat Operasional</FormLabel><FormControl><Input placeholder="BK 1234 XX / Nama" list="vehicle-suggestions" {...field} /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel className="text-xs font-bold">Kendaraan / Alat Operasional</FormLabel><FormControl><Input placeholder="nama alat/ kendaraan (Plat Nomor)" list="vehicle-suggestions" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                       <div className="md:col-span-3">
