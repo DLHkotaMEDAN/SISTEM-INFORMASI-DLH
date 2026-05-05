@@ -329,9 +329,9 @@ const FuelWeeklyRecap = () => {
                             {visibleColumns.pertamax && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount.toLocaleString('id-ID') : "-"}</td>}
                             {visibleColumns.dexlite && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount.toLocaleString('id-ID') : "-"}</td>}
                             {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount : "-"}</td>}
-                            {visibleColumns.item_remarks && <td className="border-2 border-black p-1 italic">{item.item_remarks || "-"}</td>}
-                            {visibleColumns.location && <td className="border-2 border-black p-1 break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
-                            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle break-words">{item.remarks || "-"}</td>}
+                            {visibleColumns.item_remarks && <td className="border-2 border-black p-1 italic whitespace-normal break-words leading-tight">{item.item_remarks || "-"}</td>}
+                            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
+                            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle whitespace-normal break-words leading-tight">{item.remarks || "-"}</td>}
                           </tr>
                         ))}
                         {selectedRegion === "semua" && (
