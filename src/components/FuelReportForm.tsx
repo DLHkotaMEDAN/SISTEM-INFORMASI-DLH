@@ -5,13 +5,13 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, MessageSquare, HelpCircle, Check, X, MapPinned
+  Plus, Trash2, MessageSquare, HelpCircle, Check, X, MapPinned, AlertCircle
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -297,7 +297,14 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                       </div>
                       <div className="md:col-span-3">
                         <FormField control={form.control} name={`items.${index}.item_remarks`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-xs font-bold">Keterangan Item</FormLabel><FormControl><Input placeholder="Catatan item..." className="h-10" {...field} /></FormControl><FormMessage /></FormItem>
+                          <FormItem>
+                            <FormLabel className="text-xs font-bold">Keterangan</FormLabel>
+                            <FormControl><Input placeholder="Catatan..." className="h-10" {...field} /></FormControl>
+                            <FormDescription className="text-[10px] text-amber-600 flex items-center gap-1 font-medium">
+                              <AlertCircle size={10} /> Mohon cantumkan Nama Personil di sini.
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
                         )} />
                       </div>
                     </div>
@@ -387,7 +394,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
           </DialogHeader>
           <div className="py-4 flex flex-col gap-3">
             <Button onClick={() => performAppend(true, true)} className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
-              <Check className="mr-3 h-5 w-5" /> Ya, Lokasi Sama
+              <Check size={18} className="mr-3 h-5 w-5" /> Ya, Lokasi Sama
             </Button>
             <Button onClick={() => performAppend(false, true)} variant="outline" className="h-12 justify-start px-6">
               <Plus className="mr-3 h-5 w-5" /> Tidak, Lokasi Berbeda

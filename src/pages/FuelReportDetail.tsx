@@ -108,12 +108,15 @@ const FuelReportDetail = () => {
                   </div>
                   <div className="flex items-start gap-2 text-sm text-slate-600">
                     <MapPin className="h-4 w-4 mt-0.5 text-red-500 shrink-0" />
-                    <span>{item.location.street}, {item.location.village}, {item.location.subDistrict}</span>
+                    <span>{item.location.street}, {item.location.subDistrict}, {item.location.village}</span>
                   </div>
                   {item.item_remarks && (
-                    <p className="text-xs italic text-slate-500 bg-slate-50 p-2 rounded border border-dashed">
-                      Catatan: {item.item_remarks}
-                    </p>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase">Keterangan:</p>
+                      <p className="text-xs italic text-slate-500 bg-slate-50 p-2 rounded border border-dashed">
+                        {item.item_remarks}
+                      </p>
+                    </div>
                   )}
                 </div>
               ))}

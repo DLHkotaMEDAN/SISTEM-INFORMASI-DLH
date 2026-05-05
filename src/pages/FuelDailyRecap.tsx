@@ -135,27 +135,14 @@ const FuelDailyRecap = () => {
         cell.font = { bold: true };
       });
 
-      let totalPertamax = 0;
-      let totalDexlite = 0;
-      let totalOli = 0;
-
       flatItems.forEach((item, idx) => {
         const rowData: any = { no: idx + 1 };
         if (visibleColumns.region) rowData.region = item.region;
         if (visibleColumns.team) rowData.team = item.team;
         if (visibleColumns.vehicle) rowData.vehicle = item.vehicle_operator;
-        
-        const pAmt = item.fuel_type === 'Pertamax' ? item.amount : 0;
-        const dAmt = item.fuel_type === 'Dexlite' ? item.amount : 0;
-        const oAmt = item.fuel_type === 'Oli' ? item.amount : 0;
-        
-        totalPertamax += pAmt;
-        totalDexlite += dAmt;
-        totalOli += oAmt;
-
-        if (visibleColumns.pertamax) rowData.pertamax = pAmt;
-        if (visibleColumns.dexlite) rowData.dexlite = dAmt;
-        if (visibleColumns.oli) rowData.oli = oAmt;
+        if (visibleColumns.pertamax) rowData.pertamax = item.fuel_type === 'Pertamax' ? item.amount : 0;
+        if (visibleColumns.dexlite) rowData.dexlite = item.fuel_type === 'Dexlite' ? item.amount : 0;
+        if (visibleColumns.oli) rowData.oli = item.fuel_type === 'Oli' ? item.amount : 0;
         if (visibleColumns.location) rowData.location = `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`;
         if (visibleColumns.remarks) rowData.remarks = item.item_remarks || item.remarks || "-";
 
@@ -170,9 +157,9 @@ const FuelDailyRecap = () => {
       const leadingColsCount = 1 + (visibleColumns.region ? 1 : 0) + (visibleColumns.team ? 1 : 0) + (visibleColumns.vehicle ? 1 : 0);
       const totalRowData: any = {};
       totalRowData.no = 'TOTAL KESELURUHAN:';
-      if (visibleColumns.pertamax) totalRowData.pertamax = totalPertamax;
-      if (visibleColumns.dexlite) totalRowData.dexlite = totalDexlite;
-      if (visibleColumns.oli) totalRowData.oli = totalOli;
+      if (visibleColumns.pertamax) totalRowData.pertamax = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? it.amount : 0), 0);
+      if (visibleColumns.dexlite) totalRowData.dexlite = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? it.amount : 0), 0);
+      if (visibleColumns.oli) totalRowData.oli = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Oli' ? it.amount : 0), 0);
 
       const totalRow = worksheet.addRow(totalRowData);
       worksheet.mergeCells(totalRow.number, 1, totalRow.number, leadingColsCount);
