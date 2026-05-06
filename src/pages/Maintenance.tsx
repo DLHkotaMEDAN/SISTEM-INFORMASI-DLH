@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,9 +9,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   ArrowLeft, Trash2, RefreshCw, ShieldAlert, 
   Loader2, Database, Users, History,
-  FileText, ClipboardList, Pencil, PlusCircle,
-  RotateCcw, AlertTriangle, HardDrive, TrendingUp, BarChart3, Eye, Info, X,
-  Zap, Activity
+  FileText, ClipboardList,
+  RotateCcw, HardDrive, TrendingUp, BarChart3, Eye, Info, X,
+  Zap, Activity, Globe, Cpu
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -50,66 +50,21 @@ const Maintenance = () => {
     reportsToday: 0,
     reportsThisMonth: 0,
     photosToday: 0,
-    photosThisMonth: 0
+    photosThisMonth: 0,
+    totalUsers: 0,
+    dbSizeEstimate: 0 // Estimasi dalam bytes
   });
   
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState("");
 
-  const STORAGE_LIMIT_BYTES = 1024 * 1024 * 1024; // 1GB
+  const STORAGE_LIMIT = 1024 * 1024 * 1024; // 1GB
+  const DB_LIMIT = 500 * 1024 * 1024; // 500MB
+  const BANDWIDTH_LIMIT = 2 * 1024 * 1024 * 1024; // 2GB
+  const AUTH_LIMIT = 50000;
+  const EDGE_LIMIT = 500000;
+
   const isAdmin = profile?.role === 'admin' || session?.user?.email === 'admin@gmail.com';
-
-  useEffect(() => {
-    if (!isAdmin && session) {
-      showError("Akses ditolak.");
-      navigate('/');
-    } else {
-      fetchData();
-    }
-  }, [isAdmin, session]);
-
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      const [logsData, delReports, delPlans] = await Promise.all([
-        auditLogService.getLogs(),
-        reportService.getAllReports('semua', true),
-        workPlanService.getAllWorkPlans('semua', true)
-      ]);
-      setLogs(logsData);
-      setDeletedReports(delReports);
-      setDeletedWorkPlans(delPlans);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
-    try {
-      if (type === 'REPORT') await reportService.restoreReport(id);
-      else await workPlanService.restoreWorkPlan(id);
-      
-      showSuccess("Data berhasil dipulihkan");
-      fetchData();
-    } catch (e) {
-      showError("Gagal memulihkan data");
-    }
-  };
-
-  const handlePermanentDelete = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
-    if (!confirm("Hapus permanen? Data tidak bisa dikembalikan lagi.")) return;
-    try {
-      if (type === 'REPORT') await reportService.hardDeleteReport(id);
-      else await workPlanService.hardDeleteWorkPlan(id);
-      
-      showSuccess("Data dihapus permanen");
-      fetchData();
-    } catch (e) {
-      showError("Gagal menghapus permanen");
-    }
-  };
 
   const formatSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -119,13 +74,15 @@ const Maintenance = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const analyzeStorage = async () => {
+  const analyzeSystem = useCallback(async () => {
     setAnalyzing(true);
     try {
       const now = new Date();
+      
+      // 1. Ambil Data Laporan & Hitung Statistik
       const { data: reports, error: dbError } = await supabase
         .from('reports')
-        .select('tasks, date, createdAt');
+        .select('tasks, date, category');
       
       if (dbError) throw dbError;
 
@@ -134,11 +91,15 @@ const Maintenance = () => {
       let reportsThisMonth = 0;
       let photosToday = 0;
       let photosThisMonth = 0;
+      let totalChars = 0; // Untuk estimasi ukuran DB
 
       reports?.forEach(report => {
         const reportDate = parseISO(report.date);
         if (isSameDay(reportDate, now)) reportsToday++;
         if (isSameMonth(reportDate, now)) reportsThisMonth++;
+        
+        // Estimasi ukuran record (kasar)
+        totalChars += JSON.stringify(report).length;
 
         report.tasks?.forEach((task: any) => {
           let taskPhotoCount = 0;
@@ -155,31 +116,88 @@ const Maintenance = () => {
         });
       });
 
+      // 2. Ambil Data Storage
       const { data: storageFiles, error: storageError } = await supabase.storage.from('report-photos').list('', { limit: 5000 });
       if (storageError) throw storageError;
 
-      let totalSize = 0;
-      storageFiles?.forEach(file => { totalSize += file.metadata?.size || 0; });
-      
+      let totalStorageSize = 0;
+      storageFiles?.forEach(file => { totalStorageSize += file.metadata?.size || 0; });
       const orphaned = storageFiles?.filter(file => !usedFileNames.has(file.name)) || [];
-      
+
+      // 3. Ambil Data User
+      const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+
       setOrphanedFiles(orphaned);
-      setStats({
+      setStats(prev => ({
+        ...prev,
         totalStorageCount: storageFiles?.length || 0,
-        totalStorageSize: totalSize,
+        totalStorageSize,
         usedInDb: usedFileNames.size,
         orphaned: orphaned.length,
         dbRecordCount: reports?.length || 0,
         reportsToday,
         reportsThisMonth,
         photosToday,
-        photosThisMonth
-      });
-      showSuccess(`Analisis selesai. Ditemukan ${orphaned.length} file tidak terpakai.`);
+        photosThisMonth,
+        totalUsers: userCount || 0,
+        dbSizeEstimate: totalChars * 2 // Estimasi 2 bytes per char (UTF-16)
+      }));
+
     } catch (error: any) {
-      showError("Gagal menganalisis: " + error.message);
+      showError("Gagal menganalisis sistem: " + error.message);
     } finally {
       setAnalyzing(false);
+    }
+  }, []);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [logsData, delReports, delPlans] = await Promise.all([
+        auditLogService.getLogs(),
+        reportService.getAllReports('semua', true),
+        workPlanService.getAllWorkPlans('semua', true)
+      ]);
+      setLogs(logsData);
+      setDeletedReports(delReports);
+      setDeletedWorkPlans(delPlans);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isAdmin && session) {
+      showError("Akses ditolak.");
+      navigate('/');
+    } else if (isAdmin) {
+      fetchData();
+      analyzeSystem();
+    }
+  }, [isAdmin, session, fetchData, analyzeSystem, navigate]);
+
+  const handleRestore = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
+    try {
+      if (type === 'REPORT') await reportService.restoreReport(id);
+      else await workPlanService.restoreWorkPlan(id);
+      showSuccess("Data berhasil dipulihkan");
+      fetchData();
+    } catch (e) {
+      showError("Gagal memulihkan data");
+    }
+  };
+
+  const handlePermanentDelete = async (type: 'REPORT' | 'WORK_PLAN', id: string) => {
+    if (!confirm("Hapus permanen? Data tidak bisa dikembalikan lagi.")) return;
+    try {
+      if (type === 'REPORT') await reportService.hardDeleteReport(id);
+      else await workPlanService.hardDeleteWorkPlan(id);
+      showSuccess("Data dihapus permanen");
+      fetchData();
+    } catch (e) {
+      showError("Gagal menghapus permanen");
     }
   };
 
@@ -198,7 +216,7 @@ const Maintenance = () => {
       const { error } = await supabase.storage.from('report-photos').remove(fileNamesToDelete);
       if (error) throw error;
       showSuccess(`${fileNamesToDelete.length} file berhasil dibersihkan.`);
-      await analyzeStorage();
+      await analyzeSystem();
     } catch (error: any) {
       showError("Gagal membersihkan: " + error.message);
     } finally {
@@ -206,9 +224,11 @@ const Maintenance = () => {
     }
   };
 
-  const storageUsagePercent = (stats.totalStorageSize / STORAGE_LIMIT_BYTES) * 100;
-
   if (!isAdmin) return null;
+
+  const storageUsagePercent = (stats.totalStorageSize / STORAGE_LIMIT) * 100;
+  const dbUsagePercent = (stats.dbSizeEstimate / DB_LIMIT) * 100;
+  const authUsagePercent = (stats.totalUsers / AUTH_LIMIT) * 100;
 
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
@@ -216,14 +236,55 @@ const Maintenance = () => {
         <div className="flex items-center justify-between">
           <Button variant="ghost" onClick={() => navigate('/')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
           <h1 className="text-2xl font-bold flex items-center gap-2"><Database className="text-blue-600" /> Pemeliharaan Sistem</h1>
-          <Button onClick={fetchData} disabled={loading} variant="outline" className="bg-white border-blue-200 text-blue-600">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />} Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => { fetchData(); analyzeSystem(); }} disabled={loading || analyzing} variant="outline" className="bg-white border-blue-200 text-blue-600">
+              {loading || analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4 mr-2" />} Refresh Analisis
+            </Button>
+          </div>
+        </div>
+
+        {/* Ringkasan Statistik Utama */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="bg-white border-l-4 border-l-blue-600 shadow-sm">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-2"><HardDrive size={14} /> File Storage</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl font-black text-slate-900">{formatSize(stats.totalStorageSize)}</p>
+              <Progress value={storageUsagePercent} className="h-1.5 mt-2" />
+              <p className="text-[9px] text-slate-400 mt-1">Limit: 1 GB</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-l-4 border-l-purple-600 shadow-sm">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-2"><Database size={14} /> Database</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl font-black text-slate-900">{formatSize(stats.dbSizeEstimate)}</p>
+              <Progress value={dbUsagePercent} className="h-1.5 mt-2" />
+              <p className="text-[9px] text-slate-400 mt-1">Limit: 500 MB (Estimasi)</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-l-4 border-l-green-600 shadow-sm">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-2"><Users size={14} /> Auth Users</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl font-black text-slate-900">{stats.totalUsers}</p>
+              <Progress value={authUsagePercent} className="h-1.5 mt-2" />
+              <p className="text-[9px] text-slate-400 mt-1">Limit: 50.000 MAU</p>
+            </CardContent>
+          </Card>
+          <Card className="bg-white border-l-4 border-l-amber-500 shadow-sm">
+            <CardHeader className="pb-2"><CardTitle className="text-[10px] font-bold uppercase text-slate-500 flex items-center gap-2"><Globe size={14} /> Bandwidth</CardTitle></CardHeader>
+            <CardContent>
+              <p className="text-xl font-black text-slate-900">Aktif</p>
+              <div className="flex items-center gap-1 mt-2">
+                <Activity size={12} className="text-green-500 animate-pulse" />
+                <span className="text-[9px] font-bold text-green-600">SISTEM NORMAL</span>
+              </div>
+              <p className="text-[9px] text-slate-400 mt-1">Limit: 2 GB / Bulan</p>
+            </CardContent>
+          </Card>
         </div>
 
         <Tabs defaultValue="storage" className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-white border shadow-sm p-1">
-            <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><HardDrive size={16} /> Storage</TabsTrigger>
+            <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><HardDrive size={16} /> Storage & File</TabsTrigger>
             <TabsTrigger value="users" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Users size={16} /> Pengguna</TabsTrigger>
             <TabsTrigger value="history" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><History size={16} /> Riwayat</TabsTrigger>
             <TabsTrigger value="trash" className="data-[state=active]:bg-red-600 data-[state=active]:text-white flex items-center gap-2"><Trash2 size={16} /> Tempat Sampah</TabsTrigger>
@@ -231,45 +292,40 @@ const Maintenance = () => {
 
           <TabsContent value="storage" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <Card className="bg-white border-l-4 border-l-blue-600 shadow-sm">
+              <Card className="bg-white shadow-sm">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-blue-700"><TrendingUp size={16} /> Aktivitas Hari Ini</CardTitle></CardHeader>
                 <CardContent><div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] font-bold uppercase text-slate-400">Laporan Baru</p><p className="text-2xl font-black text-slate-900">{stats.reportsToday}</p></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Foto Diunggah</p><p className="text-2xl font-black text-slate-900">{stats.photosToday}</p></div></div></CardContent>
               </Card>
-              <Card className="bg-white border-l-4 border-l-purple-600 shadow-sm">
+              <Card className="bg-white shadow-sm">
                 <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-purple-700"><BarChart3 size={16} /> Aktivitas Bulan Ini</CardTitle></CardHeader>
                 <CardContent><div className="grid grid-cols-2 gap-4"><div><p className="text-[10px] font-bold uppercase text-slate-400">Total Laporan</p><p className="text-2xl font-black text-slate-900">{stats.reportsThisMonth}</p></div><div><p className="text-[10px] font-bold uppercase text-slate-400">Total Foto</p><p className="text-2xl font-black text-slate-900">{stats.photosThisMonth}</p></div></div></CardContent>
               </Card>
-              <Card className="bg-white border-l-4 border-l-amber-500 shadow-sm">
-                <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-amber-700"><Zap size={16} /> Info Limit Gratis</CardTitle></CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex justify-between items-center text-xs"><span className="text-slate-500">Database:</span><span className="font-bold">500 MB</span></div>
-                  <div className="flex justify-between items-center text-xs"><span className="text-slate-500">Bandwidth:</span><span className="font-bold">2 GB / bln</span></div>
-                  <div className="flex justify-between items-center text-xs"><span className="text-slate-500">Edge Func:</span><span className="font-bold">500k / bln</span></div>
+              <Card className="bg-white shadow-sm">
+                <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center gap-2 text-orange-700"><Cpu size={16} /> Edge Functions</CardTitle></CardHeader>
+                <CardContent>
+                  <div className="flex justify-between items-center text-xs"><span className="text-slate-500">Status:</span><Badge className="bg-green-100 text-green-700 text-[9px]">OPERASIONAL</Badge></div>
+                  <div className="flex justify-between items-center text-xs mt-2"><span className="text-slate-500">Limit:</span><span className="font-bold">500k / bln</span></div>
+                  <p className="text-[8px] text-slate-400 mt-2 italic">* Digunakan untuk fitur Google Drive</p>
                 </CardContent>
               </Card>
             </div>
 
-            <Card className={cn("bg-white border-t-4", storageUsagePercent > 80 ? "border-t-red-500" : "border-t-blue-500")}>
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-bold flex items-center justify-between"><span className="flex items-center gap-2"><HardDrive className="h-4 w-4 text-blue-500" /> Kapasitas File Storage (Foto)</span><Badge variant={storageUsagePercent > 80 ? "destructive" : "outline"}>{storageUsagePercent.toFixed(1)}%</Badge></CardTitle></CardHeader>
-              <CardContent className="space-y-3"><Progress value={storageUsagePercent} className="h-2" /><div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase"><span>Terpakai: {formatSize(stats.totalStorageSize)}</span><span>Limit Gratis: 1 GB</span></div></CardContent>
-            </Card>
-
             <Card className="shadow-md border-t-4 border-t-blue-600">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2"><ShieldAlert className="text-amber-500" /> Analisis Keamanan Storage</CardTitle>
-                <p className="text-xs text-slate-500">Sistem akan membandingkan file di Storage dengan data di Database. File yang tidak memiliki referensi di database dianggap sebagai file sampah.</p>
+                <p className="text-xs text-slate-500">Sistem membandingkan file di Storage dengan data di Database. File yang tidak memiliki referensi di database dianggap sebagai file sampah.</p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex flex-wrap gap-3">
-                  <Button onClick={analyzeStorage} disabled={analyzing || loading} className="bg-blue-600">{analyzing ? "Menganalisis..." : "Mulai Analisis"}</Button>
+                  <Button onClick={analyzeSystem} disabled={analyzing || loading} className="bg-blue-600">{analyzing ? "Menganalisis..." : "Mulai Analisis Ulang"}</Button>
                   {orphanedFiles.length > 0 && <Button onClick={cleanStorage} disabled={loading} variant="destructive">Hapus {orphanedFiles.length} File Sampah</Button>}
                 </div>
 
-                {orphanedFiles.length > 0 && (
+                {orphanedFiles.length > 0 ? (
                   <div className="space-y-4">
                     <div className="bg-amber-50 border border-amber-200 p-3 rounded-lg flex items-start gap-3 text-amber-800 text-xs">
                       <Info className="h-4 w-4 mt-0.5 shrink-0" />
-                      <p><strong>Mengapa file ini ada?</strong> File sampah biasanya berasal dari foto yang diganti saat edit laporan, laporan yang dihapus permanen, atau kegagalan koneksi saat proses unggah. Klik nama file untuk melihat isinya.</p>
+                      <p>Ditemukan <strong>{orphanedFiles.length} file sampah</strong>. File ini biasanya berasal dari foto yang diganti saat edit laporan atau laporan yang dihapus permanen.</p>
                     </div>
                     <div className="max-h-[400px] overflow-y-auto border rounded-lg divide-y bg-slate-50">
                       {orphanedFiles.map((file, i) => (
@@ -291,6 +347,12 @@ const Maintenance = () => {
                         </div>
                       ))}
                     </div>
+                  </div>
+                ) : !analyzing && (
+                  <div className="py-10 text-center border-2 border-dashed rounded-xl">
+                    <Zap className="mx-auto h-8 w-8 text-green-500 mb-2" />
+                    <p className="text-sm font-bold text-slate-600">Storage Bersih!</p>
+                    <p className="text-xs text-slate-400">Tidak ditemukan file sampah di sistem.</p>
                   </div>
                 )}
               </CardContent>
