@@ -220,32 +220,38 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
 
                   {form.watch(`entries.${index}.locations`)?.map((_, locIdx) => (
                     <div key={locIdx} className="p-4 bg-slate-50 rounded-lg border space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.street`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase">Nama Jalan</FormLabel><FormControl><Input className="h-8 text-xs" {...field} /></FormControl></FormItem>
-                        )} />
-                        <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.subDistrict`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase">Kecamatan (Opsional)</FormLabel>
-                            <Select onValueChange={(v) => { field.onChange(v); form.setValue(`entries.${index}.locations.${locIdx}.village`, ""); }} value={field.value}>
-                              <FormControl><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value=" ">Abaikan / Kosong</SelectItem>
-                                {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
-                        <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.village`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase">Kelurahan (Opsional)</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) || form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) === " "}>
-                              <FormControl><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
-                              <SelectContent>
-                                <SelectItem value=" ">Abaikan / Kosong</SelectItem>
-                                {form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) && form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) !== " " && medanDistricts[form.watch(`entries.${index}.locations.${locIdx}.subDistrict`)!]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                              </SelectContent>
-                            </Select>
-                          </FormItem>
-                        )} />
+                      <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+                        <div className="md:col-span-6">
+                          <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.street`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase">Nama Jalan</FormLabel><FormControl><Input className="h-8 text-xs" {...field} /></FormControl></FormItem>
+                          )} />
+                        </div>
+                        <div className="md:col-span-3">
+                          <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.subDistrict`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase">Kecamatan</FormLabel>
+                              <Select onValueChange={(v) => { field.onChange(v); form.setValue(`entries.${index}.locations.${locIdx}.village`, ""); }} value={field.value}>
+                                <FormControl><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value=" ">Abaikan / Kosong</SelectItem>
+                                  {Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )} />
+                        </div>
+                        <div className="md:col-span-3">
+                          <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.village`} render={({ field }) => (
+                            <FormItem><FormLabel className="text-[10px] uppercase">Kelurahan</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value} disabled={!form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) || form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) === " "}>
+                                <FormControl><SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl>
+                                <SelectContent>
+                                  <SelectItem value=" ">Abaikan / Kosong</SelectItem>
+                                  {form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) && form.watch(`entries.${index}.locations.${locIdx}.subDistrict`) !== " " && medanDistricts[form.watch(`entries.${index}.locations.${locIdx}.subDistrict`)!]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </FormItem>
+                          )} />
+                        </div>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
