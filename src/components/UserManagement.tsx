@@ -19,7 +19,7 @@ import { cn } from "@/lib/utils";
 import { format } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
 
-const roles = ['admin', 'user', 'pimpinan', 'admin_harian', 'admin_bbm'];
+const roles = ['admin', 'user', 'pimpinan', 'admin_harian', 'admin_bbm', 'admin_spj_bbm'];
 const categories = ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"];
 
 interface Profile {
@@ -173,6 +173,7 @@ const UserManagement = () => {
                           profile.role === 'pimpinan' ? "text-amber-600 border-amber-200 bg-amber-50" :
                           profile.role === 'admin_harian' ? "text-purple-600 border-purple-200 bg-purple-50" :
                           profile.role === 'admin_bbm' ? "text-orange-600 border-orange-200 bg-orange-50" :
+                          profile.role === 'admin_spj_bbm' ? "text-blue-700 border-blue-200 bg-blue-50" :
                           "text-blue-600 border-blue-200 bg-blue-50"
                         )}>
                           <div className="flex items-center gap-2">
@@ -227,24 +228,12 @@ const UserManagement = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={5} className="h-32 text-center text-slate-400 italic">
-                    Tidak ada pengguna ditemukan. Pastikan pengguna baru sudah login sekali agar muncul di sini.
+                    Tidak ada pengguna ditemukan.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
-        </div>
-      </div>
-
-      <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg flex items-start gap-3 text-amber-800 text-xs">
-        <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
-        <div className="space-y-1">
-          <p className="font-bold">Catatan Penting:</p>
-          <ul className="list-disc ml-4 space-y-1">
-            <li>Jika user baru tidak muncul, minta user tersebut **Login** sekali ke aplikasi.</li>
-            <li>Perubahan **Role** akan langsung berdampak pada hak akses pengguna tersebut.</li>
-            <li>Role **Admin BBM** hanya dapat mengelola Laporan BBM & Oli.</li>
-          </ul>
         </div>
       </div>
     </div>

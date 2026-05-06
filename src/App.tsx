@@ -35,6 +35,12 @@ import FuelWeeklyRecap from "./pages/FuelWeeklyRecap";
 import FuelMonthlyRecap from "./pages/FuelMonthlyRecap";
 import FuelYearlyRecap from "./pages/FuelYearlyRecap";
 
+// Fuel SPJ Pages
+import FuelSpjReportList from "./pages/FuelSpjReportList";
+import CreateFuelSpjReport from "./pages/CreateFuelSpjReport";
+import EditFuelSpjReport from "./pages/EditFuelSpjReport";
+import FuelSpjDailyRecap from "./pages/FuelSpjDailyRecap";
+
 const queryClient = new QueryClient();
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -44,6 +50,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   if (!session) return <Navigate to="/login" />;
   
   if (profile?.role === 'admin_bbm') return <Navigate to="/fuel-reports" />;
+  if (profile?.role === 'admin_spj_bbm') return <Navigate to="/fuel-reports/spj" />;
   
   return <>{children}</>;
 };
@@ -54,7 +61,7 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Memuat...</div>;
   if (!session) return <Navigate to="/login" />;
   
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_bbm' || session?.user?.email === 'admin@gmail.com';
+  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
   if (!isAllowed) return <Navigate to="/" />;
   
   return <>{children}</>;
@@ -93,6 +100,12 @@ const App = () => (
             <Route path="/fuel-reports/weekly-rekap" element={<AdminRoute><FuelWeeklyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/monthly-rekap" element={<AdminRoute><FuelMonthlyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/yearly-rekap" element={<AdminRoute><FuelYearlyRecap /></AdminRoute>} />
+
+            {/* Fuel SPJ Routes */}
+            <Route path="/fuel-reports/spj" element={<AdminRoute><FuelSpjReportList /></AdminRoute>} />
+            <Route path="/fuel-reports/spj/create" element={<AdminRoute><CreateFuelSpjReport /></AdminRoute>} />
+            <Route path="/fuel-reports/spj/edit/:id" element={<AdminRoute><EditFuelSpjReport /></AdminRoute>} />
+            <Route path="/fuel-reports/spj/daily-rekap" element={<AdminRoute><FuelSpjDailyRecap /></AdminRoute>} />
             
             <Route path="/create" element={<ProtectedRoute><CreateReport /></ProtectedRoute>} />
             <Route path="/edit/:id" element={<ProtectedRoute><EditReport /></ProtectedRoute>} />

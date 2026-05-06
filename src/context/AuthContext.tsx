@@ -6,7 +6,7 @@ import { Session, User } from '@supabase/supabase-js';
 
 interface Profile {
   id: string;
-  role: 'admin' | 'user' | 'pimpinan' | 'admin_harian' | 'admin_bbm';
+  role: 'admin' | 'user' | 'pimpinan' | 'admin_harian' | 'admin_bbm' | 'admin_spj_bbm';
   category: string | null;
   username: string | null;
 }
@@ -38,7 +38,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (error) {
         if (error.code === 'PGRST116') {
-          // Jika profil belum ada, buatkan default
           const { data: newData, error: createError } = await supabase
             .from('profiles')
             .insert([{ id: userId, role: 'user', updated_at: new Date().toISOString() }])
@@ -57,7 +56,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   useEffect(() => {
-    // Ambil session awal
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -68,7 +66,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     });
 
-    // Pantau perubahan auth
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);

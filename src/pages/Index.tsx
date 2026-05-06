@@ -70,6 +70,7 @@ const Index = () => {
 
   const isLoggedIn = !!session;
   const isAdminBbm = profile?.role === 'admin_bbm';
+  const isAdminSpj = profile?.role === 'admin_spj_bbm';
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
   const isAdmin = profile?.role === 'admin' || (session?.user?.email === 'admin@gmail.com');
   const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
@@ -78,9 +79,12 @@ const Index = () => {
   useEffect(() => {
     if (authLoading) return;
 
-    // REDIRECT OTOMATIS: Jika role adalah admin_bbm, langsung pindah ke fuel-reports
     if (isAdminBbm) {
       navigate('/fuel-reports');
+      return;
+    }
+    if (isAdminSpj) {
+      navigate('/fuel-reports/spj');
       return;
     }
 
@@ -88,7 +92,7 @@ const Index = () => {
     if (isUserRestricted && profile?.category) {
       setSelectedCategory(profile.category);
     }
-  }, [profile, isLoggedIn, isAdminBbm, authLoading, navigate]);
+  }, [profile, isLoggedIn, isAdminBbm, isAdminSpj, authLoading, navigate]);
 
   const loadData = async () => {
     try {
@@ -120,7 +124,7 @@ const Index = () => {
 
   const handleDeleteReport = async (e: React.MouseEvent, report: Report) => {
     e.stopPropagation();
-    if (isPimpinan || isAdminBbm) return;
+    if (isPimpinan || isAdminBbm || isAdminSpj) return;
     if (window.confirm(`Pindahkan laporan "${report.description}" ke tempat sampah?`)) {
       try {
         await reportService.deleteReport(report.id);
@@ -134,7 +138,7 @@ const Index = () => {
 
   const handleToggleWorkPlanVisibility = async (e: React.MouseEvent, plan: WorkPlan) => {
     e.stopPropagation();
-    if (!isLoggedIn || isPimpinan || isAdminBbm) return;
+    if (!isLoggedIn || isPimpinan || isAdminBbm || isAdminSpj) return;
     
     const newVisibility = plan.is_visible === false ? true : false;
     try {
@@ -148,7 +152,7 @@ const Index = () => {
 
   const handleDeleteWorkPlan = async (e: React.MouseEvent, plan: WorkPlan) => {
     e.stopPropagation();
-    if (!isLoggedIn || isPimpinan || isAdminBbm) return;
+    if (!isLoggedIn || isPimpinan || isAdminBbm || isAdminSpj) return;
     if (window.confirm(`Pindahkan rencana kerja "${plan.items[0]?.description}" ke tempat sampah?`)) {
       try {
         await workPlanService.deleteWorkPlan(plan.id);
@@ -189,23 +193,18 @@ const Index = () => {
   });
 
   const filteredWorkPlans = workPlans.filter(plan => {
-    const search = searchQuery.toLowerCase();
-    const planDate = new Date(plan.date);
-    const m = (planDate.getMonth() + 1).toString();
-    const y = planDate.getFullYear().toString();
-    
-    const matchSearch = plan.items?.some(item => item.description.toLowerCase().includes(search) || item.location.street.toLowerCase().includes(search));
+    const search = searchQuery.toLowerCase().trim();
+    const matchSearch = !search || (Array.isArray(plan.items) && plan.items.some(item => 
+      (item.description?.toLowerCase() || "").includes(search) ||
+      (item.location?.street?.toLowerCase() || "").includes(search)
+    ));
     const matchSpecificDate = !selectedDate || plan.date === selectedDate;
-    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
-    const matchYear = selectedYear === "semua" || y === selectedYear;
+    const matchMonth = selectedMonth === "semua" || (new Date(plan.date).getMonth() + 1).toString() === selectedMonth;
+    const matchYear = selectedYear === "semua" || new Date(plan.date).getFullYear().toString() === selectedYear;
     const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
     const restrictionMatch = !isUserRestricted || plan.category === profile?.category;
     
-    if (selectedDate) {
-      return matchSearch && matchSpecificDate && matchCategory && restrictionMatch;
-    }
-    
-    return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
+    return matchSearch && matchSpecificDate && matchMonth && matchYear && matchCategory && restrictionMatch;
   });
 
   if (authLoading) {
@@ -217,8 +216,7 @@ const Index = () => {
     );
   }
 
-  // Jika admin_bbm, jangan render konten dashboard sama sekali (karena akan di-redirect)
-  if (isAdminBbm) return null;
+  if (isAdminBbm || isAdminSpj) return null;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -233,10 +231,10 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
-              {(isAdmin || isAdminBbm) && (
+              {(isAdmin || isAdminBbm || isAdminSpj) && (
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/fuel-reports')} className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">
+                    <Button variant="outline" size="sm" onClick={() => navigate(isAdminSpj ? '/fuel-reports/spj' : '/fuel-reports')} className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">
                       <Fuel className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Laporan BBM</span>
                     </Button>
                   </TooltipTrigger>
@@ -255,7 +253,7 @@ const Index = () => {
                 </Tooltip>
               )}
               
-              {isLoggedIn && !isAdminBbm && (
+              {isLoggedIn && !isAdminBbm && !isAdminSpj && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="icon" onClick={() => setIsTrashOpen(true)} className="h-9 w-9 text-slate-500 hover:text-red-600 hover:bg-red-50 border-slate-200">
@@ -266,7 +264,7 @@ const Index = () => {
                 </Tooltip>
               )}
 
-              {!isAdminBbm && (
+              {!isAdminBbm && !isAdminSpj && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3 h-9">
@@ -285,7 +283,7 @@ const Index = () => {
 
               {isLoggedIn ? (
                 <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
-                  <div className="hidden sm:flex flex-col items-end mr-2"><p className="text-[10px] font-bold text-slate-900 leading-none">{isAdminBbm ? 'Admin BBM' : isAdminHarian ? 'Admin Harian' : isPimpinan ? 'Pimpinan' : isAdmin ? 'Admin' : 'User'}</p><p className="text-[8px] text-slate-500">{isPimpinan || isAdminHarian || isAdminBbm ? 'Semua Kategori' : (profile?.category || 'Semua')}</p></div>
+                  <div className="hidden sm:flex flex-col items-end mr-2"><p className="text-[10px] font-bold text-slate-900 leading-none">{isAdminSpj ? 'Admin SPJ' : isAdminBbm ? 'Admin BBM' : isAdminHarian ? 'Admin Harian' : isPimpinan ? 'Pimpinan' : isAdmin ? 'Admin' : 'User'}</p><p className="text-[8px] text-slate-500">{isPimpinan || isAdminHarian || isAdminBbm || isAdminSpj ? 'Semua Kategori' : (profile?.category || 'Semua')}</p></div>
                   <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="h-4 w-4 md:h-5 md:w-5" /></Button></TooltipTrigger><TooltipContent><p>Keluar Sistem</p></TooltipContent></Tooltip>
                 </div>
               ) : (
