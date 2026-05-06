@@ -155,12 +155,23 @@ const Maintenance = () => {
     }
   };
 
+  const handleClearAllLogs = async () => {
+    if (!confirm("Hapus seluruh riwayat aktivitas? Tindakan ini tidak dapat dibatalkan.")) return;
+    setLoading(true);
+    try {
+      await auditLogService.deleteAllLogs();
+      showSuccess("Seluruh riwayat aktivitas telah dibersihkan");
+      setLogs([]);
+    } catch (e) {
+      showError("Gagal membersihkan seluruh log");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      // Jalankan pembersihan log otomatis saat load
-      await auditLogService.deleteOldLogs();
-      
       const [logsData, delReports, delPlans] = await Promise.all([
         auditLogService.getLogs(),
         reportService.getAllReports('semua', true),
@@ -370,17 +381,27 @@ const Maintenance = () => {
 
           <TabsContent value="history">
             <Card className="shadow-md border-t-4 border-t-blue-600">
-              <CardHeader className="flex flex-row items-center justify-between">
+              <CardHeader className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <CardTitle className="text-lg flex items-center gap-2"><History className="text-blue-600" /> Riwayat Aktivitas Pengguna</CardTitle>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={handleCleanupLogs} 
-                  disabled={loading}
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <Eraser className="h-4 w-4 mr-2" /> Bersihkan Log {'>'} 7 Hari
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={handleCleanupLogs} 
+                    disabled={loading}
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                  >
+                    <Eraser className="h-4 w-4 mr-2" /> Bersihkan Log {'>'} 7 Hari
+                  </Button>
+                  <Button 
+                    variant="destructive" 
+                    size="sm" 
+                    onClick={handleClearAllLogs} 
+                    disabled={loading}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" /> Bersihkan Semua Log
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">

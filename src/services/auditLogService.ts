@@ -51,5 +51,14 @@ export const auditLogService = {
       .lt('created_at', sevenDaysAgo.toISOString());
       
     if (error) throw error;
+  },
+
+  async deleteAllLogs() {
+    const { error } = await supabase
+      .from('audit_logs')
+      .delete()
+      .neq('id', '00000000-0000-0000-0000-000000000000'); // Trik untuk menghapus semua baris
+      
+    if (error) throw error;
   }
 };
