@@ -99,7 +99,6 @@ const FuelSpjDailyRecap = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border-2 border-black p-1 w-[30px]" rowSpan={2}>No</th>
-                <th className="border-2 border-black p-1 w-[70px]" rowSpan={2}>Tanggal</th>
                 <th className="border-2 border-black p-1 w-[80px]" rowSpan={2}>No. SPJ</th>
                 <th className="border-2 border-black p-1 w-[70px]" rowSpan={2}>Wilayah</th>
                 <th className="border-2 border-black p-1 w-[100px]" rowSpan={2}>Kendaraan / Alat Operasional</th>
@@ -120,9 +119,6 @@ const FuelSpjDailyRecap = () => {
               {flatItems.length > 0 ? flatItems.map((item, idx) => (
                 <tr key={idx}>
                   <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                  <td className="border-2 border-black p-1 text-center whitespace-normal break-words leading-tight">
-                    {format(parseISO(item.date), 'eee, d MMM yyyy', { locale: localeId })}
-                  </td>
                   <td className="border-2 border-black p-1 text-center font-bold">{item.spj_no}</td>
                   <td className="border-2 border-black p-1 text-center">{item.region}</td>
                   <td className="border-2 border-black p-1 font-medium">{item.vehicle}</td>
@@ -141,7 +137,7 @@ const FuelSpjDailyRecap = () => {
                   </td>
                 </tr>
               )) : (
-                <tr><td colSpan={13} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tanggal ini</td></tr>
+                <tr><td colSpan={12} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tanggal ini</td></tr>
               )}
             </tbody>
           </table>
