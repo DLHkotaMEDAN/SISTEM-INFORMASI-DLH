@@ -148,8 +148,8 @@ const Maintenance = () => {
       showSuccess("Log aktivitas yang lebih dari seminggu telah dihapus");
       const logsData = await auditLogService.getLogs();
       setLogs(logsData);
-    } catch (e) {
-      showError("Gagal membersihkan log");
+    } catch (e: any) {
+      showError("Gagal membersihkan log: " + (e.message || "Izin ditolak"));
     } finally {
       setLoading(false);
     }
@@ -162,8 +162,11 @@ const Maintenance = () => {
       await auditLogService.deleteAllLogs();
       showSuccess("Seluruh riwayat aktivitas telah dibersihkan");
       setLogs([]);
-    } catch (e) {
-      showError("Gagal membersihkan seluruh log");
+    } catch (e: any) {
+      showError("Gagal membersihkan database: " + (e.message || "Izin ditolak"));
+      // Refresh data untuk sinkronisasi ulang dengan DB jika gagal
+      const logsData = await auditLogService.getLogs();
+      setLogs(logsData);
     } finally {
       setLoading(false);
     }

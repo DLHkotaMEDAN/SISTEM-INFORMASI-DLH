@@ -54,11 +54,15 @@ export const auditLogService = {
   },
 
   async deleteAllLogs() {
+    // Menggunakan filter yang lebih universal (menghapus semua yang ID-nya tidak null)
     const { error } = await supabase
       .from('audit_logs')
       .delete()
-      .neq('id', '00000000-0000-0000-0000-000000000000'); // Trik untuk menghapus semua baris
+      .not('id', 'is', null);
       
-    if (error) throw error;
+    if (error) {
+      console.error("Database error saat hapus log:", error);
+      throw new Error(error.message);
+    }
   }
 };
