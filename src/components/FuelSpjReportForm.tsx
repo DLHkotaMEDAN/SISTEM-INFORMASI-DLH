@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, User, FileText, Calculator
+  Plus, Trash2, Calculator, FileText
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -20,12 +20,12 @@ import { fuelPriceService } from '@/services/fuelPriceService';
 import { medanDistricts } from '@/data/medan-districts';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { FuelType } from '@/types/fuelReport';
 
 const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
 
 const locationSchema = z.object({
-  street: z.string().min(1, "Jalan wajib diisi"),
+  street: z.string().min(1, "Wajib diisi"),
   subDistrict: z.string().optional().default(""),
   village: z.string().optional().default(""),
   fuel_type: z.string().min(1, "Jenis wajib"),
@@ -88,7 +88,7 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   };
 
   const calculateLiter = (index: number, locIndex: number, rp: number, type: string) => {
-    if (type === 'Oli') return; // Oli manual
+    if (type === 'Oli') return;
     const price = type === 'Pertamax' ? prices.Pertamax : prices.Dexlite;
     if (price > 0) {
       const liter = parseFloat((rp / price).toFixed(2));
@@ -99,7 +99,19 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const finalData = { ...values, price_pertamax: prices.Pertamax, price_dexlite: prices.Dexlite };
+      const finalData = { 
+        ...values, 
+        price_pertamax: prices.Pertamax, 
+        price_dexlite: prices.Dexlite,
+        entries: values.entries.map(entry => ({
+          ...entry,
+          locations: entry.locations.map(loc => ({
+            ...loc,
+            fuel_type: loc.fuel_type as FuelType
+          }))
+        }))
+      };
+
       if (isEditing && initialData) {
         await fuelSpjService.updateReport(initialData.id, finalData);
         showSuccess("Laporan SPJ diperbarui");
