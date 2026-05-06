@@ -231,7 +231,25 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
-              {(isAdmin || isAdminBbm || isAdminSpj) && (
+              {isAdmin && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm" className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">
+                      <Fuel className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Manajemen BBM</span> <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onClick={() => navigate('/fuel-reports')} className="cursor-pointer py-2">
+                      <Fuel className="mr-2 h-4 w-4 text-orange-600" /> Laporan BBM Harian
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj')} className="cursor-pointer py-2">
+                      <FileText className="mr-2 h-4 w-4 text-blue-600" /> Laporan SPJ BBM
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+
+              {(isAdminBbm || isAdminSpj) && !isAdmin && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="sm" onClick={() => navigate(isAdminSpj ? '/fuel-reports/spj' : '/fuel-reports')} className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">

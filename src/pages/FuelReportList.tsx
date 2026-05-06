@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, Fuel, Trash2, Edit, 
   Search, FilterX, ArrowLeft, RefreshCw, Printer, ChevronDown,
-  Table, FileText, CalendarDays, LogOut, Eye, MessageSquare
+  Table, FileText, CalendarDays, LogOut, Eye, MessageSquare, ArrowRight
 } from 'lucide-react';
 import { FuelReport } from '@/types/fuelReport';
 import { fuelService } from '@/services/fuelService';
@@ -55,7 +55,8 @@ const FuelReportList = () => {
   const [selectedYear, setSelectedYear] = useState("semua");
 
   const isAdminBbm = profile?.role === 'admin_bbm';
-  const isAllowed = profile?.role === 'admin' || isAdminBbm;
+  const isAdmin = profile?.role === 'admin';
+  const isAllowed = isAdmin || isAdminBbm;
 
   useEffect(() => {
     if (!isAllowed && profile) {
@@ -138,11 +139,9 @@ const FuelReportList = () => {
         <div className="flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 md:gap-4">
-              {!isAdminBbm && (
-                <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-9 w-9">
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-              )}
+              <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-9 w-9">
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
               <div className="flex flex-col">
                 <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
                   <Fuel className="text-orange-600 h-5 w-5 md:h-6 md:w-6" /> Laporan BBM & Oli
@@ -157,6 +156,12 @@ const FuelReportList = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {isAdmin && (
+              <Button variant="outline" onClick={() => navigate('/fuel-reports/spj')} className="bg-blue-50 text-blue-700 border-blue-200 h-10 px-3 flex-1 md:flex-none font-bold">
+                <FileText className="h-4 w-4 mr-2" /> Ke Laporan SPJ <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline" className="bg-white border-slate-200 h-10 px-3 flex-1 md:flex-none justify-between md:justify-center">
