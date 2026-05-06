@@ -23,6 +23,8 @@ const Login = () => {
     if (session && profile && !authLoading) {
       if (profile.role === 'admin_bbm') {
         navigate('/fuel-reports');
+      } else if (profile.role === 'admin_spj_bbm') {
+        navigate('/fuel-reports/spj');
       } else {
         navigate('/');
       }
@@ -38,6 +40,7 @@ const Login = () => {
 
     setLoading(true);
     try {
+      // Menangani input username agar otomatis menjadi email gmail jika tidak ada @
       const email = username.includes('@') ? username : `${username}@gmail.com`;
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -49,7 +52,7 @@ const Login = () => {
       console.error("Login error:", error);
       showError(error.message === "Invalid login credentials" 
         ? "Username atau Password salah" 
-        : "Gagal masuk ke sistem");
+        : "Gagal masuk ke sistem. Pastikan akun sudah terdaftar.");
       setLoading(false);
     }
   };
