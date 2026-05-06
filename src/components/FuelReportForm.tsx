@@ -301,7 +301,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                             <FormLabel className="text-xs font-bold">Keterangan</FormLabel>
                             <FormControl><Input placeholder="Catatan..." className="h-10" {...field} /></FormControl>
                             <FormDescription className="text-[10px] text-amber-600 flex items-center gap-1 font-medium">
-                              <AlertCircle size={10} /> Mohon cantumkan Nama Personil di sini.
+                              <AlertCircle size={10} /> Mohon cantumkan Nama Petugasnya di sini.
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
