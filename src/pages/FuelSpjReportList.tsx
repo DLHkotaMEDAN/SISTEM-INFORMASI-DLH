@@ -104,8 +104,15 @@ const FuelSpjReportList = () => {
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/daily-rekap')} className="cursor-pointer py-2">
                   <Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian
                 </DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer py-2 opacity-50">Rekap Mingguan</DropdownMenuItem>
-                <DropdownMenuItem className="cursor-pointer py-2 opacity-50">Rekap Bulanan</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/weekly-rekap')} className="cursor-pointer py-2">
+                  <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/monthly-rekap')} className="cursor-pointer py-2">
+                  <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/yearly-rekap')} className="cursor-pointer py-2">
+                  <Calendar className="mr-2 h-4 w-4 text-orange-600" /> Rekap Tahunan
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 

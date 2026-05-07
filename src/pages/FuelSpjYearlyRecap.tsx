@@ -5,9 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { fuelSpjService } from '@/services/fuelSpjService';
 import { FuelSpjReport } from '@/types/fuelSpjReport';
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, Calendar as CalendarIcon, Settings2, Filter } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, Settings2, Filter } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -28,15 +27,18 @@ const getLogoUrl = (fileName: string) => {
 const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
-const FuelSpjDailyRecap = () => {
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+
+const FuelSpjYearlyRecap = () => {
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [groupBy, setGroupBy] = useState<"region" | "team">("region");
   
   const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
     spj_no: true,
     region: true,
     team: false,
@@ -51,13 +53,13 @@ const FuelSpjDailyRecap = () => {
 
   useEffect(() => {
     if (isAllowed) loadData();
-  }, [selectedDate, isAllowed]);
+  }, [selectedYear, isAllowed]);
 
   const loadData = async () => {
     try {
       setLoading(true);
       const data = await fuelSpjService.getAllReports();
-      const filtered = data.filter(r => r.date === selectedDate);
+      const filtered = data.filter(r => parseISO(r.date).getFullYear().toString() === selectedYear);
       setReports(filtered);
     } catch (error) {
       console.error(error);
@@ -84,7 +86,6 @@ const FuelSpjDailyRecap = () => {
     )
   );
 
-  // Grouping logic
   const groupedData: Record<string, any[]> = {};
   flatItems.forEach(item => {
     const key = groupBy === "region" ? item.region : item.team;
@@ -104,12 +105,9 @@ const FuelSpjDailyRecap = () => {
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
             <Button variant="ghost" onClick={() => navigate('/fuel-reports/spj')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-              <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="pl-10 w-[200px]" />
-            </div>
+            <Select value={selectedYear} onValueChange={setSelectedYear}><SelectTrigger className="w-[120px] md:w-[150px]"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select>
             <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
               <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200"><Filter className="mr-2 h-4 w-4 text-slate-400" /><SelectValue placeholder="Kelompokkan" /></SelectTrigger>
               <SelectContent><SelectItem value="region">Per Wilayah</SelectItem><SelectItem value="team">Per Tim / Operator</SelectItem></SelectContent>
@@ -119,28 +117,14 @@ const FuelSpjDailyRecap = () => {
           <div className="flex gap-2">
             <Popover>
               <PopoverTrigger asChild>
-                <Button variant="outline" className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50">
-                  <Settings2 className="mr-2 h-4 w-4" /> Pilih Kolom
-                </Button>
+                <Button variant="outline" className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50"><Settings2 className="mr-2 h-4 w-4" /> Pilih Kolom</Button>
               </PopoverTrigger>
               <PopoverContent className="w-56 p-3" align="end">
                 <div className="space-y-3">
                   <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tampilkan Kolom:</p>
                   <div className="space-y-2">
-                    {Object.entries({
-                      spj_no: "No. SPJ",
-                      region: "Wilayah",
-                      team: "Tim / Operator",
-                      vehicle: "Kendaraan",
-                      fuel: "BBM / Oli",
-                      remarks: "Ket. BBM",
-                      receiver: "Penerima",
-                      location: "Lokasi"
-                    }).map(([key, label]) => (
-                      <div key={key} className="flex items-center space-x-2">
-                        <Checkbox id={`col-${key}`} checked={visibleColumns[key as keyof typeof visibleColumns]} onCheckedChange={() => toggleColumn(key as keyof typeof visibleColumns)} />
-                        <Label htmlFor={`col-${key}`} className="text-sm cursor-pointer">{label}</Label>
-                      </div>
+                    {Object.entries({ date: "Tanggal", spj_no: "No. SPJ", region: "Wilayah", team: "Tim / Operator", vehicle: "Kendaraan", fuel: "BBM / Oli", remarks: "Ket. BBM", receiver: "Penerima", location: "Lokasi" }).map(([key, label]) => (
+                      <div key={key} className="flex items-center space-x-2"><Checkbox id={`col-${key}`} checked={visibleColumns[key as keyof typeof visibleColumns]} onCheckedChange={() => toggleColumn(key as keyof typeof visibleColumns)} /><Label htmlFor={`col-${key}`} className="text-sm cursor-pointer">{label}</Label></div>
                     ))}
                   </div>
                 </div>
@@ -154,17 +138,13 @@ const FuelSpjDailyRecap = () => {
       <div className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
         <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
           <img src={LOGO_MEDAN_URL} className="h-16 w-16 object-contain" alt="Logo Medan" />
-          <div className="text-center">
-            <h1 className="text-lg font-bold uppercase">Pemerintah Kota Medan</h1>
-            <h2 className="text-xl font-black uppercase">Dinas Lingkungan Hidup</h2>
-            <p className="text-[10px] italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
-          </div>
+          <div className="text-center"><h1 className="text-lg font-bold uppercase">Pemerintah Kota Medan</h1><h2 className="text-xl font-black uppercase">Dinas Lingkungan Hidup</h2><p className="text-[10px] italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p></div>
           <img src={LOGO_DLH_URL} className="h-16 w-16 object-contain" alt="Logo DLH" />
         </div>
 
         <div className="text-center mb-8">
-          <h3 className="text-lg font-bold underline uppercase text-blue-800">REKAP HARIAN SPJ PEMAKAIAN BBM & OLI</h3>
-          <p className="text-sm font-bold">Tanggal: {format(parseISO(selectedDate), 'EEEE, d MMMM yyyy', { locale: localeId })}</p>
+          <h3 className="text-lg font-bold underline uppercase text-blue-800">REKAP TAHUNAN SPJ PEMAKAIAN BBM & OLI</h3>
+          <p className="text-sm font-bold">Tahun: {selectedYear}</p>
         </div>
         
         <div className="overflow-x-auto">
@@ -172,14 +152,15 @@ const FuelSpjDailyRecap = () => {
             <thead>
               <tr className="bg-slate-100">
                 <th className="border-2 border-black p-1 w-[30px]" rowSpan={visibleColumns.fuel ? 2 : 1}>No</th>
+                {visibleColumns.date && <th className="border-2 border-black p-1 w-[50px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Tgl</th>}
                 {visibleColumns.spj_no && <th className="border-2 border-black p-1 w-[80px]" rowSpan={visibleColumns.fuel ? 2 : 1}>No. SPJ</th>}
                 {visibleColumns.region && <th className="border-2 border-black p-1 w-[70px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Wilayah</th>}
                 {visibleColumns.team && <th className="border-2 border-black p-1 w-[80px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Tim / Operator</th>}
-                {visibleColumns.vehicle && <th className="border-2 border-black p-1 w-[100px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Kendaraan / Alat Operasional</th>}
+                {visibleColumns.vehicle && <th className="border-2 border-black p-1 w-[100px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Kendaraan</th>}
                 {visibleColumns.fuel && <th className="border-2 border-black p-1" colSpan={5}>Jenis BBM / Oli</th>}
-                {visibleColumns.remarks && <th className="border-2 border-black p-1 w-[100px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Ket. BBM/ Oli</th>}
-                {visibleColumns.receiver && <th className="border-2 border-black p-1 w-[80px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Penerima / Operator</th>}
-                {visibleColumns.location && <th className="border-2 border-black p-1 w-[120px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Lokasi Kerja</th>}
+                {visibleColumns.remarks && <th className="border-2 border-black p-1 w-[100px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Ket. BBM</th>}
+                {visibleColumns.receiver && <th className="border-2 border-black p-1 w-[80px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Penerima</th>}
+                {visibleColumns.location && <th className="border-2 border-black p-1 w-[120px]" rowSpan={visibleColumns.fuel ? 2 : 1}>Lokasi</th>}
               </tr>
               {visibleColumns.fuel && (
                 <tr className="bg-slate-50">
@@ -203,10 +184,11 @@ const FuelSpjDailyRecap = () => {
 
                     return (
                       <React.Fragment key={groupName}>
-                        <tr className="bg-slate-50/50 font-bold"><td colSpan={12} className="border-2 border-black p-1.5 bg-blue-50/30">{groupBy.toUpperCase()}: {groupName.toUpperCase()}</td></tr>
+                        <tr className="bg-slate-50/50 font-bold"><td colSpan={13} className="border-2 border-black p-1.5 bg-blue-50/30">{groupBy.toUpperCase()}: {groupName.toUpperCase()}</td></tr>
                         {items.map((item, idx) => (
                           <tr key={idx}>
                             <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
+                            {visibleColumns.date && <td className="border-2 border-black p-1 text-center">{format(parseISO(item.date), 'dd/MM')}</td>}
                             {visibleColumns.spj_no && <td className="border-2 border-black p-1 text-center font-bold">{item.spj_no}</td>}
                             {visibleColumns.region && <td className="border-2 border-black p-1 text-center">{item.region}</td>}
                             {visibleColumns.team && <td className="border-2 border-black p-1 text-center">{item.team}</td>}
@@ -222,11 +204,11 @@ const FuelSpjDailyRecap = () => {
                             )}
                             {visibleColumns.remarks && <td className="border-2 border-black p-1 italic whitespace-normal break-words leading-tight">{item.remarks || "-"}</td>}
                             {visibleColumns.receiver && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.receiver}</td>}
-                            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.street}{item.subDistrict ? `, ${item.subDistrict}` : ""}</td>}
+                            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.street}</td>}
                           </tr>
                         ))}
                         <tr className="bg-slate-50 font-bold italic">
-                          <td className="border-2 border-black p-1 text-right" colSpan={1 + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>SUB-TOTAL {groupName.toUpperCase()}:</td>
+                          <td className="border-2 border-black p-1 text-right" colSpan={1 + (visibleColumns.date?1:0) + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>SUB-TOTAL {groupName.toUpperCase()}:</td>
                           {visibleColumns.fuel && (
                             <>
                               <td className="border-2 border-black p-1 text-right">{subP_Rp.toLocaleString('id-ID')}</td>
@@ -242,7 +224,7 @@ const FuelSpjDailyRecap = () => {
                     );
                   })}
                   <tr className="bg-slate-100 font-black text-sm">
-                    <td className="border-2 border-black p-2 text-right" colSpan={1 + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>TOTAL KESELURUHAN:</td>
+                    <td className="border-2 border-black p-2 text-right" colSpan={1 + (visibleColumns.date?1:0) + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>TOTAL KESELURUHAN:</td>
                     {visibleColumns.fuel && (
                       <>
                         <td className="border-2 border-black p-2 text-right">{totalPertamaxRp.toLocaleString('id-ID')}</td>
@@ -256,7 +238,7 @@ const FuelSpjDailyRecap = () => {
                   </tr>
                 </>
               ) : (
-                <tr><td colSpan={12} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk tanggal ini</td></tr>
+                <tr><td colSpan={13} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
               )}
             </tbody>
           </table>
@@ -287,4 +269,4 @@ const FuelSpjDailyRecap = () => {
   );
 };
 
-export default FuelSpjDailyRecap;
+export default FuelSpjYearlyRecap;
