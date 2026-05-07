@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, Calculator, FileText
+  Plus, Trash2, Calculator, FileText, Users
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -23,6 +23,15 @@ import { Badge } from "@/components/ui/badge";
 import { FuelType } from '@/types/fuelReport';
 
 const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
+
+const teamOptions: Record<string, string[]> = {
+  "Pusat": ["Mobil Crane", "Mobil Tangga 30m", "Beco Loader", "Dump Truck"],
+  "Wilayah 1 Utara": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
+  "Wilayah 2 Barat": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
+  "Wilayah 3 Timur": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
+  "Wilayah 4 Kota": ["Tim Babat", "Tim Siram", "Tim Pohon", "Dump Truck"],
+  "Wilayah 5 Selatan": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
+};
 
 const locationSchema = z.object({
   street: z.string().min(1, "Wajib diisi"),
@@ -44,6 +53,8 @@ const entrySchema = z.object({
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   region: z.string().min(1, "Wilayah wajib dipilih"),
+  team: z.string().min(1, "Tim wajib dipilih"),
+  customTeam: z.string().optional(),
   entries: z.array(entrySchema).min(1),
   remarks: z.string().optional().default(""),
 });
@@ -53,6 +64,7 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   const { profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [prices, setPrices] = useState({ Pertamax: 13500, Dexlite: 14500 });
+  const [customTeamMode, setCustomTeamMode] = useState(false);
   
   const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
   const [receiverSuggestions, setReceiverSuggestions] = useState<string[]>([]);
@@ -60,9 +72,13 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: initialData || {
+    defaultValues: initialData ? {
+      ...initialData,
+      customTeam: ""
+    } : {
       date: new Date().toISOString().split('T')[0],
       region: "",
+      team: "",
       entries: [{ 
         spj_no: "", 
         vehicle_operator: "", 
@@ -77,6 +93,8 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
     control: form.control,
     name: "entries"
   });
+
+  const selectedRegion = form.watch("region");
 
   useEffect(() => {
     fetchPrices();
@@ -100,7 +118,6 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
       const spjNumbers: string[] = [];
       
       reports.forEach(report => {
-        // Jika sedang edit, jangan masukkan nomor SPJ dari laporan ini ke daftar "sudah ada"
         if (isEditing && initialData && report.id === initialData.id) return;
         
         report.entries.forEach(entry => {
@@ -126,17 +143,13 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    // 1. Validasi Duplikasi Nomor SPJ
     const currentSpjNumbers = values.entries.map(e => e.spj_no.toLowerCase().trim());
-    
-    // Cek duplikasi di dalam form itu sendiri
     const hasInternalDuplicate = currentSpjNumbers.some((no, idx) => currentSpjNumbers.indexOf(no) !== idx);
     if (hasInternalDuplicate) {
       showError("Nomor SPJ sudah Ada (Duplikat di dalam form)");
       return;
     }
 
-    // Cek duplikasi dengan database
     const duplicateInDb = currentSpjNumbers.find(no => existingSpjNumbers.includes(no));
     if (duplicateInDb) {
       showError(`Nomor SPJ sudah Ada: ${duplicateInDb.toUpperCase()}`);
@@ -147,6 +160,7 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
     try {
       const finalData = { 
         ...values, 
+        team: customTeamMode ? values.customTeam || values.team : values.team,
         price_pertamax: prices.Pertamax, 
         price_dexlite: prices.Dexlite,
         entries: values.entries.map(entry => ({
@@ -201,12 +215,35 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
             )} />
             <FormField control={form.control} name="region" render={({ field }) => (
               <FormItem><FormLabel>Wilayah</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+                <Select onValueChange={(val) => { field.onChange(val); form.setValue("team", ""); setCustomTeamMode(false); }} value={field.value}>
                   <FormControl><SelectTrigger><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger></FormControl>
                   <SelectContent>{regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                 </Select>
               </FormItem>
             )} />
+
+            <FormField control={form.control} name="team" render={({ field }) => (
+              <FormItem>
+                <FormLabel className="flex items-center gap-2"><Users size={14} /> Tim / Operator</FormLabel>
+                <Select onValueChange={(val) => { 
+                  if (val === "custom") { setCustomTeamMode(true); field.onChange(""); }
+                  else { setCustomTeamMode(false); field.onChange(val); }
+                }} value={customTeamMode ? "custom" : field.value} disabled={!selectedRegion}>
+                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih Tim" /></SelectTrigger></FormControl>
+                  <SelectContent>
+                    {selectedRegion && teamOptions[selectedRegion]?.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    <SelectItem value="custom" className="text-blue-600 font-bold">+ Tambah Manual</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )} />
+
+            {customTeamMode && (
+              <FormField control={form.control} name="customTeam" render={({ field }) => (
+                <FormItem><FormLabel>Nama Tim Baru</FormLabel><FormControl><Input placeholder="Ketik nama tim..." {...field} /></FormControl><FormMessage /></FormItem>
+              )} />
+            )}
           </CardContent>
         </Card>
 

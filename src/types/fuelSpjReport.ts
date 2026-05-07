@@ -23,6 +23,7 @@ export interface FuelSpjReport {
   id: string;
   date: string;
   region: string;
+  team: string; // Field baru
   entries: FuelSpjEntry[];
   remarks: string;
   price_pertamax: number;
