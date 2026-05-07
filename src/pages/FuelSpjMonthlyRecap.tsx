@@ -32,6 +32,7 @@ const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
 const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
 const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
 
 const FuelSpjMonthlyRecap = () => {
   const navigate = useNavigate();
@@ -40,6 +41,7 @@ const FuelSpjMonthlyRecap = () => {
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
+  const [selectedRegion, setSelectedRegion] = useState("semua");
   const [groupBy, setGroupBy] = useState<"region" | "team">("region");
   
   const [visibleColumns, setVisibleColumns] = useState({
@@ -80,19 +82,26 @@ const FuelSpjMonthlyRecap = () => {
     setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
 
-  const flatItems = reports.flatMap(r => 
-    r.entries.flatMap(entry => 
-      entry.locations.map(loc => ({
-        date: r.date,
-        region: r.region,
-        team: r.team || "-",
-        spj_no: entry.spj_no,
-        vehicle: entry.vehicle_operator,
-        receiver: entry.receiver_name,
-        ...loc
-      }))
-    )
-  );
+  const getFilteredItems = () => {
+    const flat = reports.flatMap(r => 
+      r.entries.flatMap(entry => 
+        entry.locations.map(loc => ({
+          date: r.date,
+          region: r.region,
+          team: r.team || "-",
+          spj_no: entry.spj_no,
+          vehicle: entry.vehicle_operator,
+          receiver: entry.receiver_name,
+          ...loc
+        }))
+      )
+    );
+    
+    if (selectedRegion === "semua") return flat;
+    return flat.filter(item => item.region === selectedRegion);
+  };
+
+  const flatItems = getFilteredItems();
 
   const groupedData: Record<string, any[]> = {};
   flatItems.forEach(item => {
@@ -253,9 +262,16 @@ const FuelSpjMonthlyRecap = () => {
             <Button variant="ghost" onClick={() => navigate('/fuel-reports/spj')}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}><SelectTrigger className="w-[130px] md:w-[150px]"><SelectValue placeholder="Bulan" /></SelectTrigger><SelectContent>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent></Select>
             <Select value={selectedYear} onValueChange={setSelectedYear}><SelectTrigger className="w-[90px] md:w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger><SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent></Select>
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200"><Filter className="mr-2 h-4 w-4 text-slate-400" /><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="semua">Semua Wilayah</SelectItem>
+                {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+              </SelectContent>
+            </Select>
             <Select value={groupBy} onValueChange={(v: any) => setGroupBy(v)}>
-              <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200"><Filter className="mr-2 h-4 w-4 text-slate-400" /><SelectValue placeholder="Kelompokkan" /></SelectTrigger>
-              <SelectContent><SelectItem value="region">Per Wilayah</SelectItem><SelectItem value="team">Per Tim / Operator</SelectItem></SelectContent>
+              <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200"><Settings2 className="mr-2 h-4 w-4 text-slate-400" /><SelectValue placeholder="Kelompokkan" /></SelectTrigger>
+              <SelectContent><SelectItem value="region">Grup Per Wilayah</SelectItem><SelectItem value="team">Grup Per Tim</SelectItem></SelectContent>
             </Select>
           </div>
           
@@ -291,10 +307,11 @@ const FuelSpjMonthlyRecap = () => {
         <div className="text-center mb-8">
           <h3 className="text-lg font-bold underline uppercase text-blue-800">REKAP BULANAN SPJ PEMAKAIAN BBM & OLI</h3>
           <p className="text-sm font-bold">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>
+          {selectedRegion !== "semua" && <p className="text-xs font-bold uppercase text-slate-500 mt-1">{selectedRegion}</p>}
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed">
+          <table className="w-full min-w-[1000px] border-collapse border-2 border-black text-[9px] table-fixed">
             <thead>
               <tr className="bg-slate-100">
                 <th className="border-2 border-black p-1 w-[30px]" rowSpan={visibleColumns.fuel ? 2 : 1}>No</th>
