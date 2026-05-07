@@ -25,6 +25,8 @@ export interface FuelReport {
   team: string;
   items: FuelUsageItem[];
   remarks: string;
+  price_pertamax: number; // Field baru
+  price_dexlite: number;  // Field baru
   pimpinan_note?: string;
   created_at?: string;
   deleted_at?: string | null;

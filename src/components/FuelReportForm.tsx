@@ -64,6 +64,8 @@ const formSchema = z.object({
   region: z.string().min(1, "Wilayah wajib dipilih"),
   team: z.string().min(1, "Tim wajib dipilih"),
   customTeam: z.string().optional(),
+  price_pertamax: z.coerce.number().min(1, "Harga wajib diisi"),
+  price_dexlite: z.coerce.number().min(1, "Harga wajib diisi"),
   items: z.array(usageItemSchema).min(1, "Minimal satu detail pemakaian"),
   remarks: z.string().optional().default(""),
 });
@@ -80,17 +82,17 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const [customTeamMode, setCustomTeamMode] = useState(false);
   const [showTypePrompt, setShowTypePrompt] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
-  const [prices, setPrices] = useState({ Pertamax: 13500, Dexlite: 14500 });
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData ? {
       ...initialData,
+      price_pertamax: initialData.price_pertamax || 13500,
+      price_dexlite: initialData.price_dexlite || 14500,
       items: initialData.items.map(item => ({ 
         ...item, 
         fuel_type: item.fuel_type as string,
         requires_fuel: item.requires_fuel ?? (item.amount_rp > 0 || item.amount_liter > 0 || item.amount > 0),
-        // Handle data lama: jika amount_rp kosong tapi amount ada, gunakan amount
         amount_rp: item.amount_rp || (item.fuel_type !== 'Oli' ? item.amount : 0),
         amount_liter: item.amount_liter || (item.fuel_type === 'Oli' ? item.amount : 0)
       })),
@@ -98,6 +100,8 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
       date: new Date().toISOString().split('T')[0],
       region: "",
       team: "",
+      price_pertamax: 13500,
+      price_dexlite: 14500,
       items: [{ 
         vehicle_operator: "", 
         fuel_type: "Pertamax", 
@@ -118,21 +122,24 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   });
 
   useEffect(() => {
-    fetchPrices();
-  }, []);
+    if (!isEditing) {
+      fetchPrices();
+    }
+  }, [isEditing]);
 
   const fetchPrices = async () => {
     try {
       const data = await fuelPriceService.getPrices();
       const p = data.find(x => x.type === 'Pertamax')?.price || 13500;
       const d = data.find(x => x.type === 'Dexlite')?.price || 14500;
-      setPrices({ Pertamax: p, Dexlite: d });
+      form.setValue("price_pertamax", p);
+      form.setValue("price_dexlite", d);
     } catch (e) { console.error(e); }
   };
 
   const calculateLiter = (index: number, rp: number, type: string) => {
     if (type === 'Oli') return;
-    const price = type === 'Pertamax' ? prices.Pertamax : prices.Dexlite;
+    const price = type === 'Pertamax' ? form.getValues("price_pertamax") : form.getValues("price_dexlite");
     if (price > 0) {
       const liter = parseFloat((rp / price).toFixed(2));
       form.setValue(`items.${index}.amount_liter`, liter);
@@ -196,13 +203,15 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         date: values.date,
         region: values.region,
         team: customTeamMode ? values.customTeam || values.team : values.team,
+        price_pertamax: values.price_pertamax,
+        price_dexlite: values.price_dexlite,
         items: values.items.map(item => ({
           ...item,
           fuel_type: item.fuel_type as FuelType,
           vehicle_operator: item.vehicle_operator || "-",
           amount_rp: item.requires_fuel ? item.amount_rp : 0,
           amount_liter: item.requires_fuel ? item.amount_liter : 0,
-          amount: item.fuel_type === 'Oli' ? item.amount_liter : item.amount_rp // Fallback untuk data lama
+          amount: item.fuel_type === 'Oli' ? item.amount_liter : item.amount_rp 
         })),
         remarks: values.remarks,
       };
@@ -244,44 +253,70 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
 
         <Card className="border-t-4 border-t-blue-600">
           <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Info className="h-5 w-5 text-blue-500" /> Informasi Wilayah & Tim</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="date" render={({ field }) => (
-              <FormItem><FormLabel>Tanggal</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            
-            <FormField control={form.control} name="region" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Wilayah</FormLabel>
-                <Select onValueChange={(val) => { field.onChange(val); form.setValue("team", ""); setCustomTeamMode(false); }} value={field.value}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger></FormControl>
-                  <SelectContent>{regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            <FormField control={form.control} name="team" render={({ field }) => (
-              <FormItem>
-                <FormLabel>Tim / Operator</FormLabel>
-                <Select onValueChange={(val) => { 
-                  if (val === "custom") { setCustomTeamMode(true); field.onChange(""); }
-                  else { setCustomTeamMode(false); field.onChange(val); }
-                }} value={customTeamMode ? "custom" : field.value} disabled={!selectedRegion}>
-                  <FormControl><SelectTrigger><SelectValue placeholder="Pilih Tim" /></SelectTrigger></FormControl>
-                  <SelectContent>
-                    {selectedRegion && teamOptions[selectedRegion]?.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                    <SelectItem value="custom" className="text-blue-600 font-bold">+ Tambah Manual</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )} />
-
-            {customTeamMode && (
-              <FormField control={form.control} name="customTeam" render={({ field }) => (
-                <FormItem><FormLabel>Nama Tim Baru</FormLabel><FormControl><Input placeholder="Ketik nama tim..." {...field} /></FormControl><FormMessage /></FormItem>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="date" render={({ field }) => (
+                <FormItem><FormLabel>Tanggal</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
               )} />
-            )}
+              
+              <FormField control={form.control} name="region" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Wilayah</FormLabel>
+                  <Select onValueChange={(val) => { field.onChange(val); form.setValue("team", ""); setCustomTeamMode(false); }} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger></FormControl>
+                    <SelectContent>{regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              <FormField control={form.control} name="team" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Tim / Operator</FormLabel>
+                  <Select onValueChange={(val) => { 
+                    if (val === "custom") { setCustomTeamMode(true); field.onChange(""); }
+                    else { setCustomTeamMode(false); field.onChange(val); }
+                  }} value={customTeamMode ? "custom" : field.value} disabled={!selectedRegion}>
+                    <FormControl><SelectTrigger><SelectValue placeholder="Pilih Tim" /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      {selectedRegion && teamOptions[selectedRegion]?.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      <SelectItem value="custom" className="text-blue-600 font-bold">+ Tambah Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
+              {customTeamMode && (
+                <FormField control={form.control} name="customTeam" render={({ field }) => (
+                  <FormItem><FormLabel>Nama Tim Baru</FormLabel><FormControl><Input placeholder="Ketik nama tim..." {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-bold uppercase text-slate-500">Harga BBM Hari Ini (Otomatis dari Master)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-dashed">
+                <FormField control={form.control} name="price_pertamax" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] font-bold text-blue-700">HARGA PERTAMAX (RP/LITER)</FormLabel>
+                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="price_dexlite" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] font-bold text-green-700">HARGA DEXLITE (RP/LITER)</FormLabel>
+                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 italic">* Anda dapat mengubah harga di atas jika harga SPBU berbeda hari ini. Perubahan ini hanya berlaku untuk laporan ini.</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -406,7 +441,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             <Button onClick={() => handleTypeSelection(true)} className="h-12 justify-start px-6 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200">
               <Fuel className="mr-3 h-5 w-5" /> Ya, Perlu Input BBM / Oli
             </Button>
-            <Button onClick={() => handleTypeSelection(false)} variant="outline" className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
+            <Button onClick={() => handleTypeSelection(false)} variant="outline" className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-orange-200">
               <MapPinned className="mr-3 h-5 w-5" /> Tidak, Hanya Tambah Lokasi
             </Button>
           </div>
