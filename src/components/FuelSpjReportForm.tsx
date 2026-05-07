@@ -158,8 +158,11 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
 
     setIsSubmitting(true);
     try {
+      // Destructure untuk membuang customTeam agar tidak dikirim ke database
+      const { customTeam, ...restValues } = values;
+
       const finalData = { 
-        ...values, 
+        ...restValues, 
         team: customTeamMode ? values.customTeam || values.team : values.team,
         price_pertamax: prices.Pertamax, 
         price_dexlite: prices.Dexlite,
