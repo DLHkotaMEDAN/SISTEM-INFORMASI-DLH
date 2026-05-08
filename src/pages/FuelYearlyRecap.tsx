@@ -6,7 +6,7 @@ import { fuelService } from '@/services/fuelService';
 import { FuelReport } from '@/types/fuelReport';
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Printer, Table, Filter, Settings2, PenTool, ChevronDown, FileText, CalendarDays } from 'lucide-react';
+import { ArrowLeft, Printer, Table, Filter, Settings2, PenTool, ChevronDown, FileText, Calendar } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { format, parseISO } from 'date-fns';
 import { id as localeId } from 'date-fns/locale';
@@ -183,7 +183,7 @@ const FuelYearlyRecap = () => {
 
   const totalPertamaxRpAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_rp || it.amount) : 0), 0);
   const totalPertamaxLtrAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_liter || 0) : 0), 0);
-  const totalDexliteRpAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_rp || it.amount) : 0), 0);
+  const totalDexliteRpAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_rp || item.amount) : 0), 0);
   const totalDexliteLtrAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_liter || 0) : 0), 0);
   const totalOliAll = flatItems.reduce((acc, it) => acc + (it.fuel_type === 'Oli' ? (it.amount_liter || it.amount) : 0), 0);
 
@@ -250,7 +250,7 @@ const FuelYearlyRecap = () => {
                 </DropdownMenuItem>
                 <div className="h-px bg-slate-100 my-1" />
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="cursor-pointer py-2">
-                  <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" /> Rekap Harian
+                  <Calendar className="mr-2 h-4 w-4 text-blue-500" /> Rekap Harian
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/weekly-rekap')} className="cursor-pointer py-2">
                   <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
@@ -259,7 +259,7 @@ const FuelYearlyRecap = () => {
                   <FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/yearly-rekap')} className="cursor-pointer py-2">
-                  <CalendarDays className="mr-2 h-4 w-4 text-red-500" /> Rekap Tahunan
+                  <Calendar className="mr-2 h-4 w-4 text-red-500" /> Rekap Tahunan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
