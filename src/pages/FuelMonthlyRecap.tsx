@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Report as AppReport, Task } from '@/types/report';
+import { Report as AppReport, Task, Equipment, HeavyEquipment } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import { 
@@ -59,7 +59,7 @@ type RecapMode = "with-fuel" | "without-fuel";
 type PhotoMode = "with-photo" | "without-photo";
 type SignatureMode = "with-signature" | "without-signature";
 
-const MonthlyRecap = () => {
+const FuelMonthlyRecap = () => {
   const navigate = useNavigate();
   const { session, profile, signOut } = useAuth();
   const [reports, setReports] = useState<AppReport[]>([]);
@@ -308,17 +308,17 @@ const MonthlyRecap = () => {
             desc: task.description,
             loc: `${task.location.street}, ${villages}`,
             vol: `${task.volume} ${getUnitByCategory(report.category)}`,
-            eq_type: task.equipment?.map((e: any) => e.type).join("\n"),
-            eq_qty: task.equipment?.map((e: any) => e.quantity).join("\n"),
-            he: task.heavyEquipment?.map((he: any) => `${he.type} ${he.vehicle || ""}`).join("\n"),
+            eq_type: task.equipment?.map((e: Equipment) => e.type).join("\n"),
+            eq_qty: task.equipment?.map((e: Equipment) => e.quantity).join("\n"),
+            he: task.heavyEquipment?.map((he: HeavyEquipment) => `${he.type} ${he.vehicle || ""}`).join("\n"),
             coord: task.personnel.coordinator,
             members: task.personnel.members,
             rem: [task.remarks, i === 0 ? report.remarks : ""].filter(Boolean).join(" | ")
           };
           if (recapMode === "with-fuel") {
-            rowData.fp = task.heavyEquipment?.reduce((acc: number, he: any) => acc + (he.fuel?.pertamax || 0), 0) || 0;
-            rowData.fd = task.heavyEquipment?.reduce((acc: number, he: any) => acc + (he.fuel?.dexlite || 0), 0) || 0;
-            rowData.fs = task.heavyEquipment?.reduce((acc: number, he: any) => acc + (he.fuel?.solar || 0), 0) || 0;
+            rowData.fp = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.pertamax || 0), 0) || 0;
+            rowData.fd = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.dexlite || 0), 0) || 0;
+            rowData.fs = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.solar || 0), 0) || 0;
           }
           const row = worksheet.addRow(rowData);
           if (photoMode === "with-photo") row.height = 100;
@@ -412,14 +412,14 @@ const MonthlyRecap = () => {
           </>
         )}
         <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(task.category)}</td>
-        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e: any, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
-        <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e: any, i: number) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
-        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he: any, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
+        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e: Equipment, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
+        <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e: Equipment, i: number) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
+        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
         {recapMode === "with-fuel" && (
           <>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: any, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: any, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: any, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
+            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
+            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
+            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
           </>
         )}
         <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
@@ -727,4 +727,4 @@ const MonthlyRecap = () => {
   );
 };
 
-export default MonthlyRecap;
+export default FuelMonthlyRecap;
