@@ -5,8 +5,11 @@ export interface Equipment {
 
 export interface FuelUsage {
   pertamax: number;
+  pertamax_liter?: number;
   dexlite: number;
+  dexlite_liter?: number;
   solar: number;
+  solar_liter?: number;
   remarks?: string;
 }
 
@@ -66,7 +69,9 @@ export interface Report {
   fuel: FuelUsage;
   personnel: Personnel;
   remarks: string;
-  pimpinan_note?: string; // Field baru untuk penilaian pimpinan
+  pimpinan_note?: string;
+  price_pertamax?: number; // Field baru
+  price_dexlite?: number;  // Field baru
   createdAt: string;
   unit: string;
   volume: number;

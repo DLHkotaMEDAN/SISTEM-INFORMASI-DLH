@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ClipboardCheck, HelpCircle, Copy, AlertCircle, X } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ClipboardCheck, HelpCircle, Copy, AlertCircle, X, Calculator, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Report, ReportCategory, Task, FuelUsage, Location, Equipment, HeavyEquipment } from '@/types/report';
@@ -22,6 +22,7 @@ import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { storageService } from '@/services/storageService';
 import { auditLogService } from '@/services/auditLogService';
+import { fuelPriceService } from '@/services/fuelPriceService';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from "@/lib/utils";
 import {
@@ -72,8 +73,11 @@ const photosSchema = z.object({
 
 const fuelSchema = z.object({
   pertamax: z.coerce.number().int().default(0),
+  pertamax_liter: z.coerce.number().default(0),
   dexlite: z.coerce.number().int().default(0),
+  dexlite_liter: z.coerce.number().default(0),
   solar: z.coerce.number().int().default(0),
+  solar_liter: z.coerce.number().default(0),
 });
 
 const taskSchema = z.object({
@@ -101,6 +105,8 @@ const taskSchema = z.object({
 const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   category: z.string().min(1, "Kategori wajib dipilih"),
+  price_pertamax: z.coerce.number().min(1, "Harga wajib diisi"),
+  price_dexlite: z.coerce.number().min(1, "Harga wajib diisi"),
   tasks: z.array(taskSchema).min(1),
   remarks: z.string().optional().default(""),
 }).superRefine((data, ctx) => {
@@ -142,11 +148,15 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     defaultValues: initialData ? {
       date: initialData.date,
       category: initialData.category,
+      price_pertamax: initialData.price_pertamax || 13500,
+      price_dexlite: initialData.price_dexlite || 14500,
       tasks: initialData.tasks.map(t => ({ ...t, location: { ...t.location, village: Array.isArray(t.location.village) ? t.location.village : [t.location.village] } })),
       remarks: initialData.remarks,
     } : {
       date: new Date().toISOString().split('T')[0],
       category: isUserRestricted ? (profile?.category || "") : "",
+      price_pertamax: 13500,
+      price_dexlite: 14500,
       tasks: [{ description: "", location: { street: "", village: [""], subDistrict: "" }, photos: { zero: "", fifty: "", hundred: "" }, volume: 0, equipment: [{ type: "", quantity: 1 }], heavyEquipment: [], personnel: { coordinator: "", members: 0 }, vehicle: "", remarks: "" }],
       remarks: "",
     },
@@ -171,7 +181,26 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       } catch (e) { console.error(e); }
     };
     fetchVehicles();
+    if (!isEditing) fetchPrices();
   }, []);
+
+  const fetchPrices = async () => {
+    try {
+      const data = await fuelPriceService.getPrices();
+      const p = data.find(x => x.type === 'Pertamax')?.price || 13500;
+      const d = data.find(x => x.type === 'Dexlite')?.price || 14500;
+      form.setValue("price_pertamax", p);
+      form.setValue("price_dexlite", d);
+    } catch (e) { console.error(e); }
+  };
+
+  const calculateLiter = (taskIdx: number, heIdx: number, rp: number, type: 'pertamax' | 'dexlite') => {
+    const price = type === 'pertamax' ? form.getValues("price_pertamax") : form.getValues("price_dexlite");
+    if (price > 0) {
+      const liter = parseFloat((rp / price).toFixed(2));
+      form.setValue(`tasks.${taskIdx}.heavyEquipment.${heIdx}.fuel.${type}_liter`, liter);
+    }
+  };
 
   useEffect(() => {
     const checkWorkPlan = async () => {
@@ -219,7 +248,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       photos: { zero: "", fifty: "", hundred: "" },
       volume: 0,
       equipment: [],
-      heavyEquipment: item.tools.map(tool => ({ type: tool.name, vehicle: "", fuel: { pertamax: 0, dexlite: 0, solar: 0 } })),
+      heavyEquipment: item.tools.map(tool => ({ type: tool.name, vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } })),
       personnel: { coordinator: item.coordinator, members: item.personnel.members },
       vehicle: "",
       remarks: item.basis
@@ -256,7 +285,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     try {
       const processedTasksWithUrls = await uploadTaskPhotos(values.tasks);
       let totalVolume = 0;
-      let totalFuel: FuelUsage = { pertamax: 0, dexlite: 0, solar: 0 };
+      let totalFuel: FuelUsage = { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 };
       let allEquipment: Equipment[] = [];
       let allHeavyEquipment: HeavyEquipment[] = [];
       let totalMembers = 0;
@@ -265,8 +294,11 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         totalVolume += task.volume;
         task.heavyEquipment.forEach((he: any) => {
           totalFuel.pertamax += he.fuel.pertamax;
+          totalFuel.pertamax_liter = (totalFuel.pertamax_liter || 0) + (he.fuel.pertamax_liter || 0);
           totalFuel.dexlite += he.fuel.dexlite;
+          totalFuel.dexlite_liter = (totalFuel.dexlite_liter || 0) + (he.fuel.dexlite_liter || 0);
           totalFuel.solar += he.fuel.solar;
+          totalFuel.solar_liter = (totalFuel.solar_liter || 0) + (he.fuel.solar_liter || 0);
           allHeavyEquipment.push(he as HeavyEquipment);
         });
         task.equipment.forEach((e: any) => allEquipment.push(e as Equipment));
@@ -277,6 +309,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
+        price_pertamax: values.price_pertamax,
+        price_dexlite: values.price_dexlite,
         vehicle: finalTasks[0].heavyEquipment?.[0]?.vehicle || finalTasks[0].vehicle,
         description: finalTasks[0].description,
         location: finalTasks[0].location as Location,
@@ -372,15 +406,40 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <Card className="border-t-4 border-t-blue-500">
           <CardHeader><CardTitle className="text-lg">Informasi Dasar</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Hari / Tanggal</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>)} />
-            <FormField control={form.control} name="category" render={({ field }) => (
-              <FormItem><FormLabel className="flex items-center gap-2">Kategori / Tim {isUserRestricted && <Lock size={12} className="text-amber-500" />}</FormLabel>
-                <div className="relative"><Select onValueChange={field.onChange} value={field.value} disabled={isUserRestricted}><FormControl><SelectTrigger className={isUserRestricted ? "bg-slate-50 text-slate-500" : ""}><SelectValue placeholder="Pilih kategori..." /></SelectTrigger></FormControl><SelectContent>{categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>{isUserRestricted && <div className="absolute -top-2 -right-2 bg-amber-100 text-amber-700 p-1 rounded-full border border-amber-200 shadow-sm z-10"><Lock size={10} /></div>}</div>
-              </FormItem>
-            )} />
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormField control={form.control} name="date" render={({ field }) => (<FormItem><FormLabel>Hari / Tanggal</FormLabel><FormControl><Input type="date" {...field} /></FormControl></FormItem>)} />
+              <FormField control={form.control} name="category" render={({ field }) => (
+                <FormItem><FormLabel className="flex items-center gap-2">Kategori / Tim {isUserRestricted && <Lock size={12} className="text-amber-500" />}</FormLabel>
+                  <div className="relative"><Select onValueChange={field.onChange} value={field.value} disabled={isUserRestricted}><FormControl><SelectTrigger className={isUserRestricted ? "bg-slate-50 text-slate-500" : ""}><SelectValue placeholder="Pilih kategori..." /></SelectTrigger></FormControl><SelectContent>{categories.map((cat) => (<SelectItem key={cat} value={cat}>{cat}</SelectItem>))}</SelectContent></Select>{isUserRestricted && <div className="absolute -top-2 -right-2 bg-amber-100 text-amber-700 p-1 rounded-full border border-amber-200 shadow-sm z-10"><Lock size={10} /></div>}</div>
+                </FormItem>
+              )} />
+            </div>
+
+            <div className="pt-4 border-t border-slate-100">
+              <div className="flex items-center gap-2 mb-3">
+                <Calculator className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-bold uppercase text-slate-500">Harga BBM Hari Ini (Otomatis dari Master)</span>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-dashed">
+                <FormField control={form.control} name="price_pertamax" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] font-bold text-blue-700">HARGA PERTAMAX (RP/LITER)</FormLabel>
+                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="price_dexlite" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-[10px] font-bold text-green-700">HARGA DEXLITE (RP/LITER)</FormLabel>
+                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                  </FormItem>
+                )} />
+              </div>
+              <p className="text-[10px] text-slate-400 mt-2 italic">* Perubahan harga di sini hanya berlaku untuk laporan ini saja.</p>
+            </div>
           </CardContent>
         </Card>
+
         <div className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="text-blue-600" /> Daftar Kegiatan & Sumber Daya</h2>
           {taskFields.map((taskField, taskIndex) => (
@@ -418,13 +477,22 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                           <div className="md:col-span-1 flex justify-end"><Button type="button" variant="destructive" size="icon" className={cn("h-10 w-10", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`); form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>
                         </div>
                         <div className="grid grid-cols-3 gap-4 p-3 bg-white rounded border border-red-100">
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Pertamax (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Dexlite (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
-                          <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Solar (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                          <div className="space-y-2">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Pertamax (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'pertamax'); }} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-blue-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
+                          </div>
+                          <div className="space-y-2">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Dexlite (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'dexlite'); }} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-green-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
+                          </div>
+                          <div className="space-y-2">
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Solar (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-slate-50 text-center font-bold" {...field} /></FormControl></FormItem>)} />
+                          </div>
                         </div>
                       </div>
                     ))}
-                    <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || []; form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, dexlite: 0, solar: 0 } }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat Berat</span></Button>
+                    <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || []; form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat Berat</span></Button>
                   </div>
                 </div>
                 <div className="pt-6 border-t border-slate-100 space-y-4">
@@ -460,7 +528,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       
       <Dialog open={showWorkPlanPrompt} onOpenChange={setShowWorkPlanPrompt}><DialogContent className="sm:max-w-[450px]"><DialogHeader><DialogTitle className="flex items-center gap-2 text-blue-600"><ClipboardCheck className="h-6 w-6" /> Sinkronisasi Rencana Kerja</DialogTitle><DialogDescription className="pt-2">Ditemukan Rencana Kerja untuk kategori {selectedCategory} pada tanggal {selectedDate}. Apakah Anda ingin mengisi data laporan secara otomatis?</DialogDescription></DialogHeader><div className="bg-blue-50 p-4 rounded-lg border border-blue-100 space-y-2"><p className="text-[10px] font-bold text-blue-700 uppercase">Data yang akan disinkronkan:</p><ul className="text-[11px] text-blue-800 space-y-1"><li>• Uraian Kegiatan & Lokasi</li><li>• Jenis Alat Berat</li><li>• Koordinator & Jumlah Anggota</li><li>• Keterangan Kegiatan</li></ul></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowWorkPlanPrompt(false)}>Tidak, Input Manual</Button><Button onClick={applyWorkPlan} className="bg-blue-600 hover:bg-blue-700"><HelpCircle className="mr-2 h-4 w-4" /> Ya, Sinkronkan Data</Button></DialogFooter></DialogContent></Dialog>
 
-      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Laporan</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data laporan ini ke formulir.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)}>Batal</Button><Button onClick={handleDuplicate} disabled={!duplicateDate} className="bg-blue-600 hover:bg-blue-700"><Copy className="h-4 w-4 mr-2" /> Salin ke Form</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Laporan</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data laporan ini ke formulir.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)}>Batal</Button><Button onClick={handleDuplicate} disabled={!duplicateDate} className="bg-blue-600 hover:bg-blue-700"><Copy className="h-4 w-4 mr-2" /> Salin ke Form</Button></DialogFooter></DialogContent>
     </Form>
   );
 };

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck, LogIn, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Trash2, Edit, Fuel, Users, Wrench, MessageSquare, Truck, LogIn, ShieldCheck, Calculator } from 'lucide-react';
 import { Report } from '@/types/report';
 import { showError } from '@/utils/toast';
 import { getUnitByCategory } from '@/utils/report-helpers';
@@ -159,10 +159,15 @@ const ReportDetail = () => {
                       
                       {task.heavyEquipment?.length > 0 && (
                         <div className="pt-2 border-t">
-                          <p className="font-bold text-[10px] mb-1">ALAT BERAT:</p>
+                          <p className="font-bold text-[10px] mb-1">ALAT BERAT & BBM:</p>
                           {task.heavyEquipment.map((he, idx) => (
-                            <div key={idx} className="mb-1 text-[10px]">
-                              {he.type} {he.vehicle ? `- ${he.vehicle}` : ""}
+                            <div key={idx} className="mb-2 text-[10px] bg-white p-2 rounded border border-slate-100">
+                              <div className="font-bold text-slate-700">{he.type} {he.vehicle ? `- ${he.vehicle}` : ""}</div>
+                              <div className="flex gap-3 mt-1">
+                                {he.fuel.pertamax > 0 && <span className="text-blue-600">P: Rp {he.fuel.pertamax.toLocaleString()} ({he.fuel.pertamax_liter || 0} L)</span>}
+                                {he.fuel.dexlite > 0 && <span className="text-green-600">D: Rp {he.fuel.dexlite.toLocaleString()} ({he.fuel.dexlite_liter || 0} L)</span>}
+                                {he.fuel.solar > 0 && <span className="text-slate-600">S: Rp {he.fuel.solar.toLocaleString()} ({he.fuel.solar_liter || 0} L)</span>}
+                              </div>
                             </div>
                           ))}
                         </div>
