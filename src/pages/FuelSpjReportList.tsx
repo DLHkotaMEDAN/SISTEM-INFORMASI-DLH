@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Plus, Calendar, MapPin, Fuel, Trash2, Edit, 
   Search, FilterX, ArrowLeft, RefreshCw, Printer, ChevronDown,
-  Table, FileText, Settings2, Eye, LogOut
+  Table, FileText, Settings2, Eye, LogOut, CalendarDays
 } from 'lucide-react';
 import { fuelSpjService } from '@/services/fuelSpjService';
 import { FuelSpjReport } from '@/types/fuelSpjReport';
@@ -16,12 +16,28 @@ import { useAuth } from '@/context/AuthContext';
 import { showSuccess, showError } from '@/utils/toast';
 import { Input } from "@/components/ui/input";
 import FuelPriceSettings from '@/components/FuelPriceSettings';
+import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+const months = [
+  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
+];
+
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
 
 const FuelSpjReportList = () => {
   const navigate = useNavigate();
@@ -30,6 +46,11 @@ const FuelSpjReportList = () => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [isPriceSettingsOpen, setIsPriceSettingsOpen] = useState(false);
+  
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("semua");
+  const [selectedYear, setSelectedYear] = useState("semua");
+  const [selectedRegion, setSelectedRegion] = useState("semua");
 
   const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm';
 
@@ -66,10 +87,33 @@ const FuelSpjReportList = () => {
     }
   };
 
+  const resetFilters = () => {
+    setSearchQuery("");
+    setSelectedDate("");
+    setSelectedMonth("semua");
+    setSelectedYear("semua");
+    setSelectedRegion("semua");
+  };
+
   const filteredReports = reports.filter(r => {
     const search = searchQuery.toLowerCase();
-    return r.region.toLowerCase().includes(search) || 
+    const reportDate = new Date(r.date);
+    const m = (reportDate.getMonth() + 1).toString();
+    const y = reportDate.getFullYear().toString();
+
+    const matchSearch = r.region.toLowerCase().includes(search) || 
            r.entries.some(e => e.spj_no.toLowerCase().includes(search) || e.vehicle_operator.toLowerCase().includes(search));
+
+    const matchSpecificDate = !selectedDate || r.date === selectedDate;
+    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+    const matchYear = selectedYear === "semua" || y === selectedYear;
+    const matchRegion = selectedRegion === "semua" || r.region === selectedRegion;
+
+    if (selectedDate) {
+      return matchSearch && matchSpecificDate && matchRegion;
+    }
+
+    return matchSearch && matchMonth && matchYear && matchRegion;
   });
 
   if (!isAllowed) return null;
@@ -122,15 +166,78 @@ const FuelSpjReportList = () => {
           </div>
         </div>
 
-        <div className="bg-white p-4 rounded-xl shadow-sm border">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input 
-              placeholder="Cari No. SPJ, Kendaraan, atau Wilayah..." 
-              className="pl-10 bg-slate-50 border-slate-200 h-11" 
-              value={searchQuery} 
-              onChange={(e) => setSearchQuery(e.target.value)} 
-            />
+        <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+            <div className="md:col-span-3 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari No. SPJ / Kendaraan</label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  placeholder="Ketik kata kunci..." 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
+                  value={searchQuery} 
+                  onChange={(e) => setSearchQuery(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Wilayah</label>
+              <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+                <SelectTrigger className="bg-slate-50 border-slate-200 h-10 text-sm">
+                  <SelectValue placeholder="Semua Wilayah" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Wilayah</SelectItem>
+                  {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tanggal</label>
+              <div className="relative">
+                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <Input 
+                  type="date" 
+                  className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
+                  value={selectedDate} 
+                  onChange={(e) => setSelectedDate(e.target.value)} 
+                />
+              </div>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
+              <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10 text-sm", selectedDate && "opacity-50")}>
+                  <SelectValue placeholder="Pilih Bulan" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Bulan</SelectItem>
+                  {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
+              <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
+                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10 text-sm", selectedDate && "opacity-50")}>
+                  <SelectValue placeholder="Pilih Tahun" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="semua">Semua Tahun</SelectItem>
+                  {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="md:col-span-1 flex justify-end">
+              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-full md:w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0 border border-dashed md:border-none">
+                <FilterX className="h-5 w-5" />
+              </Button>
+            </div>
           </div>
         </div>
 
