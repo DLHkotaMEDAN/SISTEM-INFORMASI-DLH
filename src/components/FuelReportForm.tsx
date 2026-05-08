@@ -36,7 +36,7 @@ const regions = [
 ];
 
 const teamOptions: Record<string, string[]> = {
-  "Pusat": ["Mobil Crane", "Mobil Tangga 30m", "Beco Loader", "Dump Truck"],
+  "Pusat": ["Mobil Crane", "Mobil Tangga 30m", "Beco Loader", "Dump Truck", "PickUp"],
   "Wilayah 1 Utara": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 2 Barat": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 3 Timur": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
@@ -420,7 +420,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
           <CardHeader className="py-3"><CardTitle className="text-sm flex items-center gap-2"><MessageSquare size={16} className="text-slate-400" /> Keterangan Tambahan (Umum)</CardTitle></CardHeader>
           <CardContent>
             <FormField control={form.control} name="remarks" render={({ field }) => (
-              <FormItem><FormControl><Input placeholder="Catatan tambahan untuk seluruh laporan..." {...field} /></FormControl><FormMessage /></FormItem>
+              <FormItem><FormControl><Input placeholder="Catatan tambahan untuk seluruh laporan..." {...field} /></FormControl></FormItem>
             )} />
           </CardContent>
         </Card>
