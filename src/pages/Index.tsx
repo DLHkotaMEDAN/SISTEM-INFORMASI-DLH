@@ -21,6 +21,8 @@ import { workPlanService } from '@/services/workPlanService';
 import { useAuth } from '@/context/AuthContext';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import TrashDialog from '@/components/TrashDialog';
+import FuelReportTab from '@/components/FuelReportTab';
+import FuelSpjTab from '@/components/FuelSpjTab';
 import { cn } from "@/lib/utils";
 import {
   Select,
@@ -69,10 +71,10 @@ const Index = () => {
   const [selectedCategory, setSelectedCategory] = useState("semua");
 
   const isLoggedIn = !!session;
+  const isAdmin = profile?.role === 'admin' || (session?.user?.email === 'admin@gmail.com');
   const isAdminBbm = profile?.role === 'admin_bbm';
   const isAdminSpj = profile?.role === 'admin_spj_bbm';
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
-  const isAdmin = profile?.role === 'admin' || (session?.user?.email === 'admin@gmail.com');
   const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
   const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan && !isAdminHarian;
 
@@ -232,35 +234,6 @@ const Index = () => {
           <div className="flex items-center gap-1.5 md:gap-2">
             <TooltipProvider>
               {isAdmin && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">
-                      <Fuel className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Manajemen BBM</span> <ChevronDown className="ml-1 h-3 w-3 opacity-50" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={() => navigate('/fuel-reports')} className="cursor-pointer py-2">
-                      <Fuel className="mr-2 h-4 w-4 text-orange-600" /> Laporan BBM Harian
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj')} className="cursor-pointer py-2">
-                      <FileText className="mr-2 h-4 w-4 text-blue-600" /> Laporan SPJ BBM
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
-
-              {(isAdminBbm || isAdminSpj) && !isAdmin && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => navigate(isAdminSpj ? '/fuel-reports/spj' : '/fuel-reports')} className="bg-orange-50 text-orange-700 border-orange-200 px-2 md:px-3 h-9">
-                      <Fuel className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Laporan BBM</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Manajemen BBM & Oli</p></TooltipContent>
-                </Tooltip>
-              )}
-
-              {isAdmin && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button variant="outline" size="sm" onClick={() => navigate('/maintenance')} className="bg-amber-50 text-amber-700 border-amber-200 px-2 md:px-3 h-9">
@@ -286,15 +259,18 @@ const Index = () => {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3 h-9">
-                      <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak {activeTab === "reports" ? "Laporan" : "Rencana"}</span><ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                      <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span><ChevronDown className="ml-1 h-3 w-3 opacity-50" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    {activeTab === "reports" ? (
-                      <><DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem><DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem></>
-                    ) : (
-                      <><DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem><DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem></>
-                    )}
+                    <DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               )}
@@ -313,69 +289,70 @@ const Index = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            <div className="md:col-span-4 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Uraian / Lokasi</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input placeholder="Ketik kata kunci..." className="pl-10 bg-slate-50 border-slate-200 h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+        {(activeTab === "reports" || activeTab === "workplans") && (
+          <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              <div className="md:col-span-4 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Uraian / Lokasi</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input placeholder="Ketik kata kunci..." className="pl-10 bg-slate-50 border-slate-200 h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                </div>
               </div>
-            </div>
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Kategori</label>
-              <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUserRestricted}>
-                <SelectTrigger className="bg-slate-50 border-slate-200 h-10"><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
-                <SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'semua' ? 'Semua Kategori' : cat}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tanggal</label>
-              <div className="relative">
-                <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                <Input type="date" className="pl-10 bg-slate-50 border-slate-200 h-10" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Kategori</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUserRestricted}>
+                  <SelectTrigger className="bg-slate-50 border-slate-200 h-10"><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
+                  <SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'semua' ? 'Semua Kategori' : cat}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="md:col-span-2 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
-              <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
-                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
-                  <SelectValue placeholder="Pilih Bulan" />
-                </SelectTrigger>
-                <SelectContent><SelectItem value="semua">Semua Bulan</SelectItem>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-1 space-y-1.5">
-              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
-              <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
-                <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
-                  <SelectValue placeholder="Pilih Tahun" />
-                </SelectTrigger>
-                <SelectContent><SelectItem value="semua">Semua Tahun</SelectItem>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div className="md:col-span-1 flex justify-end">
-              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"><FilterX className="h-5 w-5" /></Button>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tanggal</label>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input type="date" className="pl-10 bg-slate-50 border-slate-200 h-10" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
+                  <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                    <SelectValue placeholder="Pilih Bulan" />
+                  </SelectTrigger>
+                  <SelectContent><SelectItem value="semua">Semua Bulan</SelectItem>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-1 space-y-1.5">
+                <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
+                <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
+                  <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
+                    <SelectValue placeholder="Pilih Tahun" />
+                  </SelectTrigger>
+                  <SelectContent><SelectItem value="semua">Semua Tahun</SelectItem>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-1 flex justify-end">
+                <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"><FilterX className="h-5 w-5" /></Button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         <Tabs defaultValue="reports" onValueChange={setActiveTab} className="w-full space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <TabsList className="grid w-full md:w-[400px] grid-cols-2 h-12 bg-white border shadow-sm p-1"><TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger><TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger></TabsList>
-            {isLoggedIn && (
-              <div className="flex">
-                <Button 
-                  onClick={() => navigate(activeTab === "reports" ? '/create' : '/work-plans/create')} 
-                  className="bg-blue-600 hover:bg-blue-700 h-10 font-bold shadow-sm w-full md:w-auto px-2 md:px-6"
-                >
-                  <Plus className="h-4 w-4 md:mr-2" /> 
-                  <span className="hidden md:inline">
-                    {activeTab === "reports" ? "Input Laporan Baru" : "Buat Rencana Baru"}
-                  </span>
-                </Button>
-              </div>
-            )}
+            <TabsList className={cn(
+              "grid w-full h-12 bg-white border shadow-sm p-1",
+              isAdmin ? "md:w-[800px] grid-cols-2 md:grid-cols-4" : "md:w-[400px] grid-cols-2"
+            )}>
+              <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan Harian</TabsTrigger>
+              <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><ClipboardList size={16} /> Rencana Kerja</TabsTrigger>
+              {isAdmin && (
+                <>
+                  <TabsTrigger value="fuel_reports" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white flex items-center gap-2"><Fuel size={16} /> Admin BBM</TabsTrigger>
+                  <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white flex items-center gap-2"><FileText size={16} /> Laporan SPJ</TabsTrigger>
+                </>
+              )}
+            </TabsList>
           </div>
 
           <TabsContent value="reports" className="space-y-4">
@@ -426,8 +403,18 @@ const Index = () => {
                 ))}
               </div>
             ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p><Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button></div>}
-            <div className="flex justify-center pt-4"><Button variant="outline" onClick={() => navigate('/work-plans')} className="text-blue-600 border-blue-200 h-10 px-4">Lihat Semua Rencana Kerja <ArrowRight className="ml-2 h-4 w-4" /></Button></div>
           </TabsContent>
+
+          {isAdmin && (
+            <>
+              <TabsContent value="fuel_reports" className="space-y-4">
+                <FuelReportTab />
+              </TabsContent>
+              <TabsContent value="fuel_spj" className="space-y-4">
+                <FuelSpjTab />
+              </TabsContent>
+            </>
+          )}
         </Tabs>
       </main>
       
