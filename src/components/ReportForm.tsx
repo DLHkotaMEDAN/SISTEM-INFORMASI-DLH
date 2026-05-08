@@ -76,8 +76,8 @@ const fuelSchema = z.object({
   pertamax_liter: z.coerce.number().default(0),
   dexlite: z.coerce.number().int().default(0),
   dexlite_liter: z.coerce.number().default(0),
-  solar: z.coerce.number().int().default(0),
-  solar_liter: z.coerce.number().default(0),
+  solar: z.coerce.number().int().default(0), // Digunakan untuk Oli (Rp) - biasanya 0
+  solar_liter: z.coerce.number().default(0), // Digunakan untuk Oli (Liter)
 });
 
 const taskSchema = z.object({
@@ -486,8 +486,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                             <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-green-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
                           </div>
                           <div className="space-y-2">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Solar (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-slate-50 text-center font-bold" {...field} /></FormControl></FormItem>)} />
+                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar_liter`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold text-purple-600">Oli (Liter)</FormLabel><FormControl><Input type="number" step="0.01" className="h-8 text-xs bg-purple-50 font-bold" {...field} placeholder="Manual Liter" /></FormControl></FormItem>)} />
+                            <div className="h-7 text-[9px] flex items-center justify-center text-slate-400 italic">Tanpa Rupiah</div>
                           </div>
                         </div>
                       </div>

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Report } from '@/types/report';
+import { Report, Task, Equipment, HeavyEquipment } from '@/types/report';
 import { reportService } from '@/services/reportService';
 import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import { 
@@ -25,18 +25,6 @@ import { supabase } from '@/lib/supabase';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import DriveUploadDialog from '@/components/DriveUploadDialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const allCategories = [
   "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
@@ -277,7 +265,7 @@ const DailyRecap = () => {
         columns.push(
           { header: 'P (Rp)', key: 'fp', width: 10 }, { header: 'P (L)', key: 'fpl', width: 8 },
           { header: 'D (Rp)', key: 'fd', width: 10 }, { header: 'D (L)', key: 'fdl', width: 8 },
-          { header: 'S (Rp)', key: 'fs', width: 10 }, { header: 'S (L)', key: 'fsl', width: 8 }
+          { header: 'Oli (L)', key: 'fsl', width: 8 }
         );
       }
       columns.push({ header: 'Koordinator', key: 'coord', width: 20 }, { header: 'Anggota', key: 'members', width: 10 }, { header: 'Keterangan', key: 'rem', width: 35 });
@@ -323,7 +311,6 @@ const DailyRecap = () => {
             rowData.fpl = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.pertamax_liter || 0), 0) || 0;
             rowData.fd = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.dexlite || 0), 0) || 0;
             rowData.fdl = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.dexlite_liter || 0), 0) || 0;
-            rowData.fs = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.solar || 0), 0) || 0;
             rowData.fsl = task.heavyEquipment?.reduce((acc, he) => acc + (he.fuel?.solar_liter || 0), 0) || 0;
           }
           const row = worksheet.addRow(rowData);
@@ -376,15 +363,14 @@ const DailyRecap = () => {
   const headerStyle = { backgroundColor: '#f1f5f9', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
   const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
 
-  const totalCols = 12 + (photoMode === "with-photo" ? 3 : 0) + (recapMode === "with-fuel" ? 6 : 0);
+  const totalCols = 12 + (photoMode === "with-photo" ? 3 : 0) + (recapMode === "with-fuel" ? 5 : 0);
 
   // Hitung Total BBM
   const totalPertamax = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.pertamax || 0), 0) || 0), 0), 0);
   const totalPertamaxLtr = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.pertamax_liter || 0), 0) || 0), 0), 0);
   const totalDexlite = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.dexlite || 0), 0) || 0), 0), 0);
   const totalDexliteLtr = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.dexlite_liter || 0), 0) || 0), 0), 0);
-  const totalSolar = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.solar || 0), 0) || 0), 0), 0);
-  const totalSolarLtr = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.solar_liter || 0), 0) || 0), 0), 0);
+  const totalOliLtr = reports.reduce((acc, r) => acc + r.tasks.reduce((tAcc, t) => tAcc + (t.heavyEquipment?.reduce((heAcc, he) => heAcc + (he.fuel?.solar_liter || 0), 0) || 0), 0), 0);
 
   const renderReportRows = (report: Report, reportIdx: number) => {
     return report.tasks.map((task, taskIdx) => {
@@ -421,8 +407,7 @@ const DailyRecap = () => {
               <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight bg-blue-50/30">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax_liter || 0}</div>))}</td>
               <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
               <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight bg-green-50/30">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite_liter || 0}</div>))}</td>
-              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
-              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight bg-slate-50/30">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar_liter || 0}</div>))}</td>
+              <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight bg-purple-50/30">{task.heavyEquipment?.map((he, i) => (<div key={i} className="mb-0.5">{he.fuel?.solar_liter || 0}</div>))}</td>
             </>
           )}
           <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
@@ -467,8 +452,7 @@ const DailyRecap = () => {
           <col style={{ width: '35px' }} />
           <col style={{ width: '45px' }} />
           <col style={{ width: '35px' }} />
-          <col style={{ width: '45px' }} />
-          <col style={{ width: '35px' }} />
+          <col style={{ width: '40px' }} />
         </>
       )}
       <col style={{ width: '90px' }} />
@@ -489,7 +473,7 @@ const DailyRecap = () => {
         <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
         <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
         <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
-        {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-1" colSpan={6}>BBM (Voucher Rp & Liter)</th>)}
+        {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-1" colSpan={5}>BBM & Oli (Liter)</th>)}
         <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
         <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
       </tr>
@@ -503,8 +487,7 @@ const DailyRecap = () => {
             <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">P (L)</th>
             <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">D (Rp)</th>
             <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">D (L)</th>
-            <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">S (Rp)</th>
-            <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">S (L)</th>
+            <th style={subHeaderStyle} className="border-2 border-black p-1 text-[8px]">Oli (L)</th>
           </>
         )}
         <th style={subHeaderStyle} className="border-2 border-black p-1">Koordinator</th>
@@ -689,13 +672,12 @@ const DailyRecap = () => {
                     
                     {recapMode === "with-fuel" && (
                       <tr className="bg-slate-50 font-black">
-                        <td className="border-2 border-black p-2 text-right" colSpan={photoMode === "with-photo" ? 11 : 8}>TOTAL PEMAKAIAN BBM:</td>
+                        <td className="border-2 border-black p-2 text-right" colSpan={photoMode === "with-photo" ? 11 : 8}>TOTAL PEMAKAIAN BBM & OLI:</td>
                         <td className="border-2 border-black p-1 text-center text-[9px]">{totalPertamax.toLocaleString('id-ID')}</td>
                         <td className="border-2 border-black p-1 text-center text-[9px] bg-blue-50/50">{totalPertamaxLtr.toFixed(2)}</td>
                         <td className="border-2 border-black p-1 text-center text-[9px]">{totalDexlite.toLocaleString('id-ID')}</td>
                         <td className="border-2 border-black p-1 text-center text-[9px] bg-green-50/50">{totalDexliteLtr.toFixed(2)}</td>
-                        <td className="border-2 border-black p-1 text-center text-[9px]">{totalSolar.toLocaleString('id-ID')}</td>
-                        <td className="border-2 border-black p-1 text-center text-[9px] bg-slate-50/50">{totalSolarLtr.toFixed(2)}</td>
+                        <td className="border-2 border-black p-1 text-center text-[9px] bg-purple-50/50">{totalOliLtr.toFixed(2)}</td>
                         <td className="border-2 border-black p-2" colSpan={3}></td>
                       </tr>
                     )}
