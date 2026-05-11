@@ -399,7 +399,10 @@ const WorkPlanDailyRecap = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          .no-print { display: none !important; }
+          .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper], .sonner-toaster { 
+            display: none !important; 
+            visibility: hidden !important;
+          }
           .print-area { 
             box-shadow: none !important; 
             border: none !important; 

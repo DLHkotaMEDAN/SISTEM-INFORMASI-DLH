@@ -376,9 +376,9 @@ const WorkPlanWeeklyRecap = () => {
               )}
             </>
           ) : (
-            <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed">
+            <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
               <tbody>
-                <tr><td colSpan={hasRemarks ? 12 : 11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada rencana kerja untuk periode ini</td></tr>
+                <tr><td colSpan={20} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>
               </tbody>
             </table>
           )}
@@ -388,7 +388,10 @@ const WorkPlanWeeklyRecap = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          .no-print { display: none !important; }
+          .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper], .sonner-toaster { 
+            display: none !important; 
+            visibility: hidden !important;
+          }
           .print-area { 
             box-shadow: none !important; 
             border: none !important; 
