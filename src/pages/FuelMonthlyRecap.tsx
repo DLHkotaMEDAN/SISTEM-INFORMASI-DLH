@@ -1,51 +1,29 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Report as AppReport, Task, Equipment, HeavyEquipment } from '@/types/report';
-import { reportService } from '@/services/reportService';
-import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
-import { 
-  ArrowLeft, Printer, Fuel, FileText, ChevronsUpDown, 
-  Table, Image as ImageIcon, ImageOff, LogOut, LogIn, CloudUpload, 
-  Loader2, Lock, ChevronDown, PenTool, Calendar 
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { fuelService } from '@/services/fuelService';
+import { FuelReport } from '@/types/fuelReport';
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useAuth } from '@/context/AuthContext';
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
+import { ArrowLeft, Printer, Table, Filter, Settings2, PenTool, ChevronDown, FileText, CalendarDays, Calendar as CalendarIcon } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
+import { format, parseISO } from 'date-fns';
+import { id as localeId } from 'date-fns/locale';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { showSuccess, showError, showLoading, dismissToast } from '@/utils/toast';
-import { supabase } from '@/lib/supabase';
-import html2canvas from 'html2canvas';
-import { jsPDF } from 'jspdf';
-import DriveUploadDialog from '@/components/DriveUploadDialog';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { useAuth } from '@/context/AuthContext';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
-const months = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember"
-];
-
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
-
-const allCategories = [
-  "Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram", "Tim Pohon"
-];
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -55,81 +33,50 @@ const getLogoUrl = (fileName: string) => {
 const LOGO_MEDAN_URL = getLogoUrl('logo-medan.jpg');
 const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 
-type RecapMode = "with-fuel" | "without-fuel";
-type PhotoMode = "with-photo" | "without-photo";
+const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
+
 type SignatureMode = "with-signature" | "without-signature";
 
 const FuelMonthlyRecap = () => {
   const navigate = useNavigate();
-  const { session, profile, signOut } = useAuth();
-  const [reports, setReports] = useState<AppReport[]>([]);
+  const { profile } = useAuth();
+  const [reports, setReports] = useState<FuelReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isDriveDialogOpen, setIsDriveDialogOpen] = useState(false);
-  
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
-  const [recapMode, setRecapMode] = useState<RecapMode>("without-fuel");
-  const [photoMode, setPhotoMode] = useState<PhotoMode>("with-photo");
+  const [selectedRegion, setSelectedRegion] = useState("semua");
   const [signatureMode, setSignatureMode] = useState<SignatureMode>("with-signature");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
-  
-  const printRef = useRef<HTMLDivElement>(null);
-  const isLoggedIn = !!session;
-  
-  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
-  const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
-  const isUserRestricted = isLoggedIn && profile?.role === 'user' && !isPimpinan && !isAdminHarian;
+
+  const [visibleColumns, setVisibleColumns] = useState({
+    date: true,
+    region: true,
+    team: true,
+    vehicle: true,
+    pertamax_rp: true,
+    pertamax_ltr: true,
+    dexlite_rp: true,
+    dexlite_ltr: true,
+    oli: true,
+    location: true,
+    remarks: true
+  });
 
   useEffect(() => {
-    if (isAdminHarian) {
-      showError("Admin Harian tidak diizinkan mengakses Rekap Bulanan");
-      navigate('/');
-      return;
-    }
-
-    if (isLoggedIn && profile) {
-      if (isUserRestricted && profile.category) {
-        setSelectedCategories([profile.category]);
-      } else {
-        setSelectedCategories(['semua']);
-      }
-    } else {
-      setSelectedCategories(['semua']);
-    }
-  }, [profile, isLoggedIn, isUserRestricted, isAdminHarian, navigate]);
-
-  useEffect(() => {
-    if (selectedCategories.length > 0 && !isAdminHarian) {
-      loadData();
-    }
-  }, [selectedMonth, selectedYear, selectedCategories, isAdminHarian]);
+    loadData();
+  }, [selectedMonth, selectedYear]);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      let data = await reportService.getAllReports();
-      data = data.filter(r => {
-        const reportDate = new Date(r.date);
-        const m = (reportDate.getMonth() + 1).toString();
-        const y = reportDate.getFullYear().toString();
-        const matchMonth = selectedMonth === "semua" || m === selectedMonth;
-        const matchYear = selectedYear === "semua" || y === selectedYear;
-        let matchCategory = false;
-        if (!isLoggedIn || profile?.role === 'admin' || isPimpinan) {
-          matchCategory = selectedCategories.includes('semua') || selectedCategories.includes(r.category);
-        } else {
-          matchCategory = r.category === profile?.category;
-        }
-        return matchMonth && matchYear && matchCategory;
+      const data = await fuelService.getAllReports();
+      const filtered = data.filter(r => {
+        const rDate = parseISO(r.date);
+        return (rDate.getMonth() + 1).toString() === selectedMonth && rDate.getFullYear().toString() === selectedYear;
       });
-      
-      data.sort((a, b) => {
-        const dateDiff = new Date(a.date).getTime() - new Date(b.date).getTime();
-        if (dateDiff !== 0) return dateDiff;
-        return sortByCategory(a.category, b.category);
-      });
-      
-      setReports(data);
+      filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region));
+      setReports(filtered);
     } catch (error) {
       console.error(error);
     } finally {
@@ -137,147 +84,59 @@ const FuelMonthlyRecap = () => {
     }
   };
 
-  const handleLogout = async () => {
-    if (window.confirm("Apakah Anda yakin ingin keluar?")) {
-      try {
-        await signOut();
-        navigate('/login');
-      } catch (error) {
-        showError("Gagal keluar");
-      }
-    }
+  const getFilteredItems = () => {
+    const flat = reports.flatMap(r => r.items.map(item => ({ 
+      ...item, 
+      date: r.date,
+      region: r.region, 
+      team: r.team, 
+      remarks: r.remarks 
+    })));
+    
+    if (selectedRegion === "semua") return flat;
+    return flat.filter(item => item.region === selectedRegion);
   };
 
-  const handlePrint = () => {
-    setTimeout(() => {
-      window.print();
-    }, 150);
-  };
+  const flatItems = getFilteredItems();
 
-  const handleDriveUpload = async (config: { fileName: string; folderId: string; accessToken: string }) => {
-    if (!printRef.current) return;
-    const toastId = showLoading("Menyiapkan PDF A3...");
-    try {
-      window.scrollTo(0, 0);
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const margin = 10;
-      const contentWidth = pdfWidth - (margin * 2);
-      let currentY = margin;
-
-      const headerEl = document.querySelector('.pdf-header') as HTMLElement;
-      if (headerEl) {
-        const canvas = await html2canvas(headerEl, { scale: 2, useCORS: true });
-        const headerImg = canvas.toDataURL('image/jpeg', 0.95);
-        const headerHeight = (canvas.height * contentWidth) / canvas.width;
-        pdf.addImage(headerImg, 'JPEG', margin, currentY, contentWidth, headerHeight);
-        currentY += headerHeight + 5;
-      }
-
-      const tableHeaderEl = document.querySelector('.pdf-table-header') as HTMLElement;
-      let tableHeaderImg = "";
-      let tableHeaderHeight = 0;
-      if (tableHeaderEl) {
-        const canvas = await html2canvas(tableHeaderEl, { scale: 2, useCORS: true });
-        tableHeaderImg = canvas.toDataURL('image/jpeg', 0.95);
-        tableHeaderHeight = (canvas.height * contentWidth) / canvas.width;
-        pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
-        currentY += tableHeaderHeight;
-      }
-
-      const footerEl = document.querySelector('.pdf-footer') as HTMLElement;
-      let footerImg = "";
-      let footerHeight = 0;
-      if (footerEl && signatureMode === "with-signature") {
-        const canvas = await html2canvas(footerEl, { scale: 2, useCORS: true });
-        footerImg = canvas.toDataURL('image/jpeg', 0.95);
-        footerHeight = (canvas.height * contentWidth) / canvas.width;
-      }
-
-      const reportBlocks = document.querySelectorAll('.pdf-report-block');
-      for (let i = 0; i < reportBlocks.length; i++) {
-        const block = reportBlocks[i] as HTMLElement;
-        const canvas = await html2canvas(block, { scale: 2, useCORS: true });
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const imgHeight = (canvas.height * contentWidth) / canvas.width;
-        
-        if (currentY + imgHeight > pdfHeight - margin - 20) {
-          pdf.addPage('a3', 'landscape');
-          currentY = margin;
-          if (tableHeaderImg) {
-            pdf.addImage(tableHeaderImg, 'JPEG', margin, currentY, contentWidth, tableHeaderHeight);
-            currentY += tableHeaderHeight;
-          }
-        }
-        
-        pdf.addImage(imgData, 'JPEG', margin, currentY, contentWidth, imgHeight);
-        currentY += imgHeight;
-      }
-
-      if (footerImg && signatureMode === "with-signature") {
-        if (currentY + footerHeight > pdfHeight - margin) {
-          pdf.addPage('a3', 'landscape');
-          currentY = margin;
-        }
-        pdf.addImage(footerImg, 'JPEG', margin, currentY, contentWidth, footerHeight);
-      }
-      
-      const pdfBase64 = pdf.output('datauristring').split(',')[1];
-      const { data, error } = await supabase.functions.invoke('upload-to-drive', {
-        body: { 
-          pdfBase64, 
-          fileName: config.fileName.endsWith('.pdf') ? config.fileName : `${config.fileName}.pdf`,
-          folderId: config.folderId,
-          userAccessToken: config.accessToken
-        }
-      });
-      if (error) throw error;
-      return data;
-    } catch (error: any) {
-      console.error(error);
-      showError("Gagal mengunggah: " + error.message);
-      throw error;
-    } finally {
-      dismissToast(toastId);
-    }
+  const toggleColumn = (column: keyof typeof visibleColumns) => {
+    setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
 
   const handleExportExcel = async () => {
-    if (reports.length === 0) {
+    if (flatItems.length === 0) {
       showError("Tidak ada data untuk diekspor");
       return;
     }
     const toastId = showLoading("Menyiapkan file Excel...");
     try {
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('Rekap Laporan');
-      const columns = [
-        { header: 'No', key: 'no', width: 5 },
-        { header: 'Hari / Tgl', key: 'date', width: 15 },
-        { header: 'Tim/Kec.', key: 'category', width: 15 },
-        { header: 'Uraian Kegiatan', key: 'desc', width: 30 },
-        { header: 'Lokasi', key: 'loc', width: 40 },
-      ];
-      if (photoMode === "with-photo") {
-        columns.push({ header: '0%', key: 'p0', width: 22 }, { header: '50%', key: 'p50', width: 22 }, { header: '100%', key: 'p100', width: 22 });
-      }
-      columns.push({ header: 'Vol', key: 'vol', width: 10 }, { header: 'Jenis Alat', key: 'eq_type', width: 20 }, { header: 'Jumlah Alat', key: 'eq_qty', width: 10 }, { header: 'Alat Berat', key: 'he', width: 25 });
-      if (recapMode === "with-fuel") {
-        columns.push({ header: 'P', key: 'fp', width: 6 }, { header: 'D', key: 'fd', width: 6 }, { header: 'S', key: 'fs', width: 6 });
-      }
-      columns.push({ header: 'Koordinator', key: 'coord', width: 20 }, { header: 'Anggota', key: 'members', width: 10 }, { header: 'Keterangan', key: 'rem', width: 35 });
+      const worksheet = workbook.addWorksheet('Rekap Bulanan BBM');
+      
+      const columns: any[] = [{ header: 'No', key: 'no', width: 5 }];
+      if (visibleColumns.date) columns.push({ header: 'Tgl', key: 'date', width: 10 });
+      if (visibleColumns.region) columns.push({ header: 'Wilayah', key: 'region', width: 15 });
+      if (visibleColumns.team) columns.push({ header: 'Tim / Operator', key: 'team', width: 18 });
+      if (visibleColumns.vehicle) columns.push({ header: 'Kendaraan', key: 'vehicle', width: 24 });
+      if (visibleColumns.pertamax_rp) columns.push({ header: 'Pertamax (Rp)', key: 'p_rp', width: 15 });
+      if (visibleColumns.pertamax_ltr) columns.push({ header: 'Pertamax (Liter)', key: 'p_ltr', width: 10 });
+      if (visibleColumns.dexlite_rp) columns.push({ header: 'Dexlite (Rp)', key: 'd_rp', width: 15 });
+      if (visibleColumns.dexlite_ltr) columns.push({ header: 'Dexlite (Liter)', key: 'd_ltr', width: 10 });
+      if (visibleColumns.oli) columns.push({ header: 'Oli (Liter)', key: 'oli', width: 10 });
+      if (visibleColumns.location) columns.push({ header: 'Lokasi Kerja', key: 'location', width: 40 });
+      if (visibleColumns.remarks) columns.push({ header: 'Keterangan', key: 'remarks', width: 30 });
+
       worksheet.columns = columns;
       
       const lastColLetter = String.fromCharCode(64 + columns.length);
       worksheet.mergeCells(`A1:${lastColLetter}1`);
-      worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN';
+      worksheet.getCell('A1').value = 'PEMERINTAH KOTA MEDAN - DINAS LINGKUNGAN HIDUP';
       worksheet.getCell('A1').font = { bold: true, size: 14 };
       worksheet.getCell('A1').alignment = { horizontal: 'center' };
+      
       worksheet.mergeCells(`A2:${lastColLetter}2`);
-      worksheet.getCell('A2').value = 'DINAS LINGKUNGAN HIDUP';
-      worksheet.getCell('A2').font = { bold: true, size: 16 };
+      worksheet.getCell('A2').value = `REKAP BULANAN PEMAKAIAN BBM & OLI - BULAN: ${months[parseInt(selectedMonth)-1]} ${selectedYear}`;
+      worksheet.getCell('A2').font = { bold: true, size: 12 };
       worksheet.getCell('A2').alignment = { horizontal: 'center' };
       worksheet.addRow([]);
       
@@ -285,53 +144,42 @@ const FuelMonthlyRecap = () => {
       headerRow.eachCell(cell => {
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F1F5F9' } };
         cell.border = { top: { style: 'medium' }, left: { style: 'medium' }, bottom: { style: 'medium' }, right: { style: 'medium' } };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         cell.font = { bold: true };
       });
 
-      let currentNo = 0;
-      let lastDate = "";
+      flatItems.forEach((item, idx) => {
+        const rowData: any = { no: idx + 1 };
+        if (visibleColumns.date) rowData.date = format(parseISO(item.date), 'dd/MM');
+        if (visibleColumns.region) rowData.region = item.region;
+        if (visibleColumns.team) rowData.team = item.team;
+        if (visibleColumns.vehicle) rowData.vehicle = item.vehicle_operator;
+        
+        const p_rp = item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount) : 0;
+        const p_ltr = item.fuel_type === 'Pertamax' ? (item.amount_liter || 0) : 0;
+        const d_rp = item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount) : 0;
+        const d_ltr = item.fuel_type === 'Dexlite' ? (item.amount_liter || 0) : 0;
+        const o_ltr = item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : 0;
 
-      for (const report of reports) {
-        if (report.date !== lastDate) {
-          currentNo++;
-          lastDate = report.date;
-        }
+        if (visibleColumns.pertamax_rp) rowData.p_rp = p_rp;
+        if (visibleColumns.pertamax_ltr) rowData.p_ltr = p_ltr;
+        if (visibleColumns.dexlite_rp) rowData.d_rp = d_rp;
+        if (visibleColumns.dexlite_ltr) rowData.d_ltr = d_ltr;
+        if (visibleColumns.oli) rowData.oli = o_ltr;
+        if (visibleColumns.location) rowData.location = `${item.location.street}${item.location.subDistrict ? ', ' + item.location.subDistrict : ''}`;
+        if (visibleColumns.remarks) rowData.remarks = item.item_remarks || item.remarks || "-";
 
-        for (let i = 0; i < report.tasks.length; i++) {
-          const task = report.tasks[i];
-          const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
-          const rowData: any = {
-            no: (i === 0 && report === reports.find(r => r.date === report.date)) ? currentNo : '',
-            date: i === 0 ? new Date(report.date).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' }) : '',
-            category: i === 0 ? report.category : '',
-            desc: task.description,
-            loc: `${task.location.street}, ${villages}`,
-            vol: `${task.volume} ${getUnitByCategory(report.category)}`,
-            eq_type: task.equipment?.map((e: Equipment) => e.type).join("\n"),
-            eq_qty: task.equipment?.map((e: Equipment) => e.quantity).join("\n"),
-            he: task.heavyEquipment?.map((he: HeavyEquipment) => `${he.type} ${he.vehicle || ""}`).join("\n"),
-            coord: task.personnel.coordinator,
-            members: task.personnel.members,
-            rem: [task.remarks, i === 0 ? report.remarks : ""].filter(Boolean).join(" | ")
-          };
-          if (recapMode === "with-fuel") {
-            rowData.fp = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.pertamax || 0), 0) || 0;
-            rowData.fd = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.dexlite || 0), 0) || 0;
-            rowData.fs = task.heavyEquipment?.reduce((acc: number, he: HeavyEquipment) => acc + (he.fuel?.solar || 0), 0) || 0;
-          }
-          const row = worksheet.addRow(rowData);
-          if (photoMode === "with-photo") row.height = 100;
-          row.eachCell(cell => {
-            cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
-            cell.alignment = { vertical: 'middle', wrapText: true };
-          });
-        }
-      }
+        const row = worksheet.addRow(rowData);
+        row.eachCell(cell => {
+          cell.border = { top: { style: 'thin' }, left: { style: 'thin' }, bottom: { style: 'thin' }, right: { style: 'thin' } };
+          cell.alignment = { vertical: 'middle', wrapText: true };
+        });
+      });
+
       const buffer = await workbook.xlsx.writeBuffer();
-      saveAs(new Blob([buffer]), `Rekap_DLH_${selectedMonth === 'semua' ? 'Semua' : months[parseInt(selectedMonth)-1]}_${selectedYear}.xlsx`);
+      saveAs(new Blob([buffer]), `Rekap_Bulanan_BBM_DLH_${selectedMonth}_${selectedYear}.xlsx`);
       dismissToast(toastId);
-      showSuccess("Rekap Excel berhasil diunduh");
+      showSuccess("Excel berhasil diunduh");
     } catch (error) {
       console.error(error);
       dismissToast(toastId);
@@ -339,238 +187,45 @@ const FuelMonthlyRecap = () => {
     }
   };
 
-  const toggleCategory = (category: string) => {
-    if (category === 'semua') { setSelectedCategories(['semua']); return; }
-    let newSelected = [...selectedCategories].filter(c => c !== 'semua');
-    if (newSelected.includes(category)) { newSelected = newSelected.filter(c => c !== category); }
-    else { newSelected.push(category); }
-    if (newSelected.length === 0) { setSelectedCategories(['semua']); }
-    else { setSelectedCategories(newSelected); }
-  };
+  const groupedByRegion: Record<string, any[]> = {};
+  flatItems.forEach(item => {
+    if (!groupedByRegion[item.region]) groupedByRegion[item.region] = [];
+    groupedByRegion[item.region].push(item);
+  });
 
-  const showTiurmaida = selectedCategories.includes('semua') || selectedCategories.some(c => ["Taman Kota", "Taman Amplas", "Taman Area", "Tim Babat", "Tim Siram"].includes(c));
-  const showArdiansyah = selectedCategories.includes('semua') || selectedCategories.includes("Tim Pohon");
+  const totalPertamaxRpAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount) : 0), 0);
+  const totalPertamaxLtrAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Pertamax' ? (item.amount_liter || 0) : 0), 0);
+  const totalDexliteRpAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount) : 0), 0);
+  const totalDexliteLtrAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Dexlite' ? (item.amount_liter || 0) : 0), 0);
+  const totalOliAll = flatItems.reduce((acc, item) => acc + (item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : 0), 0);
 
-  const headerStyle = { backgroundColor: '#f1f5f9', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
-  const subHeaderStyle = { backgroundColor: '#f8fafc', color: '#000000', fontWeight: 'bold', textAlign: 'center' as const, verticalAlign: 'middle' as const };
-
-  const totalCols = 12 + (photoMode === "with-photo" ? 3 : 0) + (recapMode === "with-fuel" ? 3 : 0);
-
-  const getTableSpans = () => {
-    const noSpans: number[] = [];
-    const dateSpans: number[] = [];
-    let currentNo = 0;
-    let lastDate = "";
-    
-    const flatTasks = reports.flatMap(r => r.tasks.map((t: Task) => ({ ...t, reportDate: r.date, reportId: r.id, category: r.category, reportRemarks: r.remarks })));
-    
-    flatTasks.forEach((task, idx) => {
-      if (task.reportDate !== lastDate) {
-        currentNo++;
-        lastDate = task.reportDate;
-        const sameDateTasks = flatTasks.filter(t => t.reportDate === task.reportDate);
-        noSpans[idx] = sameDateTasks.length;
-        dateSpans[idx] = sameDateTasks.length;
-      } else {
-        noSpans[idx] = 0;
-        dateSpans[idx] = 0;
-      }
-    });
-
-    return { flatTasks, noSpans, dateSpans };
-  };
-
-  const { flatTasks, noSpans, dateSpans } = getTableSpans();
-
-  const renderTaskRow = (task: any, idx: number, currentNo: number) => {
-    const villages = Array.isArray(task.location.village) ? task.location.village.join(", ") : task.location.village;
-    const reportTasks = flatTasks.filter(t => t.reportId === task.reportId);
-    const isFirstInReport = reportTasks[0] === task;
-
-    return (
-      <tr key={`${task.reportId}-${idx}`}>
-        {noSpans[idx] > 0 && (
-          <td className="border-2 border-black p-2 text-center align-top font-bold" rowSpan={noSpans[idx]}>{currentNo}</td>
-        )}
-        {dateSpans[idx] > 0 && (
-          <td className="border-2 border-black p-2 text-center align-top font-medium" rowSpan={dateSpans[idx]}>
-            {new Date(task.reportDate).toLocaleDateString('id-ID', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}
-          </td>
-        )}
-        {isFirstInReport && (
-          <td className="border-2 border-black p-2 text-center align-top font-bold text-blue-700" rowSpan={reportTasks.length}>
-            {task.category}
-          </td>
-        )}
-        <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{task.description}</td>
-        <td className="border-2 border-black p-2 align-top whitespace-normal break-words leading-tight">{`${task.location.street}, ${villages}, ${task.location.subDistrict}`}</td>
-        {photoMode === "with-photo" && (
-          <>
-            <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.zero ? <img src={task.photos.zero} className="w-full h-full object-fill" alt="0%" /> : null}</div></td>
-            <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.fifty ? <img src={task.photos.fifty} className="w-full h-full object-fill" alt="50%" /> : null}</div></td>
-            <td className="border-2 border-black p-1 align-middle"><div className="w-full h-[110px] bg-slate-100 border border-slate-300 overflow-hidden">{task.photos?.hundred ? <img src={task.photos.hundred} className="w-full h-full object-fill" alt="100%" /> : null}</div></td>
-          </>
-        )}
-        <td className="border-2 border-black p-2 text-center font-bold align-top">{task.volume} {getUnitByCategory(task.category)}</td>
-        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight">{task.equipment?.map((e: Equipment, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {e.type}</div>))}</td>
-        <td className="border-2 border-black p-1.5 px-0 align-top text-[10px] text-center leading-tight">{task.equipment?.map((e: Equipment, i: number) => (<div key={i} className="mb-0.5">{e.quantity}</div>))}</td>
-        <td className="border-2 border-black p-1.5 align-top text-[10px] leading-tight overflow-hidden">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5 whitespace-nowrap">• {he.type} {he.vehicle || ""}</div>))}</td>
-        {recapMode === "with-fuel" && (
-          <>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.pertamax || 0}</div>))}</td>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.dexlite || 0}</div>))}</td>
-            <td className="border-2 border-black p-1.5 align-top text-[10px] text-center leading-tight">{task.heavyEquipment?.map((he: HeavyEquipment, i: number) => (<div key={i} className="mb-0.5">{he.fuel?.solar || 0}</div>))}</td>
-          </>
-        )}
-        <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.coordinator}</td>
-        <td className="border-2 border-black p-2 text-center align-top font-medium">{task.personnel.members}</td>
-        <td className="border-2 border-black p-2 align-top whitespace-normal break-words italic">
-          <div className="space-y-1">
-            {task.remarks && <div>{task.remarks}</div>}
-            {isFirstInReport && task.reportRemarks && (
-              <div className={cn("text-blue-700 font-medium", task.remarks && "border-t border-slate-200 pt-1")}>
-                Catatan: {task.reportRemarks}
-              </div>
-            )}
-            {!task.remarks && (!isFirstInReport || !task.reportRemarks) && "-"}
-          </div>
-        </td>
-      </tr>
-    );
-  };
-
-  const colGroup = (
-    <colgroup>
-      <col style={{ width: '35px' }} />
-      <col style={{ width: '70px' }} />
-      <col style={{ width: '75px' }} />
-      <col style={{ width: '105px' }} />
-      <col style={{ width: '110px' }} />
-      {photoMode === "with-photo" && (
-        <>
-          <col style={{ width: '145px' }} />
-          <col style={{ width: '145px' }} />
-          <col style={{ width: '145px' }} />
-        </>
-      )}
-      <col style={{ width: '65px' }} />
-      <col style={{ width: '90px' }} />
-      <col style={{ width: '25px' }} />
-      <col style={{ width: '120px' }} />
-      {recapMode === "with-fuel" && (
-        <>
-          <col style={{ width: '40px' }} />
-          <col style={{ width: '40px' }} />
-          <col style={{ width: '40px' }} />
-        </>
-      )}
-      <col style={{ width: '90px' }} />
-      <col style={{ width: '50px' }} />
-      <col style={{ width: '160px' }} />
-    </colgroup>
-  );
-
-  const tableHeader = (
-    <thead className="pdf-table-header">
-      <tr style={{ height: '40px' }}>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">No</div></th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Hari / Tgl</div></th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Tim/Kec.</div></th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Uraian Kegiatan</div></th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Lokasi</div></th>
-        {photoMode === "with-photo" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>Dokumentasi</th>)}
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Vol</div></th>
-        <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Peralatan</th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Alat Berat</div></th>
-        {recapMode === "with-fuel" && (<th style={headerStyle} className="border-2 border-black p-2" colSpan={3}>BBM (Liter)</th>)}
-        <th style={headerStyle} className="border-2 border-black p-2" colSpan={2}>Personil</th>
-        <th style={headerStyle} className="border-2 border-black p-2" rowSpan={2}><div className="flex items-center justify-center h-full">Keterangan</div></th>
-      </tr>
-      <tr style={{ height: '30px' }}>
-        {photoMode === "with-photo" && (<><th style={subHeaderStyle} className="border-2 border-black p-1">0%</th><th style={subHeaderStyle} className="border-2 border-black p-1">50%</th><th style={subHeaderStyle} className="border-2 border-black p-1">100%</th></>)}
-        <th style={subHeaderStyle} className="border-2 border-black p-1">Jenis Alat</th>
-        <th style={subHeaderStyle} className="border-2 border-black p-1 px-0">Jml</th>
-        {recapMode === "with-fuel" && (<><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">P</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">D</th><th style={subHeaderStyle} className="border-2 border-black p-1 text-[9px]">S</th></>)}
-        <th style={subHeaderStyle} className="border-2 border-black p-1">Koordinator</th>
-        <th style={subHeaderStyle} className="border-2 border-black p-1">Anggota</th>
-      </tr>
-    </thead>
-  );
+  const bbmColCount = (visibleColumns.pertamax_rp ? 1 : 0) + (visibleColumns.pertamax_ltr ? 1 : 0) + (visibleColumns.dexlite_rp ? 1 : 0) + (visibleColumns.dexlite_ltr ? 1 : 0) + (visibleColumns.oli ? 1 : 0);
+  const leadingCols = 1 + (visibleColumns.date ? 1 : 0) + (visibleColumns.region ? 1 : 0) + (visibleColumns.team ? 1 : 0) + (visibleColumns.vehicle ? 1 : 0);
 
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
-      <div className="max-w-[1400px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" onClick={() => navigate('/')} className="px-2 md:px-4 h-9">
-              <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
-            </Button>
-            {isLoggedIn ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:text-red-600 hover:bg-red-50 rounded-full"><LogOut className="h-5 w-5" /></Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Keluar Sistem</p></TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <Button variant="outline" size="sm" onClick={() => navigate('/login')} className="text-blue-600 border-blue-600 px-2 md:px-4 h-9">
-                <LogIn className="mr-2 h-4 w-4" /> <span className="hidden md:inline">Masuk</span>
-              </Button>
-            )}
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
+      <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="px-2 md:px-4"><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
             <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[110px] md:w-[140px] h-10 text-xs md:text-sm"><SelectValue placeholder="Bulan" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="semua">Semua Bulan</SelectItem>
-                {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
-              </SelectContent>
+              <SelectTrigger className="w-[130px] md:w-[150px]"><SelectValue placeholder="Bulan" /></SelectTrigger>
+              <SelectContent>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
             </Select>
             <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-[80px] md:w-[100px] h-10 text-xs md:text-sm"><SelectValue placeholder="Tahun" /></SelectTrigger>
+              <SelectTrigger className="w-[90px] md:w-[100px]"><SelectValue placeholder="Tahun" /></SelectTrigger>
+              <SelectContent>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+            <Select value={selectedRegion} onValueChange={setSelectedRegion}>
+              <SelectTrigger className="w-[180px] bg-slate-50 border-slate-200"><Filter className="mr-2 h-4 w-4 text-slate-400" /><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="semua">Semua Tahun</SelectItem>
-                {years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}
+                <SelectItem value="semua">Semua Wilayah</SelectItem>
+                {regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
               </SelectContent>
             </Select>
-            <div className="relative">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" role="combobox" disabled={isUserRestricted} className={cn("w-[160px] md:w-[220px] justify-between font-normal h-10 text-xs md:text-sm", isUserRestricted && "bg-slate-50 text-slate-500")}>
-                    <span className="truncate">{selectedCategories.includes('semua') ? "Semua Kategori" : selectedCategories.length > 1 ? `${selectedCategories.length} Kategori Terpilih` : selectedCategories[0]}</span>
-                    <ChevronsUpDown className="ml-1 md:ml-2 h-3 w-3 md:h-4 md:w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[220px] p-0" align="start">
-                  <div className="p-2 space-y-1">
-                    <div className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-md cursor-pointer" onClick={() => toggleCategory('semua')}><Checkbox checked={selectedCategories.includes('semua')} /><label className="text-sm font-medium leading-none cursor-pointer">Semua Kategori</label></div>
-                    <div className="h-px bg-slate-200 my-1" />
-                    {allCategories.map((cat) => (<div key={cat} className="flex items-center space-x-2 p-2 hover:bg-slate-100 rounded-md cursor-pointer" onClick={() => toggleCategory(cat)}><Checkbox checked={selectedCategories.includes(cat)} /><label className="text-sm font-medium leading-none cursor-pointer">{cat}</label></div>))}
-                  </div>
-                </PopoverContent>
-              </Popover>
-              {isUserRestricted && <div className="absolute -top-2 -right-2 bg-amber-100 text-amber-700 p-1 rounded-full border border-amber-200 shadow-sm"><Lock size={10} /></div>}
-            </div>
-            <Select value={photoMode} onValueChange={(v) => setPhotoMode(v as PhotoMode)}>
-              <SelectTrigger className="w-[40px] md:w-[160px] bg-slate-50 border-slate-200 h-10 text-slate-700 font-medium p-0 md:px-3 flex justify-center">
-                <div className="flex items-center gap-2">
-                  <ImageIcon size={16} />
-                  <span className="hidden md:inline"><SelectValue placeholder="Mode Foto" /></span>
-                </div>
-              </SelectTrigger>
-              <SelectContent><SelectItem value="with-photo"><div className="flex items-center gap-2"><ImageIcon size={14} /> Dengan Foto</div></SelectItem><SelectItem value="without-photo"><div className="flex items-center gap-2"><ImageOff size={14} /> Tanpa Foto</div></SelectItem></SelectContent>
-            </Select>
-            <Select value={recapMode} onValueChange={(v) => setRecapMode(v as RecapMode)}>
-              <SelectTrigger className="w-[40px] md:w-[200px] bg-blue-50 border-blue-200 h-10 text-blue-700 font-medium p-0 md:px-3 flex justify-center">
-                <div className="flex items-center gap-2">
-                  <Fuel size={16} />
-                  <span className="hidden md:inline"><SelectValue placeholder="Mode Rekap" /></span>
-                </div>
-              </SelectTrigger>
-              <SelectContent><SelectItem value="with-fuel"><div className="flex items-center gap-2"><Fuel size={14} /> Rekap Dengan BBM</div></SelectItem><SelectItem value="without-fuel"><div className="flex items-center gap-2"><FileText size={14} /> Rekap Tanpa BBM</div></SelectItem></SelectContent>
-            </Select>
+          </div>
+          
+          <div className="flex flex-wrap gap-2">
             <Select value={signatureMode} onValueChange={(v) => setSignatureMode(v as SignatureMode)}>
               <SelectTrigger className="w-[40px] md:w-[180px] bg-amber-50 border-amber-200 h-10 text-amber-700 font-medium p-0 md:px-3 flex justify-center">
                 <div className="flex items-center gap-2">
@@ -579,41 +234,73 @@ const FuelMonthlyRecap = () => {
                 </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="with-signature"><div className="flex items-center gap-2"><PenTool size={14} /> Ada Tanda Tangan</div></SelectItem>
-                <SelectItem value="without-signature"><div className="flex items-center gap-2"><PenTool size={14} className="opacity-40" /> Tanpa Tanda Tangan</div></SelectItem>
+                <SelectItem value="with-signature">Ada Tanda Tangan</SelectItem>
+                <SelectItem value="without-signature">Tanpa Tanda Tangan</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-          <div className="flex items-center gap-2">
-            {isLoggedIn && (
-              <Button onClick={() => setIsDriveDialogOpen(true)} disabled={reports.length === 0} variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 h-10 px-2 md:px-4">
-                <CloudUpload className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Simpan ke Drive</span>
-              </Button>
-            )}
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50">
+                  <Settings2 className="mr-2 h-4 w-4" /> Pilih Kolom
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-56 p-3" align="end">
+                <div className="space-y-2">
+                  <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Tampilkan Kolom:</p>
+                  {Object.entries({
+                    date: "Tanggal",
+                    region: "Wilayah",
+                    team: "Tim / Operator",
+                    vehicle: "Kendaraan",
+                    pertamax_rp: "Pertamax (Rp)",
+                    pertamax_ltr: "Pertamax (Liter)",
+                    dexlite_rp: "Dexlite (Rp)",
+                    dexlite_ltr: "Dexlite (Liter)",
+                    oli: "Oli",
+                    location: "Lokasi Kerja",
+                    remarks: "Keterangan"
+                  }).map(([key, label]) => (
+                    <div key={key} className="flex items-center space-x-2">
+                      <Checkbox 
+                        id={`col-${key}`} 
+                        checked={visibleColumns[key as keyof typeof visibleColumns]} 
+                        onCheckedChange={() => toggleColumn(key as keyof typeof visibleColumns)}
+                      />
+                      <Label htmlFor={`col-${key}`} className="text-sm cursor-pointer">{label}</Label>
+                    </div>
+                  ))}
+                </div>
+              </PopoverContent>
+            </Popover>
+            
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button className="bg-blue-600 hover:bg-blue-700 h-10 px-2 md:px-4">
                   <Printer className="h-4 w-4 md:mr-2" /> 
                   <span className="hidden md:inline">Cetak Rekap</span>
-                  <ChevronDown className="ml-1 h-4 w-4" />
+                  <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuItem onClick={handlePrint} className="cursor-pointer py-2">
+                <DropdownMenuItem onClick={() => window.print()} className="cursor-pointer py-2">
                   <Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Halaman Ini
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer py-2">
                   <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Excel
                 </DropdownMenuItem>
                 <div className="h-px bg-slate-100 my-1" />
-                <DropdownMenuItem onClick={() => navigate('/daily-rekap')} className="cursor-pointer py-2">
-                  <Calendar className="mr-2 h-4 w-4 text-blue-500" /> Rekap Harian
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="cursor-pointer py-2">
+                  <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" /> Rekap Harian
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/weekly-rekap')} className="cursor-pointer py-2">
-                  <Table className="mr-2 h-4 w-4 text-purple-500" /> Rekap Mingguan
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/weekly-rekap')} className="cursor-pointer py-2">
+                  <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/monthly-rekap')} className="cursor-pointer py-2">
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/monthly-rekap')} className="cursor-pointer py-2">
                   <FileText className="mr-2 h-4 w-4 text-orange-500" /> Rekap Bulanan
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/fuel-reports/yearly-rekap')} className="cursor-pointer py-2">
+                  <CalendarDays className="mr-2 h-4 w-4 text-red-500" /> Rekap Tahunan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -621,106 +308,118 @@ const FuelMonthlyRecap = () => {
         </div>
       </div>
 
-      <DriveUploadDialog 
-        isOpen={isDriveDialogOpen}
-        onClose={() => setIsDriveDialogOpen(false)}
-        onUpload={handleDriveUpload}
-        defaultFileName={`Rekap_DLH_${selectedMonth === 'semua' ? 'Semua' : months[parseInt(selectedMonth)-1]}_${selectedYear}`}
-      />
-
-      <div ref={printRef} className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[297mm] w-full max-w-[420mm]">
-        <div className="pdf-header">
-          <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
-            <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_MEDAN_URL} className="max-h-full max-w-full object-contain" alt="Logo Medan" /></div>
-            <div className="text-center px-4">
-              <h1 className="text-2xl font-bold uppercase">Pemerintah Kota Medan</h1>
-              <h2 className="text-3xl font-black uppercase">Dinas LIngkungan Hidup</h2>
-              <p className="text-sm italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p>
-            </div>
-            <div className="w-20 h-20 flex items-center justify-center overflow-hidden"><img src={LOGO_DLH_URL} className="max-h-full max-w-full object-contain" alt="Logo DLH" /></div>
-          </div>
-          <div className="text-center mb-8 space-y-1">
-            <h3 className="text-xl font-bold underline uppercase">LAPORAN BULANAN PEKERJAAN TAMAN, PENGHIJAUAN, POHON DAN PEMBABATAN</h3>
-            <p className="text-xl font-bold uppercase">WILAYAH 4 MEDAN KOTA</p>
-            <p className="text-xl font-bold uppercase">Bulan: {selectedMonth === 'semua' ? 'Semua Bulan' : months[parseInt(selectedMonth)-1]} {selectedYear === 'semua' ? 'Semua Tahun' : selectedYear}</p>
-          </div>
+      <div className="print-area bg-white p-4 md:p-10 mx-auto shadow-lg border min-h-[210mm] w-full max-w-[297mm]">
+        <div className="flex items-center justify-center gap-8 border-b-4 border-double border-black pb-4 mb-6">
+          <img src={LOGO_MEDAN_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo Medan" />
+          <div className="text-center"><h1 className="text-sm md:text-xl font-bold uppercase">Pemerintah Kota Medan</h1><h2 className="text-base md:text-2xl font-black uppercase">Dinas Lingkungan Hidup</h2><p className="text-[8px] md:text-xs italic">Jl. Pinang Baris, Lalang Kec. Medan Sunggal, Kota Medan, Sumatera Utara</p></div>
+          <img src={LOGO_DLH_URL} className="h-12 w-12 md:h-20 md:w-20 object-contain" alt="Logo DLH" />
         </div>
-
-        <div className="overflow-x-auto print:overflow-visible">
-          {reports.length > 0 ? (
-            <>
-              <table className="w-full min-w-[1200px] border-collapse border-2 border-black text-[11px] table-fixed print:w-full print:min-w-0">
-                {colGroup}
-                {tableHeader}
-                <tbody>
-                  {(() => {
-                    let currentNo = 0;
-                    let lastDate = "";
-                    return flatTasks.map((task, idx) => {
-                      if (task.reportDate !== lastDate) {
-                        currentNo++;
-                        lastDate = task.reportDate;
-                      }
-                      return renderTaskRow(task, idx, currentNo);
-                    });
-                  })()}
-                </tbody>
-              </table>
-
-              {signatureMode === "with-signature" && (
-                <div className="pdf-footer mt-12 keep-together">
-                  <div className="flex justify-end mb-4 text-[11px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-                  <div className="grid grid-cols-4 gap-4 text-[11px] leading-normal">
-                    <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
-                    <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
-                    <div className="text-center flex flex-col justify-between min-h-[200px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
-                    <div className="text-center flex flex-col justify-between min-h-[200px] pb-4">
-                      <div>
-                        <p>Diketahui :</p>
-                        {showTiurmaida && !showArdiansyah && (<><p className="font-bold">Kepala Koordinator Taman</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}
-                        {showArdiansyah && !showTiurmaida && (<><p className="font-bold">Koordinator Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}
-                        {showTiurmaida && showArdiansyah && (<><p className="font-bold">Koordinator Taman & Tim Pohon</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></>)}
-                      </div>
-                      <div>
-                        {showTiurmaida && !showArdiansyah && (<><p className="font-bold underline">Tiurmaida Silitonga</p><p>NIP. 19690507 200701 2 042</p></>)}
-                        {showArdiansyah && !showTiurmaida && (<><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></>)}
-                        {showTiurmaida && showArdiansyah && (
-                          <div className="flex justify-around gap-2">
-                            <div><p className="font-bold underline">Tiurmaida Silitonga</p><p className="text-[9px]">NIP. 19690507 200701 2 042</p></div>
-                            <div><p className="font-bold underline">Ardiansyah Siregar</p><p className="text-[9px]">NIP. 19860404 201001 1 015</p></div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
+        <div className="text-center mb-8"><h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP BULANAN PEMAKAIAN BBM & OLI</h3><p className="text-sm md:text-lg font-bold">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>{selectedRegion !== "semua" && <p className="text-sm font-bold uppercase text-slate-500">{selectedRegion}</p>}</div>
+        
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed">
+            <thead>
+              <tr className="bg-slate-100">
+                <th className="border-2 border-black p-1 w-[30px]" rowSpan={bbmColCount > 0 ? 2 : 1}>No</th>
+                {visibleColumns.date && <th className="border-2 border-black p-1 w-[55px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tgl</th>}
+                {visibleColumns.region && <th className="border-2 border-black p-1 w-[80px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Wilayah</th>}
+                {visibleColumns.team && <th className="border-2 border-black p-1 w-[80px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tim / Operator</th>}
+                {visibleColumns.vehicle && <th className="border-2 border-black p-1 w-[120px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Kendaraan / Alat Operasional</th>}
+                {bbmColCount > 0 && <th className="border-2 border-black p-1" colSpan={bbmColCount}>Jenis BBM / Oli</th>}
+                {visibleColumns.location && <th className="border-2 border-black p-1 w-[180px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Lokasi Kerja</th>}
+                {visibleColumns.remarks && <th className="border-2 border-black p-1 w-[120px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Keterangan</th>}
+              </tr>
+              {bbmColCount > 0 && (
+                <tr className="bg-slate-50">
+                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
+                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
+                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
+                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
+                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Oli<br/>(Liter)</th>}
+                </tr>
               )}
-            </>
-          ) : (
-            <table className="w-full border-collapse border-2 border-black text-[11px] table-fixed">
-              <tbody>
-                <tr><td colSpan={totalCols} className="border-2 border-black p-12 text-center text-slate-400 italic text-lg">Tidak ada data laporan untuk periode ini</td></tr>
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+            </thead>
+            <tbody>
+              {Object.keys(groupedByRegion).length > 0 ? (
+                <>
+                  {Object.entries(groupedByRegion).map(([regionName, items], rIdx) => {
+                    const subPertamaxRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_rp || it.amount) : 0), 0);
+                    const subPertamaxLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_liter || 0) : 0), 0);
+                    const subDexliteRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_rp || it.amount) : 0), 0);
+                    const subDexliteLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_liter || 0) : 0), 0);
+                    const subOli = items.reduce((acc, it) => acc + (it.fuel_type === 'Oli' ? (it.amount_liter || it.amount) : 0), 0);
 
+                    return (
+                      <React.Fragment key={regionName}>
+                        {items.map((item, idx) => (
+                          <tr key={`${regionName}-${idx}`}>
+                            <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
+                            {visibleColumns.date && <td className="border-2 border-black p-1 text-center leading-tight">{format(parseISO(item.date), 'dd/MM')}</td>}
+                            {visibleColumns.region && idx === 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={items.length}>{item.region}</td>)}
+                            {visibleColumns.team && <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{item.team}</td>}
+                            {visibleColumns.vehicle && <td className="border-2 border-black p-1 whitespace-normal break-words font-medium leading-tight">{item.vehicle_operator}</td>}
+                            
+                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Pertamax' ? (item.amount_liter || "-") : "-"}</td>}
+                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Dexlite' ? (item.amount_liter || "-") : "-"}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : "-"}</td>}
+                            
+                            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
+                            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle whitespace-normal break-words leading-tight">{item.item_remarks || item.remarks || "-"}</td>}
+                          </tr>
+                        ))}
+                        {selectedRegion === "semua" && (
+                          <tr className="bg-slate-50 font-bold italic">
+                            <td className="border-2 border-black p-1 text-right" colSpan={leadingCols}>SUB-TOTAL {regionName.toUpperCase()}:</td>
+                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{subPertamaxRp.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{subPertamaxLtr.toFixed(2)}</td>}
+                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{subDexliteRp.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{subDexliteLtr.toFixed(2)}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{subOli}</td>}
+                            <td className="border-2 border-black p-1" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
+                          </tr>
+                        )}
+                      </React.Fragment>
+                    );
+                  })}
+                  <tr className="bg-slate-100 font-black text-sm">
+                    <td className="border-2 border-black p-2 text-right" colSpan={leadingCols}>TOTAL KESELURUHAN:</td>
+                    {visibleColumns.pertamax_rp && <td className="border-2 border-black p-2 text-right">{totalPertamaxRpAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-2 text-center">{totalPertamaxLtrAll.toFixed(2)}</td>}
+                    {visibleColumns.dexlite_rp && <td className="border-2 border-black p-2 text-right">{totalDexliteRpAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-2 text-center">{totalDexliteLtrAll.toFixed(2)}</td>}
+                    {visibleColumns.oli && <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>}
+                    <td className="border-2 border-black p-2" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
+                  </tr>
+                </>
+              ) : (
+                <tr><td colSpan={11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {signatureMode === "with-signature" && (
+          <div className="mt-12">
+            <div className="flex justify-end mb-4 text-[10px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+            <div className="grid grid-cols-4 gap-4 text-[10px] leading-normal">
+              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Koordinator Laporan BBM</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></div></div>
+            </div>
+          </div>
+        )}
+      </div>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body { background: white !important; margin: 0 !important; padding: 0 !important; }
-          .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper] { display: none !important; }
-          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; background-color: white !important; overflow: visible !important; box-sizing: border-box !important; }
-          @page { size: A3 landscape; margin: 1.5cm; }
-          table { page-break-inside: auto; width: 100% !important; }
-          tr { page-break-inside: avoid; page-break-after: auto; }
-          thead { display: table-header-group; }
-          tfoot { display: table-footer-group; }
-          .pdf-report-block { page-break-inside: avoid; }
-          .keep-together { page-break-inside: avoid; break-inside: avoid; }
-          .bg-slate-50, .bg-slate-100 { background-color: white !important; }
+          body { background: white !important; }
+          .no-print { display: none !important; }
+          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          @page { size: landscape; margin: 1cm; }
           .overflow-x-auto { overflow: visible !important; }
-          ::-webkit-scrollbar { display: none; }
+          table { width: 100% !important; min-width: 0 !important; }
         }
       `}} />
     </div>
