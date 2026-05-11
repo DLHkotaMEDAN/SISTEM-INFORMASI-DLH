@@ -308,11 +308,10 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         return task;
       });
 
+      // JANGAN kirim price_pertamax dan price_dexlite ke database karena kolomnya tidak ada di tabel 'reports'
       const reportData: Omit<Report, 'id' | 'createdAt'> = {
         date: values.date,
         category: values.category as ReportCategory,
-        price_pertamax: values.price_pertamax,
-        price_dexlite: values.price_dexlite,
         vehicle: finalTasks[0].heavyEquipment?.[0]?.vehicle || finalTasks[0].vehicle,
         description: finalTasks[0].description,
         location: finalTasks[0].location as Location,
