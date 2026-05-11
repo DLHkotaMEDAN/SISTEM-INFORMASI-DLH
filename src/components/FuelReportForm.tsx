@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, MessageSquare, HelpCircle, Check, X, MapPinned, AlertCircle, Calculator
+  Plus, Trash2, MessageSquare, HelpCircle, Check, X, MapPinned, AlertCircle, Calculator, Lock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -296,26 +296,26 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
 
             <div className="pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
-                <Calculator className="h-4 w-4 text-blue-600" />
+                <Lock className="h-4 w-4 text-slate-400" />
                 <span className="text-xs font-bold uppercase text-slate-500">Harga BBM Hari Ini (Otomatis dari Master)</span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-dashed">
                 <FormField control={form.control} name="price_pertamax" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] font-bold text-blue-700">HARGA PERTAMAX (RP/LITER)</FormLabel>
-                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                    <FormLabel className="text-[10px] font-bold text-blue-700 flex items-center gap-1">HARGA PERTAMAX (RP/LITER) <Lock size={10} /></FormLabel>
+                    <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="price_dexlite" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] font-bold text-green-700">HARGA DEXLITE (RP/LITER)</FormLabel>
-                    <FormControl><Input type="number" className="bg-white font-bold" {...field} /></FormControl>
+                    <FormLabel className="text-[10px] font-bold text-green-700 flex items-center gap-1">HARGA DEXLITE (RP/LITER) <Lock size={10} /></FormLabel>
+                    <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 italic">* Anda dapat mengubah harga di atas jika harga SPBU berbeda hari ini. Perubahan ini hanya berlaku untuk laporan ini.</p>
+              <p className="text-[10px] text-slate-400 mt-2 italic">* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ.</p>
             </div>
           </CardContent>
         </Card>
@@ -441,7 +441,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             <Button onClick={() => handleTypeSelection(true)} className="h-12 justify-start px-6 bg-orange-50 text-orange-700 hover:bg-orange-100 border border-orange-200">
               <Fuel className="mr-3 h-5 w-5" /> Ya, Perlu Input BBM / Oli
             </Button>
-            <Button onClick={() => handleTypeSelection(false)} variant="outline" className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-orange-200">
+            <Button onClick={() => handleTypeSelection(false)} variant="outline" className="h-12 justify-start px-6 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200">
               <MapPinned className="mr-3 h-5 w-5" /> Tidak, Hanya Tambah Lokasi
             </Button>
           </div>
