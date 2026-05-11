@@ -166,6 +166,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const selectedDate = form.watch("date");
   const { fields: taskFields, append: appendTask, remove: removeTask, replace: replaceTasks } = useFieldArray({ control: form.control, name: "tasks" });
 
+  const isTamanCategory = ["Taman Kota", "Taman Area", "Taman Amplas"].includes(selectedCategory);
+
   useEffect(() => {
     const fetchVehicles = async () => {
       try {
@@ -442,74 +444,105 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
 
         <div className="space-y-6">
           <h2 className="text-xl font-bold flex items-center gap-2"><FileText className="text-blue-600" /> Daftar Kegiatan & Sumber Daya</h2>
-          {taskFields.map((taskField, taskIndex) => (
-            <Card key={taskField.id} className="border-l-4 border-l-blue-400 overflow-hidden shadow-md">
-              <CardContent className="p-6 space-y-8">
-                <div className="flex justify-between items-center border-b pb-4"><Badge variant="secondary" className="bg-blue-600 text-white px-3 py-1">Kegiatan #{taskIndex + 1}</Badge>{taskFields.length > 1 && <Button type="button" variant="ghost" size="sm" className={cn("text-red-500 hover:bg-red-50 px-2 md:px-3", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => removeTask(taskIndex)}><Trash2 className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Hapus Kegiatan</span></Button>}</div>
-                <div className="space-y-4">
-                  <FormField control={form.control} name={`tasks.${taskIndex}.description`} render={({ field }) => (<FormItem><FormLabel className="font-bold">Uraian Kegiatan</FormLabel><FormControl><Input {...field} placeholder="Contoh: Pemangkasan pohon mahoni..." /></FormControl></FormItem>)} />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField control={form.control} name={`tasks.${taskIndex}.location.street`} render={({ field }) => (<FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name={`tasks.${taskIndex}.location.subDistrict`} render={({ field }) => (<FormItem><FormLabel>Kecamatan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsional)</span>}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
-                  </div>
-                  <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
-                    <div className="flex items-center justify-between"><FormLabel className="flex items-center gap-2"><MapPin size={14} className="text-red-500" /> Daftar Kelurahan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsional)</span>}</FormLabel><Button type="button" variant="outline" size="sm" className="h-7 text-[10px] bg-white px-2 md:px-3" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.location.village`); form.setValue(`tasks.${taskIndex}.location.village`, [...current, ""]); }}><Plus size={12} className="md:mr-1" /> <span className="hidden md:inline">Tambah Kelurahan</span></Button></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{form.watch(`tasks.${taskIndex}.location.village`)?.map((_, vIdx) => (<div key={vIdx} className="flex gap-2 items-center"><FormField control={form.control} name={`tasks.${taskIndex}.location.village.${vIdx}`} render={({ field }) => (<FormItem className="flex-1"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-white h-9 text-xs"><SelectValue placeholder="Pilih Kelurahan..." /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{form.watch(`tasks.${taskIndex}.location.subDistrict`) && form.watch(`tasks.${taskIndex}.location.subDistrict`) !== " " && medanDistricts[form.watch(`tasks.${taskIndex}.location.subDistrict`)].map(v => (<SelectItem key={v} value={v}>{v}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />{form.watch(`tasks.${taskIndex}.location.village`).length > 1 && <Button type="button" variant="ghost" size="icon" className={cn("h-9 w-9 text-red-400 hover:text-red-600", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.location.village`); form.setValue(`tasks.${taskIndex}.location.village`, current.filter((_, i) => i !== vIdx)); }}><Trash2 size={14} /></Button>}</div>))}</div>
-                  </div>
-                </div>
-                <div className="pt-6 border-t border-slate-100">
-                  <div className="flex items-center gap-2 mb-4 text-sm font-bold text-slate-700"><ImageIcon size={16} className="text-blue-500" /> Dokumentasi & Volume</div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.zero`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 0%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.fifty`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 50%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
-                    <FormField control={form.control} name={`tasks.${taskIndex}.photos.hundred`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 100%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
-                  </div>
-                  <FormField control={form.control} name={`tasks.${taskIndex}.volume`} render={({ field }) => (<FormItem className="max-w-[200px]"><FormLabel>Volume ({getUnitByCategory(selectedCategory)})</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
-                </div>
-                <div className="pt-6 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-bold text-red-600"><Fuel size={16} /> Operasional Alat Berat & BBM</div>
+          {taskFields.map((taskField, taskIndex) => {
+            const heavyEquipment = form.watch(`tasks.${taskIndex}.heavyEquipment`) || [];
+            const showFuelSection = !isTamanCategory || heavyEquipment.length > 0;
+
+            return (
+              <Card key={taskField.id} className="border-l-4 border-l-blue-400 overflow-hidden shadow-md">
+                <CardContent className="p-6 space-y-8">
+                  <div className="flex justify-between items-center border-b pb-4"><Badge variant="secondary" className="bg-blue-600 text-white px-3 py-1">Kegiatan #{taskIndex + 1}</Badge>{taskFields.length > 1 && <Button type="button" variant="ghost" size="sm" className={cn("text-red-500 hover:bg-red-50 px-2 md:px-3", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => removeTask(taskIndex)}><Trash2 className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Hapus Kegiatan</span></Button>}</div>
                   <div className="space-y-4">
-                    {form.watch(`tasks.${taskIndex}.heavyEquipment`)?.map((_, heIdx) => (
-                      <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                          <div className="md:col-span-6"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Mesin Robin, Excavator..." /></FormControl></FormItem>)} /></div>
-                          <div className="md:col-span-5"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.vehicle`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Plat Kendaraan (Opsional)</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX" onChange={(e) => { field.onChange(e); if (heIdx === 0 && (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon")) { const coordinator = vehicleCoordinatorMapping[e.target.value] || ""; if (coordinator) form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator); } }} /></FormControl></FormItem>)} /></div>
-                          <div className="md:col-span-1 flex justify-end"><Button type="button" variant="destructive" size="icon" className={cn("h-10 w-10", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`); form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>
-                        </div>
-                        <div className="grid grid-cols-3 gap-4 p-3 bg-white rounded border border-red-100">
-                          <div className="space-y-2">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Pertamax (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'pertamax'); }} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-blue-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name={`tasks.${taskIndex}.description`} render={({ field }) => (<FormItem><FormLabel className="font-bold">Uraian Kegiatan</FormLabel><FormControl><Input {...field} placeholder="Contoh: Pemangkasan pohon mahoni..." /></FormControl></FormItem>)} />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField control={form.control} name={`tasks.${taskIndex}.location.street`} render={({ field }) => (<FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                      <FormField control={form.control} name={`tasks.${taskIndex}.location.subDistrict`} render={({ field }) => (<FormItem><FormLabel>Kecamatan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsional)</span>}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
+                    </div>
+                    <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
+                      <div className="flex items-center justify-between"><FormLabel className="flex items-center gap-2"><MapPin size={14} className="text-red-500" /> Daftar Kelurahan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsional)</span>}</FormLabel><Button type="button" variant="outline" size="sm" className="h-7 text-[10px] bg-white px-2 md:px-3" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.location.village`); form.setValue(`tasks.${taskIndex}.location.village`, [...current, ""]); }}><Plus size={12} className="md:mr-1" /> <span className="hidden md:inline">Tambah Kelurahan</span></Button></div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">{form.watch(`tasks.${taskIndex}.location.village`)?.map((_, vIdx) => (<div key={vIdx} className="flex gap-2 items-center"><FormField control={form.control} name={`tasks.${taskIndex}.location.village.${vIdx}`} render={({ field }) => (<FormItem className="flex-1"><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger className="bg-white h-9 text-xs"><SelectValue placeholder="Pilih Kelurahan..." /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{form.watch(`tasks.${taskIndex}.location.subDistrict`) && form.watch(`tasks.${taskIndex}.location.subDistrict`) !== " " && medanDistricts[form.watch(`tasks.${taskIndex}.location.subDistrict`)].map(v => (<SelectItem key={v} value={v}>{v}</SelectItem>))}</SelectContent></Select><FormMessage /></FormItem>)} />{form.watch(`tasks.${taskIndex}.location.village`).length > 1 && <Button type="button" variant="ghost" size="icon" className={cn("h-9 w-9 text-red-400 hover:text-red-600", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.location.village`); form.setValue(`tasks.${taskIndex}.location.village`, current.filter((_, i) => i !== vIdx)); }}><Trash2 size={14} /></Button>}</div>))}</div>
+                    </div>
+                  </div>
+                  <div className="pt-6 border-t border-slate-100">
+                    <div className="flex items-center gap-2 mb-4 text-sm font-bold text-slate-700"><ImageIcon size={16} className="text-blue-500" /> Dokumentasi & Volume</div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                      <FormField control={form.control} name={`tasks.${taskIndex}.photos.zero`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 0%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
+                      <FormField control={form.control} name={`tasks.${taskIndex}.photos.fifty`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 50%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
+                      <FormField control={form.control} name={`tasks.${taskIndex}.photos.hundred`} render={({ field }) => (<FormItem><FormControl><ImageUpload label="Foto 100%" value={field.value} onChange={field.onChange} disabled={isPimpinan} /></FormControl></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name={`tasks.${taskIndex}.volume`} render={({ field }) => (<FormItem className="max-w-[200px]"><FormLabel>Volume ({getUnitByCategory(selectedCategory)})</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} />
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 text-sm font-bold text-red-600"><Fuel size={16} /> Operasional Alat Berat & BBM</div>
+                      {isTamanCategory && heavyEquipment.length === 0 && (
+                        <Button 
+                          type="button" 
+                          variant="outline" 
+                          size="sm" 
+                          className="h-8 text-[10px] border-red-200 text-red-600 hover:bg-red-50"
+                          onClick={() => {
+                            const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || [];
+                            form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } }]);
+                          }}
+                        >
+                          <Plus size={12} className="mr-1" /> Tambah Info BBM (Opsional)
+                        </Button>
+                      )}
+                    </div>
+
+                    {showFuelSection && (
+                      <div className="space-y-4">
+                        {heavyEquipment.map((_, heIdx) => (
+                          <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
+                            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                              <div className="md:col-span-6"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Mesin Robin, Excavator..." /></FormControl></FormItem>)} /></div>
+                              <div className="md:col-span-5"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.vehicle`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Plat Kendaraan (Opsional)</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX" onChange={(e) => { field.onChange(e); if (heIdx === 0 && (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon")) { const coordinator = vehicleCoordinatorMapping[e.target.value] || ""; if (coordinator) form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator); } }} /></FormControl></FormItem>)} /></div>
+                              <div className="md:col-span-1 flex justify-end"><Button type="button" variant="destructive" size="icon" className={cn("h-10 w-10", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`); form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>
+                            </div>
+                            <div className="grid grid-cols-3 gap-4 p-3 bg-white rounded border border-red-100">
+                              <div className="space-y-2">
+                                <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Pertamax (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'pertamax'); }} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.pertamax_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-blue-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
+                              </div>
+                              <div className="space-y-2">
+                                <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Dexlite (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'dexlite'); }} /></FormControl></FormItem>)} />
+                                <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-green-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
+                              </div>
+                              <div className="space-y-2">
+                                <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar_liter`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold text-purple-600">Oli (Liter)</FormLabel><FormControl><Input type="number" step="0.01" className="h-8 text-xs bg-purple-50 font-bold" {...field} placeholder="Manual Liter" /></FormControl></FormItem>)} />
+                                <div className="h-7 text-[9px] flex items-center justify-center text-slate-400 italic">Tanpa Rupiah</div>
+                              </div>
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite`} render={({ field }) => (<FormItem><FormLabel className="text-[10px]">Dexlite (Rp)</FormLabel><FormControl><Input type="number" className="h-8 text-xs" {...field} onChange={(e) => { field.onChange(e); calculateLiter(taskIndex, heIdx, Number(e.target.value), 'dexlite'); }} /></FormControl></FormItem>)} />
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.dexlite_liter`} render={({ field }) => (<FormItem><FormControl><Input type="number" step="0.01" className="h-7 text-[9px] bg-green-50 text-center font-bold" {...field} readOnly /></FormControl></FormItem>)} />
-                          </div>
-                          <div className="space-y-2">
-                            <FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.fuel.solar_liter`} render={({ field }) => (<FormItem><FormLabel className="text-[10px] font-bold text-purple-600">Oli (Liter)</FormLabel><FormControl><Input type="number" step="0.01" className="h-8 text-xs bg-purple-50 font-bold" {...field} placeholder="Manual Liter" /></FormControl></FormItem>)} />
-                            <div className="h-7 text-[9px] flex items-center justify-center text-slate-400 italic">Tanpa Rupiah</div>
-                          </div>
-                        </div>
+                        ))}
+                        {!isTamanCategory && (
+                          <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || []; form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat Berat</span></Button>
+                        )}
+                        {isTamanCategory && heavyEquipment.length > 0 && (
+                          <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || []; form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat Berat Lainnya</span></Button>
+                        )}
                       </div>
-                    ))}
-                    <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`) || []; form.setValue(`tasks.${taskIndex}.heavyEquipment`, [...current, { type: "", vehicle: "", fuel: { pertamax: 0, pertamax_liter: 0, dexlite: 0, dexlite_liter: 0, solar: 0, solar_liter: 0 } }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat Berat</span></Button>
+                    )}
                   </div>
-                </div>
-                <div className="pt-6 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-bold text-purple-600"><Wrench size={16} /> Peralatan Lainnya</div>
-                  <div className="space-y-3">
-                    {form.watch(`tasks.${taskIndex}.equipment`)?.map((_, eqIdx) => (<div key={eqIdx} className="flex gap-4 items-end"><div className="flex-1"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.type`} render={({ field }) => (<FormItem><FormLabel>Jenis Alat</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /></div><div className="w-24"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel>Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div><Button type="button" variant="destructive" size="icon" className={cn(isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`); form.setValue(`tasks.${taskIndex}.equipment`, current.filter((_, i) => i !== eqIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>))}
-                    <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`) || []; form.setValue(`tasks.${taskIndex}.equipment`, [...current, { type: "", quantity: 1 }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat</span></Button>
+
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-purple-600"><Wrench size={16} /> Peralatan Lainnya</div>
+                    <div className="space-y-3">
+                      {form.watch(`tasks.${taskIndex}.equipment`)?.map((_, eqIdx) => (<div key={eqIdx} className="flex gap-4 items-end"><div className="flex-1"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.type`} render={({ field }) => (<FormItem><FormLabel>Jenis Alat</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /></div><div className="w-24"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel>Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div><Button type="button" variant="destructive" size="icon" className={cn(isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`); form.setValue(`tasks.${taskIndex}.equipment`, current.filter((_, i) => i !== eqIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>))}
+                      <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`) || []; form.setValue(`tasks.${taskIndex}.equipment`, [...current, { type: "", quantity: 1 }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat</span></Button>
+                    </div>
                   </div>
-                </div>
-                <div className="pt-6 border-t border-slate-100 space-y-4">
-                  <div className="flex items-center gap-2 text-sm font-bold text-cyan-600"><Users size={16} /> Personil Kegiatan</div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name={`tasks.${taskIndex}.personnel.coordinator`} render={({ field }) => (<FormItem><FormLabel>Koordinator</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /><FormField control={form.control} name={`tasks.${taskIndex}.personnel.members`} render={({ field }) => (<FormItem><FormLabel>Jumlah Anggota</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div>
-                </div>
-                <div className="pt-6 border-t border-slate-100 space-y-4"><div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div><FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Catatan khusus..." /></FormControl></FormItem>)} /></div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="pt-6 border-t border-slate-100 space-y-4">
+                    <div className="flex items-center gap-2 text-sm font-bold text-cyan-600"><Users size={16} /> Personil Kegiatan</div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name={`tasks.${taskIndex}.personnel.coordinator`} render={({ field }) => (<FormItem><FormLabel>Koordinator</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /><FormField control={form.control} name={`tasks.${taskIndex}.personnel.members`} render={({ field }) => (<FormItem><FormLabel>Jumlah Anggota</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div>
+                  </div>
+                  <div className="pt-6 border-t border-slate-100 space-y-4"><div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div><FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Catatan khusus..." /></FormControl></FormItem>)} /></div>
+                </CardContent>
+              </Card>
+            );
+          })}
           <Button type="button" variant="outline" className="w-full border-dashed py-8 bg-white text-blue-600 font-bold border-blue-200 hover:bg-blue-50 px-2 md:px-4" onClick={() => {
             const defaultDesc = defaultActivityMapping[selectedCategory] || "";
             appendTask({ description: defaultDesc, location: { street: "", village: [""], subDistrict: "" }, photos: { zero: "", fifty: "", hundred: "" }, volume: 0, equipment: [{ type: "", quantity: 1 }], heavyEquipment: [], personnel: { coordinator: form.getValues("tasks.0.personnel.coordinator") || "", members: 0 }, vehicle: "", remarks: "" });
