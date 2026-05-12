@@ -264,7 +264,6 @@ const FuelSpjWeeklyRecap = () => {
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-col gap-4">
-          {/* Baris Atas: Kembali dan Info Periode */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
             <Button variant="ghost" onClick={() => navigate('/fuel-reports/spj')} className="h-9 px-3">
               <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -278,7 +277,6 @@ const FuelSpjWeeklyRecap = () => {
             </div>
           </div>
 
-          {/* Baris Bawah: Filter dan Aksi */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-full md:w-auto">
@@ -335,9 +333,9 @@ const FuelSpjWeeklyRecap = () => {
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button className="flex-1 md:w-auto bg-blue-600 hover:bg-blue-700 h-10 px-4 shadow-md">
-                    <Printer className="h-4 w-4 mr-2" /> 
-                    <span className="text-xs md:text-sm font-bold">Cetak Rekap</span>
+                  <Button className="bg-blue-600 hover:bg-blue-700 h-10 px-2 md:px-4">
+                    <Printer className="h-4 w-4 md:mr-2" /> 
+                    <span className="hidden md:inline">Cetak Rekap</span>
                     <ChevronDown className="ml-1 h-4 w-4 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -492,7 +490,7 @@ const FuelSpjWeeklyRecap = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; }
-          .no-print { display: none !important; }
+          .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper], .sonner-toaster { display: none !important; }
           .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
           @page { size: landscape; margin: 1cm; }
           .overflow-x-auto { overflow: visible !important; }
