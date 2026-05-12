@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, Calculator, FileText, Users, Lock
+  Plus, Trash2, Calculator, FileText, Users, Lock, Unlock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -21,6 +21,7 @@ import { medanDistricts } from '@/data/medan-districts';
 import { useAuth } from '@/context/AuthContext';
 import { Badge } from "@/components/ui/badge";
 import { FuelType } from '@/types/fuelReport';
+import { cn } from "@/lib/utils";
 
 const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
 
@@ -63,13 +64,15 @@ const formSchema = z.object({
 
 const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: any; isEditing?: boolean }) => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customTeamMode, setCustomTeamMode] = useState(false);
   
   const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
   const [receiverSuggestions, setReceiverSuggestions] = useState<string[]>([]);
   const [existingSpjNumbers, setExistingSpjNumbers] = useState<string[]>([]);
+
+  const canEditPrice = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -259,26 +262,48 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
 
             <div className="pt-4 border-t border-slate-100">
               <div className="flex items-center gap-2 mb-3">
-                <Lock className="h-4 w-4 text-slate-400" />
-                <span className="text-xs font-bold uppercase text-slate-500">Harga BBM Hari Ini (Otomatis dari Master)</span>
+                {canEditPrice ? <Unlock className="h-4 w-4 text-blue-500" /> : <Lock className="h-4 w-4 text-slate-400" />}
+                <span className="text-xs font-bold uppercase text-slate-500">
+                  {canEditPrice ? "Harga BBM (Dapat Diubah Manual)" : "Harga BBM Hari Ini (Otomatis dari Master)"}
+                </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-dashed">
                 <FormField control={form.control} name="price_pertamax" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] font-bold text-blue-700 flex items-center gap-1">HARGA PERTAMAX (RP/LITER) <Lock size={10} /></FormLabel>
-                    <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
+                    <FormLabel className="text-[10px] font-bold text-blue-700 flex items-center gap-1">
+                      HARGA PERTAMAX (RP/LITER) {canEditPrice ? <Unlock size={10} /> : <Lock size={10} />}
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        className={cn("font-bold", !canEditPrice && "bg-slate-100 cursor-not-allowed")} 
+                        {...field} 
+                        readOnly={!canEditPrice} 
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
                 <FormField control={form.control} name="price_dexlite" render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-[10px] font-bold text-green-700 flex items-center gap-1">HARGA DEXLITE (RP/LITER) <Lock size={10} /></FormLabel>
-                    <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
+                    <FormLabel className="text-[10px] font-bold text-green-700 flex items-center gap-1">
+                      HARGA DEXLITE (RP/LITER) {canEditPrice ? <Unlock size={10} /> : <Lock size={10} />}
+                    </FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        className={cn("font-bold", !canEditPrice && "bg-slate-100 cursor-not-allowed")} 
+                        {...field} 
+                        readOnly={!canEditPrice} 
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 italic">* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ.</p>
+              <p className="text-[10px] text-slate-400 mt-2 italic">
+                {canEditPrice ? "* Anda memiliki akses untuk menyesuaikan harga khusus untuk laporan ini." : "* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ."}
+              </p>
             </div>
           </CardContent>
         </Card>

@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, ClipboardCheck, HelpCircle, Copy, AlertCircle, X, Calculator, Info } from 'lucide-react';
+import { Plus, Trash2, Save, ArrowLeft, FileText, Fuel, Image as ImageIcon, Truck, Users, Wrench, Loader2, MessageSquare, MapPin, Lock, Unlock, ClipboardCheck, HelpCircle, Copy, AlertCircle, X, Calculator, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
 import { Report, ReportCategory, Task, FuelUsage, Location, Equipment, HeavyEquipment } from '@/types/report';
@@ -142,6 +142,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
   const isAdminHarian = profile?.role === 'admin_harian' || (session?.user?.email === 'sakinah@gmail.com');
   const isUserRestricted = profile?.role === 'user' && !isPimpinan && !isAdminHarian;
+  
+  const canEditPrice = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -322,6 +324,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         fuel: totalFuel,
         personnel: { coordinator: finalTasks[0].personnel.coordinator, members: totalMembers },
         remarks: values.remarks || "",
+        price_pertamax: values.price_pertamax,
+        price_dexlite: values.price_dexlite
       };
 
       let result;
@@ -419,24 +423,46 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
             {!isTamanCategory && (
               <div className="pt-4 border-t border-slate-100">
                 <div className="flex items-center gap-2 mb-3">
-                  <Lock className="h-4 w-4 text-slate-400" />
-                  <span className="text-xs font-bold uppercase text-slate-500">Harga BBM Hari Ini (Otomatis dari Master)</span>
+                  {canEditPrice ? <Unlock className="h-4 w-4 text-blue-500" /> : <Lock className="h-4 w-4 text-slate-400" />}
+                  <span className="text-xs font-bold uppercase text-slate-500">
+                    {canEditPrice ? "Harga BBM (Dapat Diubah Manual)" : "Harga BBM Hari Ini (Otomatis dari Master)"}
+                  </span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-lg border border-dashed">
                   <FormField control={form.control} name="price_pertamax" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold text-blue-700 flex items-center gap-1">HARGA PERTAMAX (RP/LITER) <Lock size={10} /></FormLabel>
-                      <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
+                      <FormLabel className="text-[10px] font-bold text-blue-700 flex items-center gap-1">
+                        HARGA PERTAMAX (RP/LITER) {canEditPrice ? <Unlock size={10} /> : <Lock size={10} />}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          className={cn("font-bold", !canEditPrice && "bg-slate-100 cursor-not-allowed")} 
+                          {...field} 
+                          readOnly={!canEditPrice} 
+                        />
+                      </FormControl>
                     </FormItem>
                   )} />
                   <FormField control={form.control} name="price_dexlite" render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-[10px] font-bold text-green-700 flex items-center gap-1">HARGA DEXLITE (RP/LITER) <Lock size={10} /></FormLabel>
-                      <FormControl><Input type="number" className="bg-slate-100 font-bold cursor-not-allowed" {...field} readOnly /></FormControl>
+                      <FormLabel className="text-[10px] font-bold text-green-700 flex items-center gap-1">
+                        HARGA DEXLITE (RP/LITER) {canEditPrice ? <Unlock size={10} /> : <Lock size={10} />}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          className={cn("font-bold", !canEditPrice && "bg-slate-100 cursor-not-allowed")} 
+                          {...field} 
+                          readOnly={!canEditPrice} 
+                        />
+                      </FormControl>
                     </FormItem>
                   )} />
                 </div>
-                <p className="text-[10px] text-slate-400 mt-2 italic">* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ.</p>
+                <p className="text-[10px] text-slate-400 mt-2 italic">
+                  {canEditPrice ? "* Anda memiliki akses untuk menyesuaikan harga khusus untuk laporan ini." : "* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ."}
+                </p>
               </div>
             )}
           </CardContent>
@@ -561,7 +587,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
       
       <Dialog open={showWorkPlanPrompt} onOpenChange={setShowWorkPlanPrompt}><DialogContent className="sm:max-w-[450px]"><DialogHeader><DialogTitle className="flex items-center gap-2 text-blue-600"><ClipboardCheck className="h-6 w-6" /> Sinkronisasi Rencana Kerja</DialogTitle><DialogDescription className="pt-2">Ditemukan Rencana Kerja untuk kategori {selectedCategory} pada tanggal {selectedDate}. Apakah Anda ingin mengisi data laporan secara otomatis?</DialogDescription></DialogHeader><div className="bg-blue-50 p-4 rounded-lg border border-blue-100 space-y-2"><p className="text-[10px] font-bold text-blue-700 uppercase">Data yang akan disinkronkan:</p><ul className="text-[11px] text-blue-800 space-y-1"><li>• Uraian Kegiatan & Lokasi</li><li>• Jenis Alat Berat</li><li>• Koordinator & Jumlah Anggota</li><li>• Keterangan Kegiatan</li></ul></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowWorkPlanPrompt(false)}>Tidak, Input Manual</Button><Button onClick={applyWorkPlan} className="bg-blue-600 hover:bg-blue-700"><HelpCircle className="mr-2 h-4 w-4" /> Ya, Sinkronkan Data</Button></DialogFooter></DialogContent></Dialog>
 
-      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Laporan</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data laporan ini ke formulir.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)}>Batal</Button><Button onClick={handleDuplicate} disabled={!duplicateDate} className="bg-blue-600 hover:bg-blue-700"><Copy className="h-4 w-4 mr-2" /> Salin ke Form</Button></DialogFooter></DialogContent></Dialog>
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}><DialogContent className="sm:max-w-[400px]"><DialogHeader><DialogTitle className="flex items-center gap-2"><Copy className="text-blue-600 h-5 w-5" /> Duplikat Laporan</DialogTitle><DialogDescription>Pilih tanggal baru untuk menyalin data laporan ini ke formulir.</DialogDescription></DialogHeader><div className="py-4 space-y-4"><div className="space-y-2"><FormLabel>Tanggal Baru</FormLabel><Input type="date" value={duplicateDate} onChange={(e) => setDuplicateDate(e.target.value)} className="h-11" /></div></div><DialogFooter className="gap-2 sm:gap-0"><Button variant="ghost" onClick={() => setShowDuplicateDialog(false)}>Batal</Button><Button onClick={handleDuplicate} disabled={!duplicateDate} className="bg-blue-600 hover:bg-blue-700"><Copy className="h-4 w-4 mr-2" /> Salin ke Form</Button></DialogFooter></DialogContent>
     </Form>
   );
 };
