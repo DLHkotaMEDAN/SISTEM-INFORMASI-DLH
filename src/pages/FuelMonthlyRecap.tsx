@@ -201,6 +201,93 @@ const FuelMonthlyRecap = () => {
   const bbmColCount = (visibleColumns.pertamax_rp ? 1 : 0) + (visibleColumns.pertamax_ltr ? 1 : 0) + (visibleColumns.dexlite_rp ? 1 : 0) + (visibleColumns.dexlite_ltr ? 1 : 0) + (visibleColumns.oli ? 1 : 0);
   const leadingCols = 1 + (visibleColumns.date ? 1 : 0) + (visibleColumns.region ? 1 : 0) + (visibleColumns.team ? 1 : 0) + (visibleColumns.vehicle ? 1 : 0);
 
+  const renderRegionRows = (regionName: string, items: any[]) => {
+    const subPertamaxRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_rp || it.amount) : 0), 0);
+    const subPertamaxLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_liter || 0) : 0), 0);
+    const subDexliteRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_rp || it.amount) : 0), 0);
+    const subDexliteLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_liter || 0) : 0), 0);
+    const subOli = items.reduce((acc, it) => acc + (it.fuel_type === 'Oli' ? (it.amount_liter || it.amount) : 0), 0);
+
+    return (
+      <React.Fragment key={regionName}>
+        {items.map((item, idx) => (
+          <tr key={`${regionName}-${idx}`}>
+            <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
+            {visibleColumns.date && <td className="border-2 border-black p-1 text-center leading-tight">{format(parseISO(item.date), 'dd/MM')}</td>}
+            {visibleColumns.region && idx === 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={items.length}>{item.region}</td>)}
+            {visibleColumns.team && <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{item.team}</td>}
+            {visibleColumns.vehicle && <td className="border-2 border-black p-1 whitespace-normal break-words font-medium leading-tight">{item.vehicle_operator}</td>}
+            
+            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Pertamax' ? (item.amount_liter || "-") : "-"}</td>}
+            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Dexlite' ? (item.amount_liter || "-") : "-"}</td>}
+            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : "-"}</td>}
+            
+            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
+            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle whitespace-normal break-words leading-tight">{item.item_remarks || item.remarks || "-"}</td>}
+          </tr>
+        ))}
+        {selectedRegion === "semua" && (
+          <tr className="bg-slate-50 font-bold italic">
+            <td className="border-2 border-black p-1 text-right" colSpan={leadingCols}>SUB-TOTAL {regionName.toUpperCase()}:</td>
+            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{subPertamaxRp.toLocaleString('id-ID')}</td>}
+            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{subPertamaxLtr.toFixed(2)}</td>}
+            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{subDexliteRp.toLocaleString('id-ID')}</td>}
+            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{subDexliteLtr.toFixed(2)}</td>}
+            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{subOli}</td>}
+            <td className="border-2 border-black p-1" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
+          </tr>
+        )}
+      </React.Fragment>
+    );
+  };
+
+  const colGroup = (
+    <colgroup>
+      <col style={{ width: '30px' }} />
+      {visibleColumns.date && <col style={{ width: '55px' }} />}
+      {visibleColumns.region && <col style={{ width: '80px' }} />}
+      {visibleColumns.team && <col style={{ width: '80px' }} />}
+      {visibleColumns.vehicle && <col style={{ width: '120px' }} />}
+      {visibleColumns.pertamax_rp && <col style={{ width: '60px' }} />}
+      {visibleColumns.pertamax_ltr && <col style={{ width: '50px' }} />}
+      {visibleColumns.dexlite_rp && <col style={{ width: '60px' }} />}
+      {visibleColumns.dexlite_ltr && <col style={{ width: '50px' }} />}
+      {visibleColumns.oli && <col style={{ width: '50px' }} />}
+      {visibleColumns.location && <col style={{ width: '180px' }} />}
+      {visibleColumns.remarks && <col style={{ width: '120px' }} />}
+    </colgroup>
+  );
+
+  const tableHeader = (
+    <thead>
+      <tr className="bg-slate-100">
+        <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>No</th>
+        {visibleColumns.date && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Tgl</th>}
+        {visibleColumns.region && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Wilayah</th>}
+        {visibleColumns.team && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Tim / Operator</th>}
+        {visibleColumns.vehicle && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Kendaraan / Alat Operasional</th>}
+        {bbmColCount > 0 && <th className="border-2 border-black p-1" colSpan={bbmColCount}>Jenis BBM / Oli</th>}
+        {visibleColumns.location && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Lokasi Kerja</th>}
+        {visibleColumns.remarks && <th className="border-2 border-black p-1" rowSpan={bbmColCount > 0 ? 2 : 1}>Keterangan</th>}
+      </tr>
+      {bbmColCount > 0 && (
+        <tr className="bg-slate-50">
+          {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 text-center leading-tight">Pertamax<br/>(Rp)</th>}
+          {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 text-center leading-tight">Pertamax<br/>(Liter)</th>}
+          {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 text-center leading-tight">Dexlite<br/>(Rp)</th>}
+          {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 text-center leading-tight">Dexlite<br/>(Liter)</th>}
+          {visibleColumns.oli && <th className="border-2 border-black p-1 text-center leading-tight">Oli<br/>(Liter)</th>}
+        </tr>
+      )}
+    </thead>
+  );
+
+  const regionEntries = Object.entries(groupedByRegion);
+  const allButLastRegion = regionEntries.slice(0, -1);
+  const lastRegionEntry = regionEntries[regionEntries.length - 1];
+
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
@@ -315,110 +402,65 @@ const FuelMonthlyRecap = () => {
         </div>
         <div className="text-center mb-8"><h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP BULANAN PEMAKAIAN BBM & OLI</h3><p className="text-sm md:text-lg font-bold">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>{selectedRegion !== "semua" && <p className="text-sm font-bold uppercase text-slate-500">{selectedRegion}</p>}</div>
         
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed">
-            <thead>
-              <tr className="bg-slate-100">
-                <th className="border-2 border-black p-1 w-[30px]" rowSpan={bbmColCount > 0 ? 2 : 1}>No</th>
-                {visibleColumns.date && <th className="border-2 border-black p-1 w-[55px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tgl</th>}
-                {visibleColumns.region && <th className="border-2 border-black p-1 w-[80px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Wilayah</th>}
-                {visibleColumns.team && <th className="border-2 border-black p-1 w-[80px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Tim / Operator</th>}
-                {visibleColumns.vehicle && <th className="border-2 border-black p-1 w-[120px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Kendaraan / Alat Operasional</th>}
-                {bbmColCount > 0 && <th className="border-2 border-black p-1" colSpan={bbmColCount}>Jenis BBM / Oli</th>}
-                {visibleColumns.location && <th className="border-2 border-black p-1 w-[180px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Lokasi Kerja</th>}
-                {visibleColumns.remarks && <th className="border-2 border-black p-1 w-[120px]" rowSpan={bbmColCount > 0 ? 2 : 1}>Keterangan</th>}
-              </tr>
-              {bbmColCount > 0 && (
-                <tr className="bg-slate-50">
-                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
-                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
-                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
-                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
-                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Oli<br/>(Liter)</th>}
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {Object.keys(groupedByRegion).length > 0 ? (
-                <>
-                  {Object.entries(groupedByRegion).map(([regionName, items], rIdx) => {
-                    const subPertamaxRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_rp || it.amount) : 0), 0);
-                    const subPertamaxLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Pertamax' ? (it.amount_liter || 0) : 0), 0);
-                    const subDexliteRp = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_rp || it.amount) : 0), 0);
-                    const subDexliteLtr = items.reduce((acc, it) => acc + (it.fuel_type === 'Dexlite' ? (it.amount_liter || 0) : 0), 0);
-                    const subOli = items.reduce((acc, it) => acc + (it.fuel_type === 'Oli' ? (it.amount_liter || it.amount) : 0), 0);
+        <div className="overflow-x-auto print:overflow-visible">
+          {regionEntries.length > 0 ? (
+            <>
+              <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed print:w-full print:min-w-0">
+                {colGroup}
+                {tableHeader}
+                <tbody>
+                  {allButLastRegion.map(([regionName, items]) => renderRegionRows(regionName, items))}
+                </tbody>
+              </table>
 
-                    return (
-                      <React.Fragment key={regionName}>
-                        {items.map((item, idx) => (
-                          <tr key={`${regionName}-${idx}`}>
-                            <td className="border-2 border-black p-1 text-center">{idx + 1}</td>
-                            {visibleColumns.date && <td className="border-2 border-black p-1 text-center leading-tight">{format(parseISO(item.date), 'dd/MM')}</td>}
-                            {visibleColumns.region && idx === 0 && (<td className="border-2 border-black p-1 text-center font-bold align-middle" rowSpan={items.length}>{item.region}</td>)}
-                            {visibleColumns.team && <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{item.team}</td>}
-                            {visibleColumns.vehicle && <td className="border-2 border-black p-1 whitespace-normal break-words font-medium leading-tight">{item.vehicle_operator}</td>}
-                            
-                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
-                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Pertamax' ? (item.amount_liter || "-") : "-"}</td>}
-                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
-                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Dexlite' ? (item.amount_liter || "-") : "-"}</td>}
-                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : "-"}</td>}
-                            
-                            {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
-                            {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle whitespace-normal break-words leading-tight">{item.item_remarks || item.remarks || "-"}</td>}
-                          </tr>
-                        ))}
-                        {selectedRegion === "semua" && (
-                          <tr className="bg-slate-50 font-bold italic">
-                            <td className="border-2 border-black p-1 text-right" colSpan={leadingCols}>SUB-TOTAL {regionName.toUpperCase()}:</td>
-                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{subPertamaxRp.toLocaleString('id-ID')}</td>}
-                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{subPertamaxLtr.toFixed(2)}</td>}
-                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{subDexliteRp.toLocaleString('id-ID')}</td>}
-                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{subDexliteLtr.toFixed(2)}</td>}
-                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{subOli}</td>}
-                            <td className="border-2 border-black p-1" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
-                          </tr>
-                        )}
-                      </React.Fragment>
-                    );
-                  })}
-                  <tr className="bg-slate-100 font-black text-sm">
-                    <td className="border-2 border-black p-2 text-right" colSpan={leadingCols}>TOTAL KESELURUHAN:</td>
-                    {visibleColumns.pertamax_rp && <td className="border-2 border-black p-2 text-right">{totalPertamaxRpAll.toLocaleString('id-ID')}</td>}
-                    {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-2 text-center">{totalPertamaxLtrAll.toFixed(2)}</td>}
-                    {visibleColumns.dexlite_rp && <td className="border-2 border-black p-2 text-right">{totalDexliteRpAll.toLocaleString('id-ID')}</td>}
-                    {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-2 text-center">{totalDexliteLtrAll.toFixed(2)}</td>}
-                    {visibleColumns.oli && <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>}
-                    <td className="border-2 border-black p-2" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
-                  </tr>
-                </>
-              ) : (
+              <div className="keep-together">
+                <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed print:w-full print:min-w-0 border-t-0">
+                  {colGroup}
+                  <tbody>
+                    {lastRegionEntry && renderRegionRows(lastRegionEntry[0], lastRegionEntry[1])}
+                    <tr className="bg-slate-100 font-black text-sm">
+                      <td className="border-2 border-black p-2 text-right" colSpan={leadingCols}>TOTAL KESELURUHAN:</td>
+                      {visibleColumns.pertamax_rp && <td className="border-2 border-black p-2 text-right">{totalPertamaxRpAll.toLocaleString('id-ID')}</td>}
+                      {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-2 text-center">{totalPertamaxLtrAll.toFixed(2)}</td>}
+                      {visibleColumns.dexlite_rp && <td className="border-2 border-black p-2 text-right">{totalDexliteRpAll.toLocaleString('id-ID')}</td>}
+                      {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-2 text-center">{totalDexliteLtrAll.toFixed(2)}</td>}
+                      {visibleColumns.oli && <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>}
+                      <td className="border-2 border-black p-2" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                {signatureMode === "with-signature" && (
+                  <div className="mt-12">
+                    <div className="flex justify-end mb-4 text-[10px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
+                    <div className="grid grid-cols-4 gap-4 text-[10px] leading-normal">
+                      <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
+                      <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Koordinator Laporan BBM</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></div></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <table className="w-full border-collapse border-2 border-black text-[9px] table-fixed">
+              <tbody>
                 <tr><td colSpan={11} className="border-2 border-black p-8 text-center italic text-slate-400">Tidak ada data untuk periode ini</td></tr>
-              )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          )}
         </div>
-
-        {signatureMode === "with-signature" && (
-          <div className="mt-12">
-            <div className="flex justify-end mb-4 text-[10px]"><p className="w-1/4 text-center">Medan, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p></div>
-            <div className="grid grid-cols-4 gap-4 text-[10px] leading-normal">
-              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Mengetahui :</p><p className="font-bold">Kabid Tata Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Heni Rustati, ST, M.Si</p><p>NIP. 19720223 200604 2 002</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Ketua Tim Pemeliharaan Lingkungan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Anitha Florida Ginting, ST, M. Si</p><p>NIP. 19811128 201001 2 011</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Pengawas Taman Penghijauan</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Jhosua Sibarani, S.T</p><p>NIP. 19740907 200903 1 002</p></div></div>
-              <div className="text-center flex flex-col justify-between min-h-[180px] pb-4"><div><p>Diketahui :</p><p className="font-bold">Koordinator Laporan BBM</p><p>Dinas Lingkungan Hidup</p><p>Kota Medan</p></div><div><p className="font-bold underline">Ardiansyah Siregar</p><p>NIP. 19860404 201001 1 015</p></div></div>
-            </div>
-          </div>
-        )}
       </div>
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
-          body { background: white !important; }
+          body { background: white !important; margin: 0 !important; padding: 0 !important; }
           .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper], .sonner-toaster { display: none !important; }
-          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
+          .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; background-color: white !important; overflow: visible !important; }
           @page { size: landscape; margin: 1cm; }
           .overflow-x-auto { overflow: visible !important; }
           table { width: 100% !important; min-width: 0 !important; }
+          .keep-together { page-break-inside: avoid; break-inside: avoid; }
         }
       `}} />
     </div>
