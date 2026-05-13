@@ -5,13 +5,13 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Button } from "@/components/ui/button";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   ArrowLeft, Save, Loader2, Fuel, MapPin, Info, 
-  Plus, Trash2, MessageSquare, HelpCircle, Check, X, MapPinned, AlertCircle, Calculator, Lock, Unlock
+  Plus, Trash2, MessageSquare, HelpCircle, Check, MapPinned, Calculator, Lock, Unlock
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { showSuccess, showError } from '@/utils/toast';
@@ -351,6 +351,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             const isLocationSame = form.watch(`items.${index}.is_location_same`);
             const requiresFuel = form.watch(`items.${index}.requires_fuel`);
             const fuelType = form.watch(`items.${index}.fuel_type`);
+            const subDistrict = form.watch(`items.${index}.location.subDistrict`);
             
             return (
               <Card key={field.id} className={cn(
@@ -415,7 +416,18 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                           <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Kecamatan (Opsional)</FormLabel><Select onValueChange={(val) => { field.onChange(val); form.setValue(`items.${index}.location.village`, ""); }} value={field.value}><FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kecamatan" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select></FormItem>
                         )} />
                         <FormField control={form.control} name={`items.${index}.location.village`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Kelurahan (Opsional)</FormLabel><Select onValueChange={field.onChange} value={field.value} disabled={!form.watch(`items.${index}.location.subDistrict`) || form.watch(`items.${index}.location.subDistrict`) === " "><FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kelurahan" /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{form.watch(`items.${index}.location.subDistrict`) && form.watch(`items.${index}.location.subDistrict`) !== " " && medanDistricts[form.watch(`items.${index}.location.subDistrict`)]?.map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}</SelectContent></Select></FormItem>
+                          <FormItem>
+                            <FormLabel className="text-[10px] uppercase text-slate-500">Kelurahan (Opsional)</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value} disabled={!subDistrict || subDistrict === " "}>
+                              <FormControl><SelectTrigger className="h-9"><SelectValue placeholder="Pilih Kelurahan" /></SelectTrigger></FormControl>
+                              <SelectContent>
+                                <SelectItem value=" ">Abaikan / Kosong</SelectItem>
+                                {subDistrict && subDistrict !== " " && medanDistricts[subDistrict]?.map(v => (
+                                  <SelectItem key={v} value={v}>{v}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormItem>
                         )} />
                       </div>
                     </div>
@@ -450,7 +462,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         </Card>
       </form>
 
-      {/* Dialog 1: Pilih Tipe Pemakaian */}
       <Dialog open={showTypePrompt} onOpenChange={setShowTypePrompt}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
@@ -475,7 +486,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         </DialogContent>
       </Dialog>
 
-      {/* Dialog 2: Konfirmasi Lokasi (Hanya muncul jika perlu BBM) */}
       <Dialog open={showLocationPrompt} onOpenChange={setShowLocationPrompt}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
