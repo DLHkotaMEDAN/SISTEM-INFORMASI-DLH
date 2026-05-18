@@ -126,11 +126,11 @@ const FuelSpjYearlyRecap = () => {
       if (visibleColumns.vehicle) columns.push({ header: 'Kendaraan', key: 'vehicle', width: 24 });
       if (visibleColumns.fuel) {
         columns.push(
-          { header: 'Pertamax (Rp)', key: 'p_rp', width: 15 },
-          { header: 'Ltr', key: 'p_ltr', width: 8 },
-          { header: 'Dexlite (Rp)', key: 'd_rp', width: 15 },
-          { header: 'Ltr', key: 'd_ltr', width: 8 },
-          { header: 'Oli (L)', key: 'o_ltr', width: 8 }
+          { header: 'Pertamax (Rp)', key: 'p_rp', width: 20 },
+          { header: 'Ltr', key: 'p_ltr', width: 12 },
+          { header: 'Dexlite (Rp)', key: 'd_rp', width: 20 },
+          { header: 'Ltr', key: 'd_ltr', width: 12 },
+          { header: 'Oli (L)', key: 'o_ltr', width: 12 }
         );
       }
       if (visibleColumns.remarks) columns.push({ header: 'Keterangan', key: 'remarks', width: 25 });
@@ -339,11 +339,11 @@ const FuelSpjYearlyRecap = () => {
               </tr>
               {visibleColumns.fuel && (
                 <tr className="bg-slate-50">
-                  <th className="border-2 border-black p-1 w-[50px]">Pertamax (Rp)</th>
-                  <th className="border-2 border-black p-1 w-[35px]">Ltr</th>
-                  <th className="border-2 border-black p-1 w-[50px]">Dexlite (Rp)</th>
-                  <th className="border-2 border-black p-1 w-[35px]">Ltr</th>
-                  <th className="border-2 border-black p-1 w-[30px]">Oli (L)</th>
+                  <th className="border-2 border-black p-1 w-[85px]">Pertamax (Rp)</th>
+                  <th className="border-2 border-black p-1 w-[55px]">Ltr</th>
+                  <th className="border-2 border-black p-1 w-[85px]">Dexlite (Rp)</th>
+                  <th className="border-2 border-black p-1 w-[55px]">Ltr</th>
+                  <th className="border-2 border-black p-1 w-[50px]">Oli (L)</th>
                 </tr>
               )}
             </thead>
