@@ -313,7 +313,7 @@ const FuelSpjMonthlyRecap = () => {
                 <DropdownMenuItem onClick={handleExportExcel} className="cursor-pointer py-2">
                   <Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Excel
                 </DropdownMenuItem>
-                <div className="h-px bg-slate-100 my-1" />
+                <div className="h-px bg-slate-100 My-1" />
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/daily-rekap')} className="cursor-pointer py-2">
                   <CalendarIcon className="mr-2 h-4 w-4 text-blue-500" /> Rekap Harian
                 </DropdownMenuItem>
@@ -346,7 +346,7 @@ const FuelSpjMonthlyRecap = () => {
         </div>
         
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] border-collapse border-2 border-black text-[9px] table-fixed">
+          <table className="w-full min-w-[1000px] border-collapse border-2 border-black text-[9px] table-auto">
             <thead>
               <tr className="bg-slate-100">
                 <th className="border-2 border-black p-1 w-[30px]" rowSpan={visibleColumns.fuel ? 2 : 1}>No</th>
@@ -362,11 +362,11 @@ const FuelSpjMonthlyRecap = () => {
               </tr>
               {visibleColumns.fuel && (
                 <tr className="bg-slate-50">
-                  <th className="border-2 border-black p-1 w-[50px]">Pertamax (Rp)</th>
-                  <th className="border-2 border-black p-1 w-[35px]">Ltr</th>
-                  <th className="border-2 border-black p-1 w-[50px]">Dexlite (Rp)</th>
-                  <th className="border-2 border-black p-1 w-[35px]">Ltr</th>
-                  <th className="border-2 border-black p-1 w-[30px]">Oli (L)</th>
+                  <th className="border-2 border-black p-1 text-center leading-tight">Pertamax<br/>(Rp)</th>
+                  <th className="border-2 border-black p-1 text-center leading-tight">Ltr</th>
+                  <th className="border-2 border-black p-1 text-center leading-tight">Dexlite<br/>(Rp)</th>
+                  <th className="border-2 border-black p-1 text-center leading-tight">Ltr</th>
+                  <th className="border-2 border-black p-1 text-center leading-tight">Oli (L)</th>
                 </tr>
               )}
             </thead>
@@ -393,11 +393,11 @@ const FuelSpjMonthlyRecap = () => {
                             {visibleColumns.vehicle && <td className="border-2 border-black p-1 font-medium">{item.vehicle}</td>}
                             {visibleColumns.fuel && (
                               <>
-                                <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? item.amount_rp.toLocaleString('id-ID') : "-"}</td>
-                                <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Pertamax' ? item.amount_liter : "-"}</td>
-                                <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? item.amount_rp.toLocaleString('id-ID') : "-"}</td>
-                                <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Dexlite' ? item.amount_liter : "-"}</td>
-                                <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? item.amount_liter : "-"}</td>
+                                <td className="border-2 border-black p-1 text-right whitespace-nowrap">{item.fuel_type === 'Pertamax' ? item.amount_rp.toLocaleString('id-ID') : "-"}</td>
+                                <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Pertamax' ? item.amount_liter : "-"}</td>
+                                <td className="border-2 border-black p-1 text-right whitespace-nowrap">{item.fuel_type === 'Dexlite' ? item.amount_rp.toLocaleString('id-ID') : "-"}</td>
+                                <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Dexlite' ? item.amount_liter : "-"}</td>
+                                <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Oli' ? item.amount_liter : "-"}</td>
                               </>
                             )}
                             {visibleColumns.remarks && <td className="border-2 border-black p-1 italic whitespace-normal break-words leading-tight">{item.remarks || "-"}</td>}
@@ -409,11 +409,11 @@ const FuelSpjMonthlyRecap = () => {
                           <td className="border-2 border-black p-1 text-right" colSpan={1 + (visibleColumns.date?1:0) + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>SUB-TOTAL {groupName.toUpperCase()}:</td>
                           {visibleColumns.fuel && (
                             <>
-                              <td className="border-2 border-black p-1 text-right">{subP_Rp.toLocaleString('id-ID')}</td>
-                              <td className="border-2 border-black p-1 text-center">{subP_Ltr.toFixed(2)}</td>
-                              <td className="border-2 border-black p-1 text-right">{subD_Rp.toLocaleString('id-ID')}</td>
-                              <td className="border-2 border-black p-1 text-center">{subD_Ltr.toFixed(2)}</td>
-                              <td className="border-2 border-black p-1 text-center">{subO_Ltr.toFixed(2)}</td>
+                              <td className="border-2 border-black p-1 text-right whitespace-nowrap">{subP_Rp.toLocaleString('id-ID')}</td>
+                              <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subP_Ltr.toFixed(2)}</td>
+                              <td className="border-2 border-black p-1 text-right whitespace-nowrap">{subD_Rp.toLocaleString('id-ID')}</td>
+                              <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subD_Ltr.toFixed(2)}</td>
+                              <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subO_Ltr.toFixed(2)}</td>
                             </>
                           )}
                           <td className="border-2 border-black p-1" colSpan={(visibleColumns.remarks?1:0) + (visibleColumns.receiver?1:0) + (visibleColumns.location?1:0)}></td>
@@ -425,11 +425,11 @@ const FuelSpjMonthlyRecap = () => {
                     <td className="border-2 border-black p-2 text-right" colSpan={1 + (visibleColumns.date?1:0) + (visibleColumns.spj_no?1:0) + (visibleColumns.region?1:0) + (visibleColumns.team?1:0) + (visibleColumns.vehicle?1:0)}>TOTAL KESELURUHAN:</td>
                     {visibleColumns.fuel && (
                       <>
-                        <td className="border-2 border-black p-2 text-right">{totalPertamaxRp.toLocaleString('id-ID')}</td>
-                        <td className="border-2 border-black p-2 text-center">{totalPertamaxLtr.toFixed(2)}</td>
-                        <td className="border-2 border-black p-2 text-right">{totalDexliteRp.toLocaleString('id-ID')}</td>
-                        <td className="border-2 border-black p-2 text-center">{totalDexliteLtr.toFixed(2)}</td>
-                        <td className="border-2 border-black p-2 text-center">{totalOliLtr.toFixed(2)}</td>
+                        <td className="border-2 border-black p-2 text-right whitespace-nowrap">{totalPertamaxRp.toLocaleString('id-ID')}</td>
+                        <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalPertamaxLtr.toFixed(2)}</td>
+                        <td className="border-2 border-black p-2 text-right whitespace-nowrap">{totalDexliteRp.toLocaleString('id-ID')}</td>
+                        <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalDexliteLtr.toFixed(2)}</td>
+                        <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalOliLtr.toFixed(2)}</td>
                       </>
                     )}
                     <td className="border-2 border-black p-2" colSpan={(visibleColumns.remarks?1:0) + (visibleColumns.receiver?1:0) + (visibleColumns.location?1:0)}></td>
@@ -456,7 +456,7 @@ const FuelSpjMonthlyRecap = () => {
       <style dangerouslySetInnerHTML={{ __html: `
         @media print {
           body { background: white !important; }
-          .no-print, [data-radix-portal], [role="menu"], [data-radix-popper-content-wrapper], .sonner-toaster { display: none !important; }
+          .no-print { display: none !important; }
           .print-area { box-shadow: none !important; border: none !important; padding: 0 !important; margin: 0 !important; width: 100% !important; max-width: none !important; }
           @page { size: landscape; margin: 1cm; }
           .overflow-x-auto { overflow: visible !important; }

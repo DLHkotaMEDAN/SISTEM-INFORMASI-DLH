@@ -316,7 +316,7 @@ const FuelMonthlyRecap = () => {
         <div className="text-center mb-8"><h3 className="text-base md:text-xl font-bold underline uppercase text-orange-700">REKAP BULANAN PEMAKAIAN BBM & OLI</h3><p className="text-sm md:text-lg font-bold">Bulan: {months[parseInt(selectedMonth)-1]} {selectedYear}</p>{selectedRegion !== "semua" && <p className="text-sm font-bold uppercase text-slate-500">{selectedRegion}</p>}</div>
         
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-fixed">
+          <table className="w-full min-w-[1100px] border-collapse border-2 border-black text-[9px] table-auto">
             <thead>
               <tr className="bg-slate-100">
                 <th className="border-2 border-black p-1 w-[30px]" rowSpan={bbmColCount > 0 ? 2 : 1}>No</th>
@@ -330,11 +330,11 @@ const FuelMonthlyRecap = () => {
               </tr>
               {bbmColCount > 0 && (
                 <tr className="bg-slate-50">
-                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
-                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
-                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
-                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
-                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Oli<br/>(Liter)</th>}
+                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 text-center leading-tight">Pertamax<br/>(Rp)</th>}
+                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 text-center leading-tight">Pertamax<br/>(Liter)</th>}
+                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 text-center leading-tight">Dexlite<br/>(Rp)</th>}
+                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 text-center leading-tight">Dexlite<br/>(Liter)</th>}
+                  {visibleColumns.oli && <th className="border-2 border-black p-1 text-center leading-tight">Oli<br/>(Liter)</th>}
                 </tr>
               )}
             </thead>
@@ -358,11 +358,11 @@ const FuelMonthlyRecap = () => {
                             {visibleColumns.team && <td className="border-2 border-black p-1 text-center align-middle whitespace-normal break-words leading-tight">{item.team}</td>}
                             {visibleColumns.vehicle && <td className="border-2 border-black p-1 whitespace-normal break-words font-medium leading-tight">{item.vehicle_operator}</td>}
                             
-                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
-                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Pertamax' ? (item.amount_liter || "-") : "-"}</td>}
-                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
-                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Dexlite' ? (item.amount_liter || "-") : "-"}</td>}
-                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : "-"}</td>}
+                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right whitespace-nowrap">{item.fuel_type === 'Pertamax' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Pertamax' ? (item.amount_liter || "-") : "-"}</td>}
+                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right whitespace-nowrap">{item.fuel_type === 'Dexlite' ? (item.amount_rp || item.amount).toLocaleString('id-ID') : "-"}</td>}
+                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Dexlite' ? (item.amount_liter || "-") : "-"}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{item.fuel_type === 'Oli' ? (item.amount_liter || item.amount) : "-"}</td>}
                             
                             {visibleColumns.location && <td className="border-2 border-black p-1 whitespace-normal break-words leading-tight">{item.location.street}{item.location.subDistrict && item.location.subDistrict !== " " ? `, ${item.location.subDistrict}` : ""}</td>}
                             {visibleColumns.remarks && <td className="border-2 border-black p-1 italic align-middle whitespace-normal break-words leading-tight">{item.item_remarks || item.remarks || "-"}</td>}
@@ -371,11 +371,11 @@ const FuelMonthlyRecap = () => {
                         {selectedRegion === "semua" && (
                           <tr className="bg-slate-50 font-bold italic">
                             <td className="border-2 border-black p-1 text-right" colSpan={leadingCols}>SUB-TOTAL {regionName.toUpperCase()}:</td>
-                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right">{subPertamaxRp.toLocaleString('id-ID')}</td>}
-                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center">{subPertamaxLtr.toFixed(2)}</td>}
-                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right">{subDexliteRp.toLocaleString('id-ID')}</td>}
-                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center">{subDexliteLtr.toFixed(2)}</td>}
-                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center">{subOli}</td>}
+                            {visibleColumns.pertamax_rp && <td className="border-2 border-black p-1 text-right whitespace-nowrap">{subPertamaxRp.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subPertamaxLtr.toFixed(2)}</td>}
+                            {visibleColumns.dexlite_rp && <td className="border-2 border-black p-1 text-right whitespace-nowrap">{subDexliteRp.toLocaleString('id-ID')}</td>}
+                            {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subDexliteLtr.toFixed(2)}</td>}
+                            {visibleColumns.oli && <td className="border-2 border-black p-1 text-center whitespace-nowrap">{subOli.toFixed(2)}</td>}
                             <td className="border-2 border-black p-1" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
                           </tr>
                         )}
@@ -384,11 +384,11 @@ const FuelMonthlyRecap = () => {
                   })}
                   <tr className="bg-slate-100 font-black text-sm">
                     <td className="border-2 border-black p-2 text-right" colSpan={leadingCols}>TOTAL KESELURUHAN:</td>
-                    {visibleColumns.pertamax_rp && <td className="border-2 border-black p-2 text-right">{totalPertamaxRpAll.toLocaleString('id-ID')}</td>}
-                    {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-2 text-center">{totalPertamaxLtrAll.toFixed(2)}</td>}
-                    {visibleColumns.dexlite_rp && <td className="border-2 border-black p-2 text-right">{totalDexliteRpAll.toLocaleString('id-ID')}</td>}
-                    {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-2 text-center">{totalDexliteLtrAll.toFixed(2)}</td>}
-                    {visibleColumns.oli && <td className="border-2 border-black p-2 text-center">{totalOliAll}</td>}
+                    {visibleColumns.pertamax_rp && <td className="border-2 border-black p-2 text-right whitespace-nowrap">{totalPertamaxRpAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.pertamax_ltr && <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalPertamaxLtrAll.toFixed(2)}</td>}
+                    {visibleColumns.dexlite_rp && <td className="border-2 border-black p-2 text-right whitespace-nowrap">{totalDexliteRpAll.toLocaleString('id-ID')}</td>}
+                    {visibleColumns.dexlite_ltr && <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalDexliteLtrAll.toFixed(2)}</td>}
+                    {visibleColumns.oli && <td className="border-2 border-black p-2 text-center whitespace-nowrap">{totalOliAll.toFixed(2)}</td>}
                     <td className="border-2 border-black p-2" colSpan={(visibleColumns.location ? 1 : 0) + (visibleColumns.remarks ? 1 : 0)}></td>
                   </tr>
                 </>
