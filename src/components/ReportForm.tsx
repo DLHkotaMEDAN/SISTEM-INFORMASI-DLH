@@ -132,7 +132,17 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const { session, profile } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [uploadProgress, setUploadProgress] = useState("");
-  const [existingVehicles, setExistingVehicles] = useState<string[]>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]);
+  
+  // Autocomplete States
+  const [history, setHistory] = useState({
+    descriptions: new Set<string>(),
+    streets: new Set<string>(),
+    coordinators: new Set<string>(),
+    equipmentTypes: new Set<string>(),
+    heavyEquipmentTypes: new Set<string>(),
+    vehicles: new Set<string>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"])
+  });
+
   const [matchingWorkPlan, setMatchingWorkPlan] = useState<WorkPlan | null>(null);
   const [showWorkPlanPrompt, setShowWorkPlanPrompt] = useState(false);
   const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
@@ -171,20 +181,42 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   const isTamanCategory = ["Taman Kota", "Taman Area", "Taman Amplas"].includes(selectedCategory);
 
   useEffect(() => {
-    const fetchVehicles = async () => {
+    const fetchHistory = async () => {
       try {
         const reports = await reportService.getAllReports();
-        const vehicles = new Set(existingVehicles);
+        const descs = new Set<string>();
+        const streets = new Set<string>();
+        const coords = new Set<string>();
+        const eqTypes = new Set<string>();
+        const heTypes = new Set<string>();
+        const vehicles = new Set<string>(history.vehicles);
+
         reports.forEach(r => {
           r.tasks?.forEach(t => {
+            if (t.description) descs.add(t.description);
+            if (t.location?.street) streets.add(t.location.street);
+            if (t.personnel?.coordinator) coords.add(t.personnel.coordinator);
             if (t.vehicle) vehicles.add(t.vehicle);
-            t.heavyEquipment?.forEach(he => { if (he.vehicle) vehicles.add(he.vehicle); });
+            
+            t.equipment?.forEach(e => { if (e.type) eqTypes.add(e.type); });
+            t.heavyEquipment?.forEach(he => { 
+              if (he.type) heTypes.add(he.type); 
+              if (he.vehicle) vehicles.add(he.vehicle);
+            });
           });
         });
-        setExistingVehicles(Array.from(vehicles));
+
+        setHistory({
+          descriptions: descs,
+          streets: streets,
+          coordinators: coords,
+          equipmentTypes: eqTypes,
+          heavyEquipmentTypes: heTypes,
+          vehicles: vehicles
+        });
       } catch (e) { console.error(e); }
     };
-    fetchVehicles();
+    fetchHistory();
     if (!isEditing) fetchPrices();
   }, []);
 
@@ -377,7 +409,14 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 max-w-4xl mx-auto pb-20">
-        <datalist id="vehicle-list">{existingVehicles.map(v => <option key={v} value={v} />)}</datalist>
+        {/* DataLists for Autocomplete */}
+        <datalist id="history-descriptions">{Array.from(history.descriptions).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="history-streets">{Array.from(history.streets).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="history-coordinators">{Array.from(history.coordinators).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="history-equipment">{Array.from(history.equipmentTypes).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="history-heavy-equipment">{Array.from(history.heavyEquipmentTypes).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="vehicle-list">{Array.from(history.vehicles).map(v => <option key={v} value={v} />)}</datalist>
+
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)} className="px-2 md:px-4">
             <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
@@ -479,9 +518,9 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                 <CardContent className="p-6 space-y-8">
                   <div className="flex justify-between items-center border-b pb-4"><Badge variant="secondary" className="bg-blue-600 text-white px-3 py-1">Kegiatan #{taskIndex + 1}</Badge>{taskFields.length > 1 && <Button type="button" variant="ghost" size="sm" className={cn("text-red-500 hover:bg-red-50 px-2 md:px-3", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => removeTask(taskIndex)}><Trash2 className="h-4 w-4 md:mr-1" /> <span className="hidden md:inline">Hapus Kegiatan</span></Button>}</div>
                   <div className="space-y-4">
-                    <FormField control={form.control} name={`tasks.${taskIndex}.description`} render={({ field }) => (<FormItem><FormLabel className="font-bold">Uraian Kegiatan</FormLabel><FormControl><Input {...field} placeholder="Contoh: Pemangkasan pohon mahoni..." /></FormControl></FormItem>)} />
+                    <FormField control={form.control} name={`tasks.${taskIndex}.description`} render={({ field }) => (<FormItem><FormLabel className="font-bold">Uraian Kegiatan</FormLabel><FormControl><Input {...field} list="history-descriptions" placeholder="Contoh: Pemangkasan pohon mahoni..." /></FormControl></FormItem>)} />
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField control={form.control} name={`tasks.${taskIndex}.location.street`} render={({ field }) => (<FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} />
+                      <FormField control={form.control} name={`tasks.${taskIndex}.location.street`} render={({ field }) => (<FormItem><FormLabel>Nama Jalan</FormLabel><FormControl><Input {...field} list="history-streets" /></FormControl></FormItem>)} />
                       <FormField control={form.control} name={`tasks.${taskIndex}.location.subDistrict`} render={({ field }) => (<FormItem><FormLabel>Kecamatan {selectedCategory === "Tim Siram" && <span className="text-[10px] text-slate-400 font-normal ml-1">(Opsional)</span>}</FormLabel><Select onValueChange={field.onChange} value={field.value}><FormControl><SelectTrigger><SelectValue placeholder="Pilih..." /></SelectTrigger></FormControl><SelectContent><SelectItem value=" ">Abaikan / Kosong</SelectItem>{Object.keys(medanDistricts).map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent></Select><FormMessage /></FormItem>)} />
                     </div>
                     <div className="space-y-3 p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -523,7 +562,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                         {heavyEquipment.map((_, heIdx) => (
                           <div key={heIdx} className="p-4 border rounded-lg bg-slate-50 space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                              <div className="md:col-span-6"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} placeholder="Contoh: Mesin Robin, Excavator..." /></FormControl></FormItem>)} /></div>
+                              <div className="md:col-span-6"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.type`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Jenis Alat Berat</FormLabel><FormControl><Input {...field} list="history-heavy-equipment" placeholder="Contoh: Mesin Robin, Excavator..." /></FormControl></FormItem>)} /></div>
                               <div className="md:col-span-5"><FormField control={form.control} name={`tasks.${taskIndex}.heavyEquipment.${heIdx}.vehicle`} render={({ field }) => (<FormItem><FormLabel className="text-xs">Plat Kendaraan (Opsional)</FormLabel><FormControl><Input {...field} list="vehicle-list" placeholder="BK 1234 XX" onChange={(e) => { field.onChange(e); if (heIdx === 0 && (selectedCategory === "Tim Siram" || selectedCategory === "Tim Pohon")) { const coordinator = vehicleCoordinatorMapping[e.target.value] || ""; if (coordinator) form.setValue(`tasks.${taskIndex}.personnel.coordinator`, coordinator); } }} /></FormControl></FormItem>)} /></div>
                               <div className="md:col-span-1 flex justify-end"><Button type="button" variant="destructive" size="icon" className={cn("h-10 w-10", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.heavyEquipment`); form.setValue(`tasks.${taskIndex}.heavyEquipment`, current.filter((_, i) => i !== heIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>
                             </div>
@@ -556,13 +595,13 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                   <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div className="flex items-center gap-2 text-sm font-bold text-purple-600"><Wrench size={16} /> Peralatan Lainnya</div>
                     <div className="space-y-3">
-                      {form.watch(`tasks.${taskIndex}.equipment`)?.map((_, eqIdx) => (<div key={eqIdx} className="flex gap-4 items-end"><div className="flex-1"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.type`} render={({ field }) => (<FormItem><FormLabel>Jenis Alat</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /></div><div className="w-24"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel>Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div><Button type="button" variant="destructive" size="icon" className={cn(isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`); form.setValue(`tasks.${taskIndex}.equipment`, current.filter((_, i) => i !== eqIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>))}
+                      {form.watch(`tasks.${taskIndex}.equipment`)?.map((_, eqIdx) => (<div key={eqIdx} className="flex gap-4 items-end"><div className="flex-1"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.type`} render={({ field }) => (<FormItem><FormLabel>Jenis Alat</FormLabel><FormControl><Input {...field} list="history-equipment" /></FormControl></FormItem>)} /></div><div className="w-24"><FormField control={form.control} name={`tasks.${taskIndex}.equipment.${eqIdx}.quantity`} render={({ field }) => (<FormItem><FormLabel>Jumlah</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div><Button type="button" variant="destructive" size="icon" className={cn(isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`); form.setValue(`tasks.${taskIndex}.equipment`, current.filter((_, i) => i !== eqIdx)); }}><Trash2 className="h-4 w-4" /></Button></div>))}
                       <Button type="button" variant="outline" size="sm" className="w-full border-dashed px-2 md:px-4" onClick={() => { const current = form.getValues(`tasks.${taskIndex}.equipment`) || []; form.setValue(`tasks.${taskIndex}.equipment`, [...current, { type: "", quantity: 1 }]); }}><Plus className="h-3 w-3 md:mr-2" /> <span className="hidden md:inline">Tambah Alat</span></Button>
                     </div>
                   </div>
                   <div className="pt-6 border-t border-slate-100 space-y-4">
                     <div className="flex items-center gap-2 text-sm font-bold text-cyan-600"><Users size={16} /> Personil Kegiatan</div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name={`tasks.${taskIndex}.personnel.coordinator`} render={({ field }) => (<FormItem><FormLabel>Koordinator</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>)} /><FormField control={form.control} name={`tasks.${taskIndex}.personnel.members`} render={({ field }) => (<FormItem><FormLabel>Jumlah Anggota</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name={`tasks.${taskIndex}.personnel.coordinator`} render={({ field }) => (<FormItem><FormLabel>Koordinator</FormLabel><FormControl><Input {...field} list="history-coordinators" /></FormControl></FormItem>)} /><FormField control={form.control} name={`tasks.${taskIndex}.personnel.members`} render={({ field }) => (<FormItem><FormLabel>Jumlah Anggota</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div>
                   </div>
                   <div className="pt-6 border-t border-slate-100 space-y-4"><div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div><FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Catatan khusus..." /></FormControl></FormItem>)} /></div>
                 </CardContent>

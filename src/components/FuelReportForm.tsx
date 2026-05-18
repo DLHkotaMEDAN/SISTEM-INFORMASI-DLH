@@ -83,6 +83,12 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const [showTypePrompt, setShowTypePrompt] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
+  // Autocomplete States
+  const [history, setHistory] = useState({
+    vehicles: new Set<string>(),
+    streets: new Set<string>()
+  });
+
   const canEditPrice = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -124,9 +130,24 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   });
 
   useEffect(() => {
-    if (!isEditing) {
-      fetchPrices();
-    }
+    const fetchHistory = async () => {
+      try {
+        const reports = await fuelService.getAllReports();
+        const vehicles = new Set<string>();
+        const streets = new Set<string>();
+
+        reports.forEach(r => {
+          r.items?.forEach(item => {
+            if (item.vehicle_operator) vehicles.add(item.vehicle_operator);
+            if (item.location?.street) streets.add(item.location.street);
+          });
+        });
+
+        setHistory({ vehicles, streets });
+      } catch (e) { console.error(e); }
+    };
+    fetchHistory();
+    if (!isEditing) fetchPrices();
   }, [isEditing]);
 
   const fetchPrices = async () => {
@@ -150,16 +171,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
 
   const selectedRegion = form.watch("region");
   const selectedTeam = form.watch("team");
-
-  const getVehicleSuggestions = () => {
-    if (selectedRegion === "Wilayah 4 Kota") {
-      if (selectedTeam === "Tim Siram") return ["Truk Siram (BK 8128 A)", "Truk Siram (BK 9031 J)"];
-      if (selectedTeam === "Tim Pohon") return ["Mobil Tangga (BK 9044 J)", "Dump Truck (BK8559 J)"];
-    }
-    return [];
-  };
-
-  const vehicleSuggestions = getVehicleSuggestions();
 
   const handleAddClick = () => {
     setShowTypePrompt(true);
@@ -236,9 +247,9 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-4xl mx-auto pb-20">
-        <datalist id="vehicle-suggestions">
-          {vehicleSuggestions.map(v => <option key={v} value={v} />)}
-        </datalist>
+        {/* DataLists for Autocomplete */}
+        <datalist id="fuel-history-vehicles">{Array.from(history.vehicles).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="fuel-history-streets">{Array.from(history.streets).map(v => <option key={v} value={v} />)}</datalist>
 
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
@@ -375,7 +386,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                     <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
                       <div className="md:col-span-3">
                         <FormField control={form.control} name={`items.${index}.vehicle_operator`} render={({ field }) => (
-                          <FormItem><FormLabel className="text-xs font-bold">Kendaraan / Alat</FormLabel><FormControl><Input placeholder="Plat Nomor" list="vehicle-suggestions" {...field} /></FormControl><FormMessage /></FormItem>
+                          <FormItem><FormLabel className="text-xs font-bold">Kendaraan / Alat</FormLabel><FormControl><Input placeholder="Plat Nomor" list="fuel-history-vehicles" {...field} /></FormControl><FormMessage /></FormItem>
                         )} />
                       </div>
                       <div className="md:col-span-2">
@@ -409,7 +420,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                     <div className="pt-4 border-t border-slate-100 space-y-4">
                       <div className="flex items-center gap-2 text-[10px] font-black uppercase text-green-600 tracking-wider"><MapPin size={14} /> Lokasi Kerja Item Ini</div>
                       <FormField control={form.control} name={`items.${index}.location.street`} render={({ field }) => (
-                        <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Nama Jalan</FormLabel><FormControl><Input className="h-9" {...field} /></FormControl><FormMessage /></FormItem>
+                        <FormItem><FormLabel className="text-[10px] uppercase text-slate-500">Nama Jalan</FormLabel><FormControl><Input className="h-9" list="fuel-history-streets" {...field} /></FormControl><FormMessage /></FormItem>
                       )} />
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name={`items.${index}.location.subDistrict`} render={({ field }) => (
