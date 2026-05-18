@@ -319,11 +319,11 @@ const FuelDailyRecap = () => {
               </tr>
               {bbmColCount > 0 && (
                 <tr className="bg-slate-50">
-                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
-                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
-                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
-                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
-                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Oli<br/>(Liter)</th>}
+                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
+                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
+                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
+                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
+                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Oli<br/>(Liter)</th>}
                 </tr>
               )}
             </thead>

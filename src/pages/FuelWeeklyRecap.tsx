@@ -204,7 +204,6 @@ const FuelWeeklyRecap = () => {
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-4 no-print mb-8 p-4 bg-white rounded-xl shadow-sm border">
         <div className="flex flex-col gap-4">
-          {/* Baris Atas: Kembali dan Info Periode */}
           <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-3">
             <Button variant="ghost" onClick={() => navigate('/fuel-reports')} className="h-9 px-3">
               <ArrowLeft className="mr-2 h-4 w-4" /> Kembali
@@ -218,7 +217,6 @@ const FuelWeeklyRecap = () => {
             </div>
           </div>
 
-          {/* Baris Bawah: Filter dan Aksi */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative w-full md:w-auto">
@@ -331,11 +329,11 @@ const FuelWeeklyRecap = () => {
               </tr>
               {bbmColCount > 0 && (
                 <tr className="bg-slate-50">
-                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
-                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
-                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[60px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
-                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
-                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[50px] text-center leading-tight">Oli<br/>(Liter)</th>}
+                  {visibleColumns.pertamax_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Pertamax<br/>(Rp)</th>}
+                  {visibleColumns.pertamax_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Pertamax<br/>(Liter)</th>}
+                  {visibleColumns.dexlite_rp && <th className="border-2 border-black p-1 w-[85px] text-center leading-tight">Dexlite<br/>(Rp)</th>}
+                  {visibleColumns.dexlite_ltr && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Dexlite<br/>(Liter)</th>}
+                  {visibleColumns.oli && <th className="border-2 border-black p-1 w-[65px] text-center leading-tight">Oli<br/>(Liter)</th>}
                 </tr>
               )}
             </thead>
