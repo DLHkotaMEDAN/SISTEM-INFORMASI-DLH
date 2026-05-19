@@ -46,7 +46,7 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 const FuelReportList = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, session, signOut } = useAuth();
   const [reports, setReports] = useState<FuelReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -58,7 +58,8 @@ const FuelReportList = () => {
 
   const isAdminBbm = profile?.role === 'admin_bbm';
   const isAdmin = profile?.role === 'admin';
-  const isAllowed = isAdmin || isAdminBbm;
+  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
+  const isAllowed = isAdmin || isAdminBbm || isPimpinan;
 
   useEffect(() => {
     if (!isAllowed && profile) {
@@ -95,6 +96,7 @@ const FuelReportList = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) return;
     if (!confirm("Hapus laporan ini?")) return;
     try {
       await fuelService.deleteReport(id);
@@ -158,7 +160,7 @@ const FuelReportList = () => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            {isAdmin && (
+            {(isAdmin || profile?.role === 'admin_spj_bbm') && (
               <Button variant="outline" onClick={() => navigate('/fuel-reports/spj')} className="bg-blue-50 text-blue-700 border-blue-200 h-10 px-3 flex-1 md:flex-none font-bold">
                 <FileText className="h-4 w-4 mr-2" /> Ke Laporan SPJ <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
@@ -205,9 +207,11 @@ const FuelReportList = () => {
               </Tooltip>
             </TooltipProvider>
 
-            <Button onClick={() => navigate('/fuel-reports/create')} className="bg-blue-600 hover:bg-blue-700 h-10 px-4 flex-1 md:flex-none font-bold shadow-sm">
-              <Plus className="mr-2 h-4 w-4" /> <span className="text-xs md:text-sm">Input Baru</span>
-            </Button>
+            {!isPimpinan && (
+              <Button onClick={() => navigate('/fuel-reports/create')} className="bg-blue-600 hover:bg-blue-700 h-10 px-4 flex-1 md:flex-none font-bold shadow-sm">
+                <Plus className="mr-2 h-4 w-4" /> <span className="text-xs md:text-sm">Input Baru</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -292,10 +296,12 @@ const FuelReportList = () => {
                         {report.pimpinan_note && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[8px]"><MessageSquare size={8} className="mr-1" /> Ada Catatan</Badge>}
                       </div>
                     </div>
-                    <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/edit/${report.id}`); }}><Edit size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
-                    </div>
+                    {!isPimpinan && (
+                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/edit/${report.id}`); }}><Edit size={14} /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    )}
                   </div>
                   <CardTitle className="text-base mt-2 group-hover:text-orange-600 transition-colors">{report.team}</CardTitle>
                 </CardHeader>

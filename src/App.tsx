@@ -64,7 +64,13 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   if (loading) return <div className="min-h-screen flex items-center justify-center">Memuat...</div>;
   if (!session) return <Navigate to="/login" />;
   
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
+  const isAllowed = profile?.role === 'admin' || 
+                    profile?.role === 'admin_bbm' || 
+                    profile?.role === 'admin_spj_bbm' || 
+                    profile?.role === 'pimpinan' || 
+                    session?.user?.email === 'admin@gmail.com' ||
+                    session?.user?.email === 'pimpinan@gmail.com';
+                    
   if (!isAllowed) return <Navigate to="/" />;
   
   return <>{children}</>;

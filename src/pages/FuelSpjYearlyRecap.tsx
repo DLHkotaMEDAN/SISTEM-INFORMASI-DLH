@@ -40,7 +40,7 @@ const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
 
 const FuelSpjYearlyRecap = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
@@ -58,7 +58,10 @@ const FuelSpjYearlyRecap = () => {
     location: true
   });
 
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm';
+  const isAllowed = profile?.role === 'admin' || 
+                    profile?.role === 'admin_spj_bbm' || 
+                    profile?.role === 'pimpinan' || 
+                    (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     if (isAllowed) loadData();

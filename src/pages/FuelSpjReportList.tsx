@@ -41,7 +41,7 @@ const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur
 
 const FuelSpjReportList = () => {
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, session, signOut } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -52,7 +52,12 @@ const FuelSpjReportList = () => {
   const [selectedYear, setSelectedYear] = useState("semua");
   const [selectedRegion, setSelectedRegion] = useState("semua");
 
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm';
+  const isAllowed = profile?.role === 'admin' || 
+                    profile?.role === 'admin_spj_bbm' || 
+                    profile?.role === 'pimpinan' || 
+                    (session?.user?.email === 'pimpinan@gmail.com');
+
+  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     if (!isAllowed && profile) {
@@ -77,6 +82,7 @@ const FuelSpjReportList = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) return;
     if (!confirm("Hapus laporan SPJ ini?")) return;
     try {
       await fuelSpjService.deleteReport(id);
@@ -160,9 +166,11 @@ const FuelSpjReportList = () => {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-600 font-bold shadow-sm">
-              <Plus className="mr-2 h-4 w-4" /> Input SPJ Baru
-            </Button>
+            {!isPimpinan && (
+              <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-600 font-bold shadow-sm">
+                <Plus className="mr-2 h-4 w-4" /> Input SPJ Baru
+              </Button>
+            )}
           </div>
         </div>
 
@@ -249,17 +257,19 @@ const FuelSpjReportList = () => {
         ) : filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map((report) => (
-              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-600 cursor-pointer group" onClick={() => navigate(`/fuel-reports/spj/edit/${report.id}`)}>
+              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-600 cursor-pointer group" onClick={() => navigate(isPimpinan ? `/fuel-reports/spj/daily-rekap?date=${report.date}` : `/fuel-reports/spj/edit/${report.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
                       <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
                     </div>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
-                    </div>
+                    {!isPimpinan && (
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
+                      </div>
+                    )}
                   </div>
                   <CardTitle className="text-base mt-2">Laporan SPJ - {report.entries.length} Kendaraan / Alat</CardTitle>
                 </CardHeader>

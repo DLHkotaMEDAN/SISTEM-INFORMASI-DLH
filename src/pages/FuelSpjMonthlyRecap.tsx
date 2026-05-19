@@ -42,7 +42,7 @@ const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur
 
 const FuelSpjMonthlyRecap = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState((new Date().getMonth() + 1).toString());
@@ -62,7 +62,10 @@ const FuelSpjMonthlyRecap = () => {
     location: true
   });
 
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm';
+  const isAllowed = profile?.role === 'admin' || 
+                    profile?.role === 'admin_spj_bbm' || 
+                    profile?.role === 'pimpinan' || 
+                    (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     if (isAllowed) loadData();
