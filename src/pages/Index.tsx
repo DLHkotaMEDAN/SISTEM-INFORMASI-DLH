@@ -398,7 +398,46 @@ const Index = () => {
                       </DropdownMenuItem>
                     </>
                   )}
-                  {/* Fuel & SPJ menus remain consistent with activeTab logic */}
+                  {activeTab === 'fuel_reports' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-orange-50">
+                        <div className="p-2 bg-orange-100 rounded-lg mr-4"><CalendarDays className="h-4 w-4 text-orange-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Harian BBM</span><span className="text-[10px] text-slate-500">Pemakaian BBM hari ini</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/weekly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-blue-50">
+                        <div className="p-2 bg-blue-100 rounded-lg mr-4"><Table className="h-4 w-4 text-blue-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Mingguan BBM</span><span className="text-[10px] text-slate-500">Pemakaian BBM seminggu</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/monthly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-purple-50">
+                        <div className="p-2 bg-purple-100 rounded-lg mr-4"><FileText className="h-4 w-4 text-purple-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Bulanan BBM</span><span className="text-[10px] text-slate-500">Arsip bulanan BBM</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/yearly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-red-50">
+                        <div className="p-2 bg-red-100 rounded-lg mr-4"><CalendarDays className="h-4 w-4 text-red-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Tahunan BBM</span><span className="text-[10px] text-slate-500">Arsip tahunan BBM</span></div>
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {activeTab === 'fuel_spj' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/daily-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-indigo-50">
+                        <div className="p-2 bg-indigo-100 rounded-lg mr-4"><CalendarDays className="h-4 w-4 text-indigo-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Harian SPJ</span><span className="text-[10px] text-slate-500">Data SPJ hari ini</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/weekly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-blue-50">
+                        <div className="p-2 bg-blue-100 rounded-lg mr-4"><Table className="h-4 w-4 text-blue-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Mingguan SPJ</span><span className="text-[10px] text-slate-500">Data SPJ seminggu</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/monthly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-purple-50">
+                        <div className="p-2 bg-purple-100 rounded-lg mr-4"><FileText className="h-4 w-4 text-purple-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Bulanan SPJ</span><span className="text-[10px] text-slate-500">Arsip bulanan SPJ</span></div>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/yearly-rekap')} className="py-4 rounded-xl cursor-pointer focus:bg-red-50">
+                        <div className="p-2 bg-red-100 rounded-lg mr-4"><CalendarDays className="h-4 w-4 text-red-600" /></div>
+                        <div className="flex flex-col"><span className="font-black text-xs">Rekap Tahunan SPJ</span><span className="text-[10px] text-slate-500">Arsip tahunan SPJ</span></div>
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
