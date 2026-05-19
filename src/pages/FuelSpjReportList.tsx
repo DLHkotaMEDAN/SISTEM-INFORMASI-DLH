@@ -155,7 +155,7 @@ const FuelSpjReportList = () => {
                   <FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/yearly-rekap')} className="cursor-pointer py-2">
-                  <Calendar className="mr-2 h-4 w-4 text-orange-600" /> Rekap Tahunan
+                  <CalendarDays className="mr-2 h-4 w-4 text-orange-600" /> Rekap Tahunan
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -256,8 +256,9 @@ const FuelSpjReportList = () => {
                       <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
                     </div>
                   </div>
                   <CardTitle className="text-base mt-2">Laporan SPJ - {report.entries.length} Kendaraan / Alat</CardTitle>
