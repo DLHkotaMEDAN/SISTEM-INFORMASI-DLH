@@ -41,7 +41,7 @@ const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur
 
 const FuelSpjWeeklyRecap = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { profile, session } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -62,7 +62,7 @@ const FuelSpjWeeklyRecap = () => {
 
   const weekStart = startOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
   const weekEnd = endOfWeek(parseISO(selectedDate), { weekStartsOn: 1 });
-  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm';
+  const isAllowed = profile?.role === 'admin' || profile?.role === 'admin_spj_bbm' || profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     if (isAllowed) loadData();

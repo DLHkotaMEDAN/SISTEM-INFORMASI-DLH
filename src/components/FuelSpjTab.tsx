@@ -8,19 +8,23 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Calendar, FileText, Trash2, Edit, 
-  Search, RefreshCw, ArrowRight, FilterX, CalendarDays
+  Search, RefreshCw, ArrowRight, FilterX, CalendarDays, Eye
 } from 'lucide-react';
 import { FuelSpjReport } from '@/types/fuelSpjReport';
 import { fuelSpjService } from '@/services/fuelSpjService';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
+import { useAuth } from '@/context/AuthContext';
 
 const FuelSpjTab = () => {
   const navigate = useNavigate();
+  const { profile, session } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDate, setSelectedDate] = useState("");
+
+  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     loadReports();
@@ -40,6 +44,7 @@ const FuelSpjTab = () => {
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    if (isPimpinan) return;
     if (!confirm("Hapus laporan SPJ ini?")) return;
     try {
       await fuelSpjService.deleteReport(id);
@@ -99,9 +104,11 @@ const FuelSpjTab = () => {
             <Button variant="outline" size="icon" onClick={loadReports} disabled={loading} className="h-10 w-10 shrink-0 border-slate-200">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>
-            <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-700 hover:bg-blue-800 h-10 flex-1 font-bold text-xs md:text-sm">
-              <FileText className="mr-2 h-4 w-4" /> Input SPJ Baru
-            </Button>
+            {!isPimpinan && (
+              <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-700 hover:bg-blue-800 h-10 flex-1 font-bold text-xs md:text-sm">
+                <FileText className="mr-2 h-4 w-4" /> Input SPJ Baru
+              </Button>
+            )}
           </div>
         </div>
       </div>
@@ -114,24 +121,29 @@ const FuelSpjTab = () => {
       ) : filteredReports.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-700 cursor-pointer group" onClick={() => navigate(`/fuel-reports/spj/edit/${report.id}`)}>
+            <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-700 cursor-pointer group" onClick={() => navigate(isPimpinan ? `/fuel-reports/spj/daily-rekap?date=${report.date}` : `/fuel-reports/spj/edit/${report.id}`)}>
               <CardHeader className="p-4 pb-2">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
                   </div>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
-                  </div>
+                  {!isPimpinan && (
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
+                    </div>
+                  )}
                 </div>
                 <CardTitle className="text-base mt-2">Laporan SPJ - {report.entries.length} Kendaraan</CardTitle>
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="pt-2 border-t flex justify-between items-center text-[10px]">
-                  <span className="text-slate-400 italic">Klik untuk edit data</span>
-                  <div className="flex items-center text-blue-700 font-bold">Edit SPJ <ArrowRight className="ml-1 h-3 w-3" /></div>
+                  <span className="text-slate-400 italic">{isPimpinan ? "Klik untuk lihat rekap" : "Klik untuk edit data"}</span>
+                  <div className="flex items-center text-blue-700 font-bold">
+                    {isPimpinan ? <><Eye className="mr-1 h-3 w-3" /> Lihat Rekap</> : <><Edit className="mr-1 h-3 w-3" /> Edit SPJ</>}
+                    <ArrowRight className="ml-1 h-3 w-3" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
