@@ -371,6 +371,38 @@ const Index = () => {
                       </DropdownMenuItem>
                     </>
                   )}
+                  {activeTab === 'fuel_reports' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="py-3 cursor-pointer">
+                        <CalendarDays className="mr-3 h-4 w-4 text-blue-600" /> Rekap Harian BBM
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/weekly-rekap')} className="py-3 cursor-pointer">
+                        <Table className="mr-3 h-4 w-4 text-green-600" /> Rekap Mingguan BBM
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/monthly-rekap')} className="py-3 cursor-pointer">
+                        <FileText className="mr-3 h-4 w-4 text-orange-600" /> Rekap Bulanan BBM
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/yearly-rekap')} className="py-3 cursor-pointer">
+                        <CalendarDays className="mr-3 h-4 w-4 text-red-600" /> Rekap Tahunan BBM
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {activeTab === 'fuel_spj' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/daily-rekap')} className="py-3 cursor-pointer">
+                        <CalendarDays className="mr-3 h-4 w-4 text-blue-600" /> Rekap Harian SPJ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/weekly-rekap')} className="py-3 cursor-pointer">
+                        <Table className="mr-3 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/monthly-rekap')} className="py-3 cursor-pointer">
+                        <FileText className="mr-3 h-4 w-4 text-orange-600" /> Rekap Bulanan SPJ
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/yearly-rekap')} className="py-3 cursor-pointer">
+                        <CalendarDays className="mr-3 h-4 w-4 text-red-600" /> Rekap Tahunan SPJ
+                      </DropdownMenuItem>
+                    </>
+                  )}
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
