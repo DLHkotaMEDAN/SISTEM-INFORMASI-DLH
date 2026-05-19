@@ -1,16 +1,13 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  Plus, FileText, MapPin, Calendar, 
-  Trash2, Eye, Search, Edit, Cloud, Printer,
+  FileText, Search, Cloud, Printer,
   LogOut, LogIn, FilterX, Database, ChevronDown,
-  Table, ClipboardList, EyeOff, ArrowRight, CalendarDays, Fuel, ShieldAlert, Loader2
+  Table, ClipboardList, CalendarDays, Fuel, Trash2, Loader2, UserCircle, Bell
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Report } from '@/types/report';
@@ -19,11 +16,15 @@ import { showSuccess, showError } from '@/utils/toast';
 import { reportService } from '@/services/reportService';
 import { workPlanService } from '@/services/workPlanService';
 import { useAuth } from '@/context/AuthContext';
-import { getUnitByCategory, sortByCategory } from '@/utils/report-helpers';
 import TrashDialog from '@/components/TrashDialog';
 import FuelReportTab from '@/components/FuelReportTab';
 import FuelSpjTab from '@/components/FuelSpjTab';
+import DashboardStats from '@/components/dashboard/DashboardStats';
+import QuickActions from '@/components/dashboard/QuickActions';
+import ReportCard from '@/components/dashboard/ReportCard';
+import WorkPlanCard from '@/components/dashboard/WorkPlanCard';
 import { cn } from "@/lib/utils";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -80,15 +81,8 @@ const Index = () => {
 
   useEffect(() => {
     if (authLoading) return;
-
-    if (isAdminBbm) {
-      navigate('/fuel-reports');
-      return;
-    }
-    if (isAdminSpj) {
-      navigate('/fuel-reports/spj');
-      return;
-    }
+    if (isAdminBbm) { navigate('/fuel-reports'); return; }
+    if (isAdminSpj) { navigate('/fuel-reports/spj'); return; }
 
     loadData();
     if (isUserRestricted && profile?.category) {
@@ -126,7 +120,7 @@ const Index = () => {
 
   const handleDeleteReport = async (e: React.MouseEvent, report: Report) => {
     e.stopPropagation();
-    if (isPimpinan || isAdminBbm || isAdminSpj) return;
+    if (isPimpinan) return;
     if (window.confirm(`Pindahkan laporan "${report.description}" ke tempat sampah?`)) {
       try {
         await reportService.deleteReport(report.id);
@@ -140,7 +134,7 @@ const Index = () => {
 
   const handleToggleWorkPlanVisibility = async (e: React.MouseEvent, plan: WorkPlan) => {
     e.stopPropagation();
-    if (!isLoggedIn || isPimpinan || isAdminBbm || isAdminSpj) return;
+    if (!isLoggedIn || isPimpinan) return;
     
     const newVisibility = plan.is_visible === false ? true : false;
     try {
@@ -154,7 +148,7 @@ const Index = () => {
 
   const handleDeleteWorkPlan = async (e: React.MouseEvent, plan: WorkPlan) => {
     e.stopPropagation();
-    if (!isLoggedIn || isPimpinan || isAdminBbm || isAdminSpj) return;
+    if (!isLoggedIn || isPimpinan) return;
     if (window.confirm(`Pindahkan rencana kerja "${plan.items[0]?.description}" ke tempat sampah?`)) {
       try {
         await workPlanService.deleteWorkPlan(plan.id);
@@ -174,89 +168,51 @@ const Index = () => {
     setSearchQuery("");
   };
 
-  const filteredReports = reports.filter(report => {
-    const search = searchQuery.toLowerCase();
-    const reportDate = new Date(report.date);
-    const m = (reportDate.getMonth() + 1).toString();
-    const y = reportDate.getFullYear().toString();
-    
-    const matchSearch = report.description.toLowerCase().includes(search) || report.location.street.toLowerCase().includes(search);
-    const matchSpecificDate = !selectedDate || report.date === selectedDate;
-    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
-    const matchYear = selectedYear === "semua" || y === selectedYear;
-    const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
-    const restrictionMatch = !isUserRestricted || report.category === profile?.category;
-    
-    if (selectedDate) {
-      return matchSearch && matchSpecificDate && matchCategory && restrictionMatch;
-    }
-    
-    return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
-  });
+  const filteredReports = useMemo(() => {
+    return reports.filter(report => {
+      const search = searchQuery.toLowerCase();
+      const reportDate = new Date(report.date);
+      const m = (reportDate.getMonth() + 1).toString();
+      const y = reportDate.getFullYear().toString();
+      
+      const matchSearch = report.description.toLowerCase().includes(search) || report.location.street.toLowerCase().includes(search);
+      const matchSpecificDate = !selectedDate || report.date === selectedDate;
+      const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+      const matchYear = selectedYear === "semua" || y === selectedYear;
+      const matchCategory = selectedCategory === "semua" || report.category === selectedCategory;
+      const restrictionMatch = !isUserRestricted || report.category === profile?.category;
+      
+      if (selectedDate) return matchSearch && matchSpecificDate && matchCategory && restrictionMatch;
+      return matchSearch && matchMonth && matchYear && matchCategory && restrictionMatch;
+    });
+  }, [reports, searchQuery, selectedDate, selectedMonth, selectedYear, selectedCategory, isUserRestricted, profile]);
 
-  const filteredWorkPlans = workPlans.filter(plan => {
-    const search = searchQuery.toLowerCase().trim();
-    const matchSearch = !search || (Array.isArray(plan.items) && plan.items.some(item => 
-      (item.description?.toLowerCase() || "").includes(search) ||
-      (item.location?.street?.toLowerCase() || "").includes(search)
-    ));
-    const matchSpecificDate = !selectedDate || plan.date === selectedDate;
-    const matchMonth = selectedMonth === "semua" || (new Date(plan.date).getMonth() + 1).toString() === selectedMonth;
-    const matchYear = selectedYear === "semua" || new Date(plan.date).getFullYear().toString() === selectedYear;
-    const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
-    const restrictionMatch = !isUserRestricted || plan.category === profile?.category;
-    
-    return matchSearch && matchSpecificDate && matchMonth && matchYear && matchCategory && restrictionMatch;
-  });
+  const filteredWorkPlans = useMemo(() => {
+    return workPlans.filter(plan => {
+      const search = searchQuery.toLowerCase().trim();
+      const matchSearch = !search || (Array.isArray(plan.items) && plan.items.some(item => 
+        (item.description?.toLowerCase() || "").includes(search) ||
+        (item.location?.street?.toLowerCase() || "").includes(search)
+      ));
+      const matchSpecificDate = !selectedDate || plan.date === selectedDate;
+      const matchMonth = selectedMonth === "semua" || (new Date(plan.date).getMonth() + 1).toString() === selectedMonth;
+      const matchYear = selectedYear === "semua" || new Date(plan.date).getFullYear().toString() === selectedYear;
+      const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
+      const restrictionMatch = !isUserRestricted || plan.category === profile?.category;
+      
+      return matchSearch && matchSpecificDate && matchMonth && matchYear && matchCategory && restrictionMatch;
+    });
+  }, [workPlans, searchQuery, selectedDate, selectedMonth, selectedYear, selectedCategory, isUserRestricted, profile]);
 
-  const FilterSection = () => (
-    <div className="bg-white p-4 rounded-xl shadow-sm border mb-6 space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-        <div className="md:col-span-4 space-y-1.5">
-          <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Uraian / Lokasi</label>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input placeholder="Ketik kata kunci..." className="pl-10 bg-slate-50 border-slate-200 h-10" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-          </div>
-        </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Kategori</label>
-          <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUserRestricted}>
-            <SelectTrigger className="bg-slate-50 border-slate-200 h-10"><SelectValue placeholder="Pilih Kategori" /></SelectTrigger>
-            <SelectContent>{categories.map(cat => <SelectItem key={cat} value={cat}>{cat === 'semua' ? 'Semua Kategori' : cat}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tanggal</label>
-          <div className="relative">
-            <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-            <Input type="date" className="pl-10 bg-slate-50 border-slate-200 h-10" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-          </div>
-        </div>
-        <div className="md:col-span-2 space-y-1.5">
-          <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
-          <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
-            <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
-              <SelectValue placeholder="Pilih Bulan" />
-            </SelectTrigger>
-            <SelectContent><SelectItem value="semua">Semua Bulan</SelectItem>{months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-1 space-y-1.5">
-          <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Tahun</label>
-          <Select value={selectedYear} onValueChange={setSelectedYear} disabled={!!selectedDate}>
-            <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10", selectedDate && "opacity-50")}>
-              <SelectValue placeholder="Pilih Tahun" />
-            </SelectTrigger>
-            <SelectContent><SelectItem value="semua">Semua Tahun</SelectItem>{years.map(y => <SelectItem key={y} value={y.toString()}>{y}</SelectItem>)}</SelectContent>
-          </Select>
-        </div>
-        <div className="md:col-span-1 flex justify-end">
-          <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0"><FilterX className="h-5 w-5" /></Button>
-        </div>
-      </div>
-    </div>
-  );
+  const stats = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return {
+      totalReports: reports.length,
+      totalWorkPlans: workPlans.length,
+      reportsToday: reports.filter(r => r.date === today).length,
+      plansToday: workPlans.filter(p => p.date === today).length
+    };
+  }, [reports, workPlans]);
 
   if (authLoading) {
     return (
@@ -267,194 +223,286 @@ const Index = () => {
     );
   }
 
-  if (isAdminBbm || isAdminSpj) return null;
-
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b sticky top-0 z-20">
+    <div className="min-h-screen bg-slate-50/50">
+      <header className="bg-white border-b sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-lg shrink-0"><FileText className="text-white h-5 w-5" /></div>
+            <div className="bg-blue-600 p-2 rounded-xl shadow-blue-200 shadow-lg shrink-0">
+              <FileText className="text-white h-5 w-5" />
+            </div>
             <div className="flex flex-col">
-              <h1 className="text-sm md:text-lg font-bold text-slate-900 leading-tight">Sistem Laporan</h1>
-              <Badge variant="outline" className="w-fit text-[8px] md:text-[10px] py-0 h-4 bg-green-50 text-green-600 border-green-200"><Cloud className="h-2 w-2 mr-1" /> Cloud DLH</Badge>
+              <h1 className="text-sm md:text-lg font-black text-slate-900 leading-tight tracking-tight">SISTEM LAPORAN</h1>
+              <Badge variant="outline" className="w-fit text-[8px] md:text-[10px] py-0 h-4 bg-green-50 text-green-600 border-green-200 font-bold">
+                <Cloud className="h-2 w-2 mr-1" /> CLOUD DLH
+              </Badge>
             </div>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2">
-            <TooltipProvider>
-              {isAdmin && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="sm" onClick={() => navigate('/maintenance')} className="bg-amber-50 text-amber-700 border-amber-200 px-2 md:px-3 h-9">
-                      <Database className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Maintenance</span>
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="md:hidden"><p>Maintenance</p></TooltipContent>
-                </Tooltip>
-              )}
-              
-              {isLoggedIn && !isAdminBbm && !isAdminSpj && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button variant="outline" size="icon" onClick={() => setIsTrashOpen(true)} className="h-9 w-9 text-slate-500 hover:text-red-600 hover:bg-red-50 border-slate-200">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent><p>Tempat Sampah</p></TooltipContent>
-                </Tooltip>
-              )}
-
-              {!isAdminBbm && !isAdminSpj && (
+          
+          <div className="flex items-center gap-2 md:gap-3">
+            {isLoggedIn ? (
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex flex-col items-end">
+                  <p className="text-[11px] font-black text-slate-900 leading-none uppercase">
+                    {isPimpinan ? 'Pimpinan' : isAdminHarian ? 'Admin Harian' : isAdmin ? 'Administrator' : 'User Lapangan'}
+                  </p>
+                  <p className="text-[9px] font-bold text-blue-600 mt-1">
+                    {isPimpinan || isAdminHarian ? 'Semua Wilayah' : (profile?.category || 'Umum')}
+                  </p>
+                </div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 px-2 md:px-3 h-9">
-                      <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak Rekap</span><ChevronDown className="ml-1 h-3 w-3 opacity-50" />
+                    <Button variant="ghost" size="icon" className="h-10 w-10 rounded-full bg-slate-100 border border-slate-200">
+                      <UserCircle className="h-6 w-6 text-slate-600" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56">
-                    {activeTab === 'reports' && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="cursor-pointer py-2"><Printer className="mr-2 h-4 w-4 text-blue-600" /> Cetak Harian Laporan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Harian Laporan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan</DropdownMenuItem>
-                      </>
+                    <div className="p-3 border-b bg-slate-50/50">
+                      <p className="text-xs font-bold text-slate-900">{profile?.username || session?.user?.email}</p>
+                      <p className="text-[10px] text-slate-500 mt-0.5">{profile?.role?.toUpperCase()}</p>
+                    </div>
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => navigate('/maintenance')} className="cursor-pointer py-2.5">
+                        <Database className="mr-2 h-4 w-4 text-amber-600" /> Maintenance Sistem
+                      </DropdownMenuItem>
                     )}
-                    
-                    {activeTab === 'workplans' && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian Rencana</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana</DropdownMenuItem>
-                      </>
-                    )}
-
-                    {activeTab === 'fuel_reports' && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian BBM</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan BBM</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan BBM</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/yearly-rekap')} className="cursor-pointer py-2"><CalendarDays className="mr-2 h-4 w-4 text-orange-600" /> Rekap Tahunan BBM</DropdownMenuItem>
-                      </>
-                    )}
-
-                    {activeTab === 'fuel_spj' && (
-                      <>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/daily-rekap')} className="cursor-pointer py-2"><Calendar className="mr-2 h-4 w-4 text-blue-600" /> Rekap Harian SPJ</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/weekly-rekap')} className="cursor-pointer py-2"><Table className="mr-2 h-4 w-4 text-green-600" /> Rekap Mingguan SPJ</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/monthly-rekap')} className="cursor-pointer py-2"><FileText className="mr-2 h-4 w-4 text-purple-600" /> Rekap Bulanan SPJ</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => navigate('/fuel-reports/spj/yearly-rekap')} className="cursor-pointer py-2"><CalendarDays className="mr-2 h-4 w-4 text-orange-600" /> Rekap Tahunan SPJ</DropdownMenuItem>
-                      </>
-                    )}
+                    <DropdownMenuItem onClick={() => setIsTrashOpen(true)} className="cursor-pointer py-2.5">
+                      <Trash2 className="mr-2 h-4 w-4 text-red-500" /> Tempat Sampah
+                    </DropdownMenuItem>
+                    <div className="h-px bg-slate-100 my-1" />
+                    <DropdownMenuItem onClick={handleLogout} className="cursor-pointer py-2.5 text-red-600 font-bold">
+                      <LogOut className="mr-2 h-4 w-4" /> Keluar Sistem
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
-              )}
-
-              {isLoggedIn ? (
-                <div className="flex items-center gap-1 border-l pl-1.5 md:pl-2 ml-0.5 md:ml-1">
-                  <div className="hidden sm:flex flex-col items-end mr-2"><p className="text-[10px] font-bold text-slate-900 leading-none">{isAdminSpj ? 'Admin SPJ' : isAdminBbm ? 'Admin BBM' : isAdminHarian ? 'Admin Harian' : isPimpinan ? 'Pimpinan' : isAdmin ? 'Admin' : 'User'}</p><p className="text-[8px] text-slate-500">{isPimpinan || isAdminHarian || isAdminBbm || isAdminSpj ? 'Semua Kategori' : (profile?.category || 'Semua')}</p></div>
-                  <Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" onClick={handleLogout} className="h-9 w-9 text-red-500 hover:bg-red-50 rounded-full"><LogOut className="h-4 w-4 md:h-5 md:w-5" /></Button></TooltipTrigger><TooltipContent><p>Keluar Sistem</p></TooltipContent></Tooltip>
-                </div>
-              ) : (
-                !authLoading && <Button onClick={() => navigate('/login')} size="sm" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50 h-9 px-2 md:px-4"><LogIn className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Masuk Sistem</span></Button>
-              )}
-            </TooltipProvider>
+              </div>
+            ) : (
+              <Button onClick={() => navigate('/login')} size="sm" className="bg-blue-600 hover:bg-blue-700 h-9 px-4 font-bold shadow-md">
+                <LogIn className="h-4 w-4 mr-2" /> Masuk
+              </Button>
+            )}
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+            Halo, {profile?.username || 'Selamat Datang'}! 👋
+          </h2>
+          <p className="text-slate-500 text-sm md:text-base mt-1 font-medium">
+            Pantau dan kelola laporan kegiatan harian Dinas Lingkungan Hidup dengan mudah.
+          </p>
+        </div>
+
+        {/* Stats Overview */}
+        <DashboardStats 
+          totalReports={stats.totalReports}
+          totalWorkPlans={stats.totalWorkPlans}
+          reportsToday={stats.reportsToday}
+          plansToday={stats.plansToday}
+        />
+
+        {/* Quick Actions for Users */}
+        <QuickActions isPimpinan={isPimpinan} isLoggedIn={isLoggedIn} activeTab={activeTab} />
+
         <Tabs defaultValue="reports" onValueChange={setActiveTab} className="w-full space-y-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <TabsList className={cn(
-              "grid w-full grid-cols-2 gap-1 bg-slate-100 border shadow-sm p-1 h-auto",
-              isAdmin ? "md:flex md:w-auto md:max-w-4xl" : "md:flex md:w-auto md:max-w-md"
-            )}>
-              <TabsTrigger value="reports" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center justify-center gap-2 py-2.5 text-xs md:text-sm"><FileText size={14} className="shrink-0" /> Laporan Harian</TabsTrigger>
-              <TabsTrigger value="workplans" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center justify-center gap-2 py-2.5 text-xs md:text-sm"><ClipboardList size={14} className="shrink-0" /> Rencana Kerja</TabsTrigger>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-2 rounded-2xl shadow-sm border ring-1 ring-slate-100">
+            <TabsList className="grid w-full grid-cols-2 md:flex md:w-auto gap-1 bg-transparent h-auto p-0">
+              <TabsTrigger 
+                value="reports" 
+                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold transition-all"
+              >
+                <FileText size={16} /> Laporan Harian
+              </TabsTrigger>
+              <TabsTrigger 
+                value="workplans" 
+                className="data-[state=active]:bg-green-600 data-[state=active]:text-white data-[state=active]:shadow-md flex items-center justify-center gap-2 py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold transition-all"
+              >
+                <ClipboardList size={16} /> Rencana Kerja
+              </TabsTrigger>
               {isAdmin && (
                 <>
-                  <TabsTrigger value="fuel_reports" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white flex items-center justify-center gap-2 py-2.5 text-xs md:text-sm"><Fuel size={14} className="shrink-0" /> Admin BBM</TabsTrigger>
-                  <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white flex items-center justify-center gap-2 py-2.5 text-xs md:text-sm"><FileText size={14} className="shrink-0" /> Laporan SPJ</TabsTrigger>
+                  <TabsTrigger value="fuel_reports" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold">
+                    <Fuel size={16} className="mr-2" /> Admin BBM
+                  </TabsTrigger>
+                  <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-blue-800 data-[state=active]:text-white py-2.5 px-6 rounded-xl text-xs md:text-sm font-bold">
+                    <Table size={16} className="mr-2" /> Laporan SPJ
+                  </TabsTrigger>
                 </>
               )}
             </TabsList>
+
+            <div className="flex items-center gap-2 px-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="bg-slate-50 text-slate-700 border-slate-200 h-10 px-4 font-bold rounded-xl">
+                    <Printer className="h-4 w-4 mr-2 text-blue-600" /> Cetak Rekap <ChevronDown className="ml-2 h-3 w-3 opacity-50" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-64">
+                  {activeTab === 'reports' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate(`/print-rekap?category=semua`)} className="py-3 cursor-pointer">
+                        <Printer className="mr-3 h-4 w-4 text-blue-600" /> Cetak Harian Laporan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/daily-rekap?categories=semua&date=semua`)} className="py-3 cursor-pointer">
+                        <Table className="mr-3 h-4 w-4 text-green-600" /> Rekap Harian Laporan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/weekly-rekap?categories=semua&date=${new Date().toISOString().split('T')[0]}`)} className="py-3 cursor-pointer">
+                        <CalendarDays className="mr-3 h-4 w-4 text-purple-600" /> Rekap Mingguan Laporan
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate(`/monthly-rekap`)} className="py-3 cursor-pointer">
+                        <FileText className="mr-3 h-4 w-4 text-orange-600" /> Rekap Bulanan Laporan
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                  {activeTab === 'workplans' && (
+                    <>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/daily-rekap')} className="py-3 cursor-pointer">
+                        <Printer className="mr-3 h-4 w-4 text-blue-600" /> Rekap Harian Rencana
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/weekly-rekap')} className="py-3 cursor-pointer">
+                        <Table className="mr-3 h-4 w-4 text-green-600" /> Rekap Mingguan Rencana
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => navigate('/work-plans/monthly-rekap')} className="py-3 cursor-pointer">
+                        <FileText className="mr-3 h-4 w-4 text-purple-600" /> Rekap Bulanan Rencana
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
-          <TabsContent value="reports" className="space-y-4">
-            <FilterSection />
-            {isLoggedIn && !isPimpinan && (
-              <div className="flex justify-end">
-                <Button onClick={() => navigate('/create')} className="bg-blue-600 hover:bg-blue-700 w-full md:w-auto font-bold shadow-sm">
-                  <Plus className="mr-2 h-5 w-5" /> Tambah Laporan Baru
-                </Button>
+          {/* Filter Section */}
+          <div className="bg-white p-5 rounded-2xl shadow-sm border ring-1 ring-slate-100 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+              <div className="md:col-span-4 space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Pencarian Cepat</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input 
+                    placeholder="Cari uraian kegiatan atau lokasi..." 
+                    className="pl-10 bg-slate-50 border-slate-200 h-11 rounded-xl focus-visible:ring-blue-500" 
+                    value={searchQuery} 
+                    onChange={(e) => setSearchQuery(e.target.value)} 
+                  />
+                </div>
               </div>
-            )}
-            
-            {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredReports.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="md:col-span-3 space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Kategori Tim</label>
+                <Select value={selectedCategory} onValueChange={setSelectedCategory} disabled={isUserRestricted}>
+                  <SelectTrigger className="bg-slate-50 border-slate-200 h-11 rounded-xl font-medium">
+                    <SelectValue placeholder="Pilih Kategori" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categories.map(cat => <SelectItem key={cat} value={cat} className="font-medium">{cat === 'semua' ? 'Semua Kategori' : cat}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Tanggal</label>
+                <div className="relative">
+                  <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                  <Input type="date" className="pl-10 bg-slate-50 border-slate-200 h-11 rounded-xl" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+                </div>
+              </div>
+              <div className="md:col-span-2 space-y-1.5">
+                <label className="text-[10px] font-black uppercase text-slate-400 ml-1 tracking-widest">Bulan</label>
+                <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
+                  <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-11 rounded-xl font-medium", selectedDate && "opacity-50")}>
+                    <SelectValue placeholder="Pilih Bulan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="semua">Semua Bulan</SelectItem>
+                    {months.map((m, i) => <SelectItem key={i+1} value={(i+1).toString()}>{m}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="md:col-span-1 flex justify-end">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" onClick={resetFilters} className="h-11 w-11 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl border border-dashed border-slate-200">
+                        <FilterX className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent><p>Reset Filter</p></TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            </div>
+          </div>
+
+          <TabsContent value="reports" className="mt-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+                <p className="text-slate-500 font-medium">Sinkronisasi data laporan...</p>
+              </div>
+            ) : filteredReports.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredReports.map((report) => (
-                  <Card key={report.id} className="group hover:shadow-md transition-all cursor-pointer overflow-hidden border-l-4 border-l-blue-500 relative" onClick={() => navigate(`/report/${report.id}`)}>
-                    <CardHeader className="p-4 pb-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-1"><div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" />{new Date(report.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div><Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-blue-50 text-blue-700 border-blue-200">{report.category}</Badge></div>
-                        {isLoggedIn && (
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/edit/${report.id}`); }}><Edit className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => handleDeleteReport(e, report)}><Trash2 className="h-4 w-4" /></Button>
-                          </div>
-                        )}
-                      </div>
-                      <CardTitle className="text-base line-clamp-1 group-hover:text-blue-600 transition-colors mt-2">{report.description}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3"><div className="flex items-start gap-2 text-xs text-slate-600"><MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" /><span className="line-clamp-2">{report.location.street}, {Array.isArray(report.location.village) ? report.location.village.join(", ") : report.location.village}</span></div><div className="pt-3 flex justify-between items-center border-t text-[10px]"><span className="text-slate-400 font-medium">Vol: {report.volume} {getUnitByCategory(report.category)}</span><div className="flex items-center text-blue-600 font-bold">Lihat Detail <Eye className="ml-1 h-3 w-3" /></div></div></CardContent>
-                  </Card>
+                  <ReportCard 
+                    key={report.id} 
+                    report={report} 
+                    isLoggedIn={isLoggedIn} 
+                    isPimpinan={isPimpinan} 
+                    onDelete={handleDeleteReport} 
+                  />
                 ))}
               </div>
-            ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada laporan ditemukan</p><Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button></div>}
+            ) : (
+              <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Search className="text-slate-300 h-10 w-10" />
+                </div>
+                <p className="text-slate-900 font-black text-xl">Tidak Ada Laporan</p>
+                <p className="text-slate-500 mt-2 max-w-xs mx-auto">Coba sesuaikan filter pencarian atau buat laporan baru untuk hari ini.</p>
+                <Button variant="link" onClick={resetFilters} className="mt-4 text-blue-600 font-bold">Reset Semua Filter</Button>
+              </div>
+            )}
           </TabsContent>
 
-          <TabsContent value="workplans" className="space-y-4">
-            <FilterSection />
-            {isLoggedIn && !isPimpinan && (
-              <div className="flex justify-end">
-                <Button onClick={() => navigate('/work-plans/create')} className="bg-green-600 hover:bg-green-700 w-full md:w-auto font-bold shadow-sm">
-                  <Plus className="mr-2 h-5 w-5" /> Tambah Rencana Baru
-                </Button>
+          <TabsContent value="workplans" className="mt-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-32 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+                <p className="text-slate-500 font-medium">Memuat rencana kerja...</p>
               </div>
-            )}
-
-            {loading ? <div className="text-center py-20 text-slate-500">Memuat data...</div> : filteredWorkPlans.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            ) : filteredWorkPlans.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredWorkPlans.map((plan) => (
-                  <Card key={plan.id} className={cn("group hover:shadow-md transition-all cursor-pointer border-l-4 overflow-hidden relative", plan.is_visible === false ? "border-l-slate-300 opacity-75" : "border-l-green-500")} onClick={() => navigate(`/work-plans/print/${plan.id}`)}>
-                    <CardHeader className="p-4 pb-2">
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-1"><div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" />{new Date(plan.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div><div className="flex items-center gap-2"><Badge variant="outline" className="w-fit text-[9px] py-0 h-4 bg-green-50 text-green-700 border-green-200">{plan.category}</Badge>{plan.is_visible === false && <Badge variant="outline" className="text-[8px] bg-red-50 text-red-600 border-red-100">Sembunyi</Badge>}</div></div>
-                        {isLoggedIn && (
-                          <div className="flex items-center gap-1">
-                            <TooltipProvider><Tooltip><TooltipTrigger asChild><Button variant="ghost" size="icon" className={cn("h-8 w-8", plan.is_visible === false ? "text-slate-400 hover:text-blue-600" : "text-blue-600 hover:bg-blue-50")} onClick={(e) => handleToggleWorkPlanVisibility(e, plan)} disabled={isPimpinan}>{plan.is_visible === false ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}</Button></TooltipTrigger><TooltipContent><p>{plan.is_visible === false ? "Tampilkan di Rekap" : "Sembunyikan dari Rekap"}</p></TooltipContent></Tooltip></TooltipProvider>
-                            <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-blue-600", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => { e.stopPropagation(); if(!isPimpinan) navigate(`/work-plans/edit/${plan.id}`); }}><Edit className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className={cn("h-8 w-8 text-slate-400 hover:text-red-500", isPimpinan && "opacity-50 cursor-not-allowed")} disabled={isPimpinan} onClick={(e) => handleDeleteWorkPlan(e, plan)}><Trash2 className="h-4 w-4" /></Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/work-plans/print/${plan.id}`); }}><Printer className="h-4 w-4" /></Button>
-                          </div>
-                        )}
-                      </div>
-                      <CardTitle className="text-base line-clamp-1 group-hover:text-green-600 transition-colors mt-2">{plan.items?.[0]?.description || "Rencana Kerja"}</CardTitle>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3"><div className="flex items-start gap-2 text-xs text-slate-600"><MapPin className="h-3.5 w-3.5 mt-0.5 text-red-500 shrink-0" /><span className="line-clamp-1">{plan.items?.[0]?.location?.street || "Lokasi Kerja"}</span></div><div className="pt-3 flex justify-between items-center border-t text-[10px]"><span className="text-slate-400 font-medium">{plan.items?.length || 0} Lokasi Kerja</span><div className="flex items-center text-green-600 font-bold">Lihat Rencana <ArrowRight className="ml-1 h-3 w-3" /></div></div></CardContent>
-                  </Card>
+                  <WorkPlanCard 
+                    key={plan.id} 
+                    plan={plan} 
+                    isLoggedIn={isLoggedIn} 
+                    isPimpinan={isPimpinan} 
+                    onDelete={handleDeleteWorkPlan}
+                    onToggleVisibility={handleToggleWorkPlanVisibility}
+                  />
                 ))}
               </div>
-            ) : <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300"><p className="text-slate-500 font-medium">Tidak ada rencana kerja ditemukan</p><Button variant="link" onClick={resetFilters} className="mt-2 text-blue-600">Reset Filter</Button></div>}
+            ) : (
+              <div className="text-center py-24 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                <div className="bg-slate-50 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <ClipboardList className="text-slate-300 h-10 w-10" />
+                </div>
+                <p className="text-slate-900 font-black text-xl">Belum Ada Rencana</p>
+                <p className="text-slate-500 mt-2 max-w-xs mx-auto">Rencana kerja untuk periode ini belum tersedia atau tidak ditemukan.</p>
+                <Button variant="link" onClick={resetFilters} className="mt-4 text-green-600 font-bold">Reset Semua Filter</Button>
+              </div>
+            )}
           </TabsContent>
 
           {isAdmin && (
             <>
-              <TabsContent value="fuel_reports" className="space-y-4">
+              <TabsContent value="fuel_reports" className="mt-0">
                 <FuelReportTab />
               </TabsContent>
-              <TabsContent value="fuel_spj" className="space-y-4">
+              <TabsContent value="fuel_spj" className="mt-0">
                 <FuelSpjTab />
               </TabsContent>
             </>
