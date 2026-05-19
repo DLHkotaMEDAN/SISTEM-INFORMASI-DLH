@@ -140,7 +140,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
     coordinators: new Set<string>(),
     equipmentTypes: new Set<string>(),
     heavyEquipmentTypes: new Set<string>(),
-    vehicles: new Set<string>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"])
+    vehicles: new Set<string>(["BK 8128 A", "BK 9031 J", "BK 8265 A", "BK 8266 A", "BK 8451 J"]),
+    taskRemarks: new Set<string>()
   });
 
   const [matchingWorkPlan, setMatchingWorkPlan] = useState<WorkPlan | null>(null);
@@ -190,6 +191,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         const eqTypes = new Set<string>();
         const heTypes = new Set<string>();
         const vehicles = new Set<string>(history.vehicles);
+        const tRemarks = new Set<string>();
 
         reports.forEach(r => {
           r.tasks?.forEach(t => {
@@ -197,6 +199,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
             if (t.location?.street) streets.add(t.location.street);
             if (t.personnel?.coordinator) coords.add(t.personnel.coordinator);
             if (t.vehicle) vehicles.add(t.vehicle);
+            if (t.remarks) tRemarks.add(t.remarks);
             
             t.equipment?.forEach(e => { if (e.type) eqTypes.add(e.type); });
             t.heavyEquipment?.forEach(he => { 
@@ -212,7 +215,8 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
           coordinators: coords,
           equipmentTypes: eqTypes,
           heavyEquipmentTypes: heTypes,
-          vehicles: vehicles
+          vehicles: vehicles,
+          taskRemarks: tRemarks
         });
       } catch (e) { console.error(e); }
     };
@@ -416,6 +420,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
         <datalist id="history-equipment">{Array.from(history.equipmentTypes).map(v => <option key={v} value={v} />)}</datalist>
         <datalist id="history-heavy-equipment">{Array.from(history.heavyEquipmentTypes).map(v => <option key={v} value={v} />)}</datalist>
         <datalist id="vehicle-list">{Array.from(history.vehicles).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="history-task-remarks">{Array.from(history.taskRemarks).map(v => <option key={v} value={v} />)}</datalist>
 
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)} className="px-2 md:px-4">
@@ -603,7 +608,7 @@ const ReportForm = ({ initialData, isEditing = false }: ReportFormProps) => {
                     <div className="flex items-center gap-2 text-sm font-bold text-cyan-600"><Users size={16} /> Personil Kegiatan</div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4"><FormField control={form.control} name={`tasks.${taskIndex}.personnel.coordinator`} render={({ field }) => (<FormItem><FormLabel>Koordinator</FormLabel><FormControl><Input {...field} list="history-coordinators" /></FormControl></FormItem>)} /><FormField control={form.control} name={`tasks.${taskIndex}.personnel.members`} render={({ field }) => (<FormItem><FormLabel>Jumlah Anggota</FormLabel><FormControl><Input type="number" {...field} /></FormControl></FormItem>)} /></div>
                   </div>
-                  <div className="pt-6 border-t border-slate-100 space-y-4"><div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div><FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} placeholder="Catatan khusus..." /></FormControl></FormItem>)} /></div>
+                  <div className="pt-6 border-t border-slate-100 space-y-4"><div className="flex items-center gap-2 text-sm font-bold text-slate-600"><MessageSquare size={16} /> Keterangan Kegiatan</div><FormField control={form.control} name={`tasks.${taskIndex}.remarks`} render={({ field }) => (<FormItem><FormControl><Input {...field} list="history-task-remarks" placeholder="Catatan khusus..." /></FormControl></FormItem>)} /></div>
                 </CardContent>
               </Card>
             );
