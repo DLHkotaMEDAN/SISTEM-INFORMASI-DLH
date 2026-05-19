@@ -257,8 +257,8 @@ const FuelSpjReportList = () => {
                       <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
                     </div>
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-400 hover:text-red-600" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
                     </div>
                   </div>
                   <CardTitle className="text-base mt-2">Laporan SPJ - {report.entries.length} Kendaraan / Alat</CardTitle>
