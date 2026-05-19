@@ -68,9 +68,13 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [customTeamMode, setCustomTeamMode] = useState(false);
   
-  const [vehicleSuggestions, setVehicleSuggestions] = useState<string[]>([]);
-  const [receiverSuggestions, setReceiverSuggestions] = useState<string[]>([]);
-  const [existingSpjNumbers, setExistingSpjNumbers] = useState<string[]>([]);
+  // Autocomplete States
+  const [history, setHistory] = useState({
+    vehicles: new Set<string>(),
+    receivers: new Set<string>(),
+    streets: new Set<string>(),
+    spjNumbers: new Set<string>()
+  });
 
   const canEditPrice = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
 
@@ -105,10 +109,31 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   const selectedRegion = form.watch("region");
 
   useEffect(() => {
-    if (!isEditing) {
-      fetchPrices();
-    }
-    fetchSuggestions();
+    const fetchHistory = async () => {
+      try {
+        const reports = await fuelSpjService.getAllReports();
+        const vehicles = new Set<string>();
+        const receivers = new Set<string>();
+        const streets = new Set<string>();
+        const spjNumbers = new Set<string>();
+        
+        reports.forEach(report => {
+          report.entries.forEach(entry => {
+            if (entry.vehicle_operator) vehicles.add(entry.vehicle_operator);
+            if (entry.receiver_name) receivers.add(entry.receiver_name);
+            if (entry.spj_no) spjNumbers.add(entry.spj_no.toLowerCase().trim());
+            entry.locations.forEach(loc => {
+              if (loc.street) streets.add(loc.street);
+            });
+          });
+        });
+        
+        setHistory({ vehicles, receivers, streets, spjNumbers });
+      } catch (e) { console.error(e); }
+    };
+
+    fetchHistory();
+    if (!isEditing) fetchPrices();
   }, [isEditing]);
 
   const fetchPrices = async () => {
@@ -118,29 +143,6 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
       const d = data.find(x => x.type === 'Dexlite')?.price || 14500;
       form.setValue("price_pertamax", p);
       form.setValue("price_dexlite", d);
-    } catch (e) { console.error(e); }
-  };
-
-  const fetchSuggestions = async () => {
-    try {
-      const reports = await fuelSpjService.getAllReports();
-      const vehicles = new Set<string>();
-      const receivers = new Set<string>();
-      const spjNumbers: string[] = [];
-      
-      reports.forEach(report => {
-        if (isEditing && initialData && report.id === initialData.id) return;
-        
-        report.entries.forEach(entry => {
-          if (entry.vehicle_operator) vehicles.add(entry.vehicle_operator);
-          if (entry.receiver_name) receivers.add(entry.receiver_name);
-          if (entry.spj_no) spjNumbers.push(entry.spj_no.toLowerCase().trim());
-        });
-      });
-      
-      setVehicleSuggestions(Array.from(vehicles).sort());
-      setReceiverSuggestions(Array.from(receivers).sort());
-      setExistingSpjNumbers(spjNumbers);
     } catch (e) { console.error(e); }
   };
 
@@ -161,10 +163,13 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
       return;
     }
 
-    const duplicateInDb = currentSpjNumbers.find(no => existingSpjNumbers.includes(no));
-    if (duplicateInDb) {
-      showError(`Nomor SPJ sudah Ada: ${duplicateInDb.toUpperCase()}`);
-      return;
+    // Cek duplikat di DB (kecuali jika sedang edit data yang sama)
+    if (!isEditing) {
+      const duplicateInDb = currentSpjNumbers.find(no => history.spjNumbers.has(no));
+      if (duplicateInDb) {
+        showError(`Nomor SPJ sudah Ada di database: ${duplicateInDb.toUpperCase()}`);
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -205,12 +210,10 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6 max-w-5xl mx-auto pb-20">
-        <datalist id="spj-vehicle-list">
-          {vehicleSuggestions.map(v => <option key={v} value={v} />)}
-        </datalist>
-        <datalist id="spj-receiver-list">
-          {receiverSuggestions.map(r => <option key={r} value={r} />)}
-        </datalist>
+        {/* DataLists for Autocomplete */}
+        <datalist id="spj-vehicle-list">{Array.from(history.vehicles).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="spj-receiver-list">{Array.from(history.receivers).map(r => <option key={r} value={r} />)}</datalist>
+        <datalist id="spj-street-list">{Array.from(history.streets).map(s => <option key={s} value={s} />)}</datalist>
 
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}><ArrowLeft className="mr-2 h-4 w-4" /> Kembali</Button>
@@ -301,9 +304,6 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
                   </FormItem>
                 )} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 italic">
-                {canEditPrice ? "* Anda memiliki akses untuk menyesuaikan harga khusus untuk laporan ini." : "* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ."}
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -342,7 +342,7 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
                       <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
                         <div className="md:col-span-8">
                           <FormField control={form.control} name={`entries.${index}.locations.${locIdx}.street`} render={({ field }) => (
-                            <FormItem><FormLabel className="text-[10px] uppercase">Nama Jalan</FormLabel><FormControl><Input className="h-8 text-xs" {...field} /></FormControl></FormItem>
+                            <FormItem><FormLabel className="text-[10px] uppercase">Nama Jalan</FormLabel><FormControl><Input className="h-8 text-xs" {...field} list="spj-street-list" /></FormControl></FormItem>
                           )} />
                         </div>
                         <div className="md:col-span-2">
