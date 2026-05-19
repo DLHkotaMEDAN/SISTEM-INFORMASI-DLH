@@ -99,7 +99,7 @@ const FuelSpjTab = () => {
             <Button variant="outline" size="icon" onClick={loadReports} disabled={loading} className="h-10 w-10 shrink-0 border-slate-200">
               <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} />
             </Button>
-            <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-700 hover:bg-blue-800 h-10 flex-1 font-bold text-xs md:text-sm">
+            <Button onClick={() => navigate('/fuel-reports/spj/create')} className="bg-blue-800 hover:bg-blue-900 h-10 flex-1 font-bold text-xs md:text-sm">
               <FileText className="mr-2 h-4 w-4" /> Input SPJ Baru
             </Button>
           </div>
@@ -121,7 +121,8 @@ const FuelSpjTab = () => {
                     <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
                     <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
                   </div>
-                  <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/spj/edit/${report.id}`); }}><Edit size={14} /></Button>
                     <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
                   </div>
                 </div>
