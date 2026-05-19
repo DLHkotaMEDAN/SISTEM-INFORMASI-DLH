@@ -163,7 +163,6 @@ const FuelSpjReportForm = ({ initialData, isEditing = false }: { initialData?: a
       return;
     }
 
-    // Cek duplikat di DB (kecuali jika sedang edit data yang sama)
     if (!isEditing) {
       const duplicateInDb = currentSpjNumbers.find(no => history.spjNumbers.has(no));
       if (duplicateInDb) {

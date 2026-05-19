@@ -86,7 +86,8 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   // Autocomplete States
   const [history, setHistory] = useState({
     vehicles: new Set<string>(),
-    streets: new Set<string>()
+    streets: new Set<string>(),
+    officerNames: new Set<string>()
   });
 
   const canEditPrice = profile?.role === 'admin' || profile?.role === 'admin_bbm' || profile?.role === 'admin_spj_bbm' || session?.user?.email === 'admin@gmail.com';
@@ -135,15 +136,17 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         const reports = await fuelService.getAllReports();
         const vehicles = new Set<string>();
         const streets = new Set<string>();
+        const officers = new Set<string>();
 
         reports.forEach(r => {
           r.items?.forEach(item => {
             if (item.vehicle_operator) vehicles.add(item.vehicle_operator);
             if (item.location?.street) streets.add(item.location.street);
+            if (item.item_remarks) officers.add(item.item_remarks);
           });
         });
 
-        setHistory({ vehicles, streets });
+        setHistory({ vehicles, streets, officerNames: officers });
       } catch (e) { console.error(e); }
     };
     fetchHistory();
@@ -170,7 +173,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   };
 
   const selectedRegion = form.watch("region");
-  const selectedTeam = form.watch("team");
 
   const handleAddClick = () => {
     setShowTypePrompt(true);
@@ -250,6 +252,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
         {/* DataLists for Autocomplete */}
         <datalist id="fuel-history-vehicles">{Array.from(history.vehicles).map(v => <option key={v} value={v} />)}</datalist>
         <datalist id="fuel-history-streets">{Array.from(history.streets).map(v => <option key={v} value={v} />)}</datalist>
+        <datalist id="fuel-history-officers">{Array.from(history.officerNames).map(v => <option key={v} value={v} />)}</datalist>
 
         <div className="flex items-center justify-between mb-6">
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
@@ -259,8 +262,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
             {isEditing ? "Edit Laporan BBM & Oli" : "Input Laporan BBM & Oli"}
           </h1>
           <Button type="submit" disabled={isSubmitting} className="bg-blue-600 hover:bg-blue-700">
-            {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-            Simpan
+            {isSubmitting ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Simpan...</> : <><Save className="h-4 w-4 mr-2" /> Simpan</>}
           </Button>
         </div>
 
@@ -348,9 +350,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                   </FormItem>
                 )} />
               </div>
-              <p className="text-[10px] text-slate-400 mt-2 italic">
-                {canEditPrice ? "* Anda memiliki akses untuk menyesuaikan harga khusus untuk laporan ini." : "* Harga ini dikunci dan dikelola oleh Admin BBM / SPJ."}
-              </p>
             </div>
           </CardContent>
         </Card>
@@ -408,7 +407,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
                         <FormField control={form.control} name={`items.${index}.item_remarks`} render={({ field }) => (
                           <FormItem>
                             <FormLabel className="text-xs font-bold">Keterangan</FormLabel>
-                            <FormControl><Input placeholder="Nama Petugas..." className="h-10" {...field} /></FormControl>
+                            <FormControl><Input placeholder="Nama Petugas..." className="h-10" list="fuel-history-officers" {...field} /></FormControl>
                             <FormMessage />
                           </FormItem>
                         )} />
