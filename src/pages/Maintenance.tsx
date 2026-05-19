@@ -164,7 +164,6 @@ const Maintenance = () => {
       setLogs([]);
     } catch (e: any) {
       showError("Gagal membersihkan database: " + (e.message || "Izin ditolak"));
-      // Refresh data untuk sinkronisasi ulang dengan DB jika gagal
       const logsData = await auditLogService.getLogs();
       setLogs(logsData);
     } finally {
@@ -304,12 +303,14 @@ const Maintenance = () => {
         </div>
 
         <Tabs defaultValue="storage" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8 h-12 bg-white border shadow-sm p-1">
-            <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><HardDrive size={16} /> Storage & File</TabsTrigger>
-            <TabsTrigger value="users" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><Users size={16} /> Pengguna</TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2"><History size={16} /> Riwayat</TabsTrigger>
-            <TabsTrigger value="trash" className="data-[state=active]:bg-red-600 data-[state=active]:text-white flex items-center gap-2"><Trash2 size={16} /> Tempat Sampah</TabsTrigger>
-          </TabsList>
+          <div className="w-full overflow-x-auto pb-2 scrollbar-hide">
+            <TabsList className="inline-flex w-full lg:grid lg:grid-cols-4 mb-8 h-12 bg-white border shadow-sm p-1 min-w-max">
+              <TabsTrigger value="storage" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2 px-6"><HardDrive size={16} /> Storage & File</TabsTrigger>
+              <TabsTrigger value="users" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2 px-6"><Users size={16} /> Pengguna</TabsTrigger>
+              <TabsTrigger value="history" className="data-[state=active]:bg-blue-600 data-[state=active]:text-white flex items-center gap-2 px-6"><History size={16} /> Riwayat</TabsTrigger>
+              <TabsTrigger value="trash" className="data-[state=active]:bg-red-600 data-[state=active]:text-white flex items-center gap-2 px-6"><Trash2 size={16} /> Tempat Sampah</TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="storage" className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

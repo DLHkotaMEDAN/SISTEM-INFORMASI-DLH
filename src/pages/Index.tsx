@@ -329,35 +329,37 @@ const Index = () => {
 
         <Tabs defaultValue="reports" onValueChange={setActiveTab} className="w-full space-y-8">
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-            <TabsList className="inline-flex h-14 items-center justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200/50">
-              <TabsTrigger 
-                value="reports" 
-                className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg flex items-center gap-2 py-2.5 px-8 rounded-xl text-xs md:text-sm font-black transition-all uppercase tracking-wider"
-              >
-                <FileText size={16} /> Laporan
-              </TabsTrigger>
-              <TabsTrigger 
-                value="workplans" 
-                className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg flex items-center gap-2 py-2.5 px-8 rounded-xl text-xs md:text-sm font-black transition-all uppercase tracking-wider"
-              >
-                <ClipboardList size={16} /> Rencana
-              </TabsTrigger>
-              {isAdmin && (
-                <>
-                  <TabsTrigger value="fuel_reports" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white py-2.5 px-8 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider">
-                    <Fuel size={16} /> BBM
-                  </TabsTrigger>
-                  <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-indigo-800 data-[state=active]:text-white py-2.5 px-8 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider">
-                    <Table size={16} /> SPJ
-                  </TabsTrigger>
-                </>
-              )}
-            </TabsList>
+            <div className="w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
+              <TabsList className="inline-flex h-14 items-center justify-start lg:justify-center rounded-2xl bg-white p-1.5 shadow-sm ring-1 ring-slate-200/50 min-w-max">
+                <TabsTrigger 
+                  value="reports" 
+                  className="data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:shadow-lg flex items-center gap-2 py-2.5 px-6 md:px-8 rounded-xl text-xs md:text-sm font-black transition-all uppercase tracking-wider"
+                >
+                  <FileText size={16} /> Laporan
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="workplans" 
+                  className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-lg flex items-center gap-2 py-2.5 px-6 md:px-8 rounded-xl text-xs md:text-sm font-black transition-all uppercase tracking-wider"
+                >
+                  <ClipboardList size={16} /> Rencana
+                </TabsTrigger>
+                {isAdmin && (
+                  <>
+                    <TabsTrigger value="fuel_reports" className="data-[state=active]:bg-orange-600 data-[state=active]:text-white py-2.5 px-6 md:px-8 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider">
+                      <Fuel size={16} /> BBM
+                    </TabsTrigger>
+                    <TabsTrigger value="fuel_spj" className="data-[state=active]:bg-indigo-800 data-[state=active]:text-white py-2.5 px-6 md:px-8 rounded-xl text-xs md:text-sm font-black uppercase tracking-wider">
+                      <Table size={16} /> SPJ
+                    </TabsTrigger>
+                  </>
+                )}
+              </TabsList>
+            </div>
 
             <div className="flex items-center gap-3">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="bg-white text-slate-700 border-slate-200 h-12 px-6 font-black rounded-2xl shadow-sm hover:bg-slate-50 transition-all">
+                  <Button variant="outline" className="bg-white text-slate-700 border-slate-200 h-12 px-6 font-black rounded-2xl shadow-sm hover:bg-slate-50 transition-all w-full lg:w-auto">
                     <Printer className="h-4 w-4 mr-3 text-blue-600" /> CETAK REKAP <ChevronDown className="ml-3 h-4 w-4 opacity-30" />
                   </Button>
                 </DropdownMenuTrigger>
