@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 const regions = ["Pusat", "Wilayah 1 Utara", "Wilayah 2 Barat", "Wilayah 3 Timur", "Wilayah 4 Kota", "Wilayah 5 Selatan"];
 
 const teamOptions: Record<string, string[]> = {
-  "Pusat": ["Mobil Crane", "Mobil Tangga 30m", "Beco Loader", "Dump Truck", "PickUp"],
+  "Pusat": ["Mobil Crane", "Mobil Tangga", "Mobil Tangga 30m", "Beco Loader", "Dump Truck", "PickUp"],
   "Wilayah 1 Utara": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 2 Barat": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 3 Timur": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],

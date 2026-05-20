@@ -36,7 +36,7 @@ const regions = [
 ];
 
 const teamOptions: Record<string, string[]> = {
-  "Pusat": ["Mobil Crane", "Mobil Tangga 30m", "Beco Loader", "Dump Truck", "PickUp"],
+  "Pusat": ["Mobil Crane", "Mobil Tangga", "Mobil Tangga 30m", "Beco Loader", "Dump Truck", "PickUp"],
   "Wilayah 1 Utara": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 2 Barat": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
   "Wilayah 3 Timur": ["Tim Babat", "Tim Siram", "Tim Pohon", "Becak Siram", "Becak Sampah", "Dump Truck"],
