@@ -63,7 +63,6 @@ const formSchema = z.object({
   date: z.string().min(1, "Tanggal wajib diisi"),
   region: z.string().min(1, "Wilayah wajib dipilih"),
   team: z.string().min(1, "Tim wajib dipilih"),
-  customTeam: z.string().optional(),
   price_pertamax: z.coerce.number().min(1, "Harga wajib diisi"),
   price_dexlite: z.coerce.number().min(1, "Harga wajib diisi"),
   items: z.array(usageItemSchema).min(1, "Minimal satu detail pemakaian"),
@@ -79,7 +78,6 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
   const navigate = useNavigate();
   const { profile, session } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [customTeamMode, setCustomTeamMode] = useState(false);
   const [showTypePrompt, setShowTypePrompt] = useState(false);
   const [showLocationPrompt, setShowLocationPrompt] = useState(false);
 
@@ -217,7 +215,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
       const finalData = {
         date: values.date,
         region: values.region,
-        team: customTeamMode ? values.customTeam || values.team : values.team,
+        team: values.team,
         price_pertamax: values.price_pertamax,
         price_dexlite: values.price_dexlite,
         items: values.items.map(item => ({
@@ -277,7 +275,7 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
               <FormField control={form.control} name="region" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Wilayah</FormLabel>
-                  <Select onValueChange={(val) => { field.onChange(val); form.setValue("team", ""); setCustomTeamMode(false); }} value={field.value}>
+                  <Select onValueChange={(val) => { field.onChange(val); form.setValue("team", ""); }} value={field.value}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Pilih Wilayah" /></SelectTrigger></FormControl>
                     <SelectContent>{regions.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}</SelectContent>
                   </Select>
@@ -288,25 +286,15 @@ const FuelReportForm = ({ initialData, isEditing = false }: FuelReportFormProps)
               <FormField control={form.control} name="team" render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tim / Operator</FormLabel>
-                  <Select onValueChange={(val) => { 
-                    if (val === "custom") { setCustomTeamMode(true); field.onChange(""); }
-                    else { setCustomTeamMode(false); field.onChange(val); }
-                  }} value={customTeamMode ? "custom" : field.value} disabled={!selectedRegion}>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={!selectedRegion}>
                     <FormControl><SelectTrigger><SelectValue placeholder="Pilih Tim" /></SelectTrigger></FormControl>
                     <SelectContent>
                       {selectedRegion && teamOptions[selectedRegion]?.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                      <SelectItem value="custom" className="text-blue-600 font-bold">+ Tambah Manual</SelectItem>
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )} />
-
-              {customTeamMode && (
-                <FormField control={form.control} name="customTeam" render={({ field }) => (
-                  <FormItem><FormLabel>Nama Tim Baru</FormLabel><FormControl><Input placeholder="Ketik nama tim..." {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-              )}
             </div>
 
             <div className="pt-4 border-t border-slate-100">
