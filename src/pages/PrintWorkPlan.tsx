@@ -5,9 +5,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { WorkPlan, WorkPlanItem } from '@/types/workPlan';
 import { workPlanService } from '@/services/workPlanService';
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Printer } from 'lucide-react';
+import { ArrowLeft, Printer, Edit, Trash2 } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import PimpinanNoteSection from '@/components/PimpinanNoteSection';
+import { useAuth } from '@/context/AuthContext';
+import { showSuccess, showError } from '@/utils/toast';
+import { cn } from "@/lib/utils";
 
 const getLogoUrl = (fileName: string) => {
   const { data } = supabase.storage.from('assets').getPublicUrl(fileName);
@@ -20,8 +23,12 @@ const LOGO_DLH_URL = getLogoUrl('logo-dlh.jpg');
 const PrintWorkPlan = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { session, profile } = useAuth();
   const [plan, setPlan] = useState<WorkPlan | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const isLoggedIn = !!session;
+  const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
   useEffect(() => {
     if (id) loadPlan(id);
@@ -43,6 +50,19 @@ const PrintWorkPlan = () => {
     if (!plan) return;
     await workPlanService.updateWorkPlan(plan.id, { pimpinan_note: note });
     setPlan({ ...plan, pimpinan_note: note });
+  };
+
+  const handleDelete = async () => {
+    if (!id || isPimpinan) return;
+    if (window.confirm("Apakah Anda yakin ingin menghapus rencana kerja ini?")) {
+      try {
+        await workPlanService.deleteWorkPlan(id);
+        showSuccess("Rencana kerja berhasil dihapus");
+        navigate('/work-plans');
+      } catch (error) {
+        showError("Gagal menghapus data");
+      }
+    }
   };
 
   if (loading) return <div className="p-20 text-center">Menyiapkan dokumen...</div>;
@@ -75,14 +95,37 @@ const PrintWorkPlan = () => {
   return (
     <div className="min-h-screen bg-slate-50 p-0 md:p-8">
       <div className="max-w-[1200px] mx-auto space-y-6 no-print mb-8 p-4 bg-white rounded-lg shadow-sm border">
-        <div className="flex items-center justify-between">
-          <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4 h-9">
-            <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
-          </Button>
-          <h1 className="font-bold text-sm md:text-base">Preview Cetak Rencana Kerja</h1>
-          <Button onClick={() => window.print()} className="bg-blue-600 px-2 md:px-4 h-9">
-            <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak</span>
-          </Button>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => navigate('/work-plans')} className="px-2 md:px-4 h-9">
+              <ArrowLeft className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Kembali</span>
+            </Button>
+            <h1 className="font-bold text-sm md:text-base">Preview Cetak Rencana Kerja</h1>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            {isLoggedIn && !isPimpinan && (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={() => navigate(`/work-plans/edit/${plan.id}`)}
+                  className="h-9 border-blue-200 text-blue-600 hover:bg-blue-50"
+                >
+                  <Edit className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Edit</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handleDelete}
+                  className="h-9 border-red-200 text-red-600 hover:bg-red-50"
+                >
+                  <Trash2 className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Hapus</span>
+                </Button>
+              </>
+            )}
+            <Button onClick={() => window.print()} className="bg-blue-600 px-2 md:px-4 h-9">
+              <Printer className="h-4 w-4 md:mr-2" /> <span className="hidden md:inline">Cetak</span>
+            </Button>
+          </div>
         </div>
       </div>
 
