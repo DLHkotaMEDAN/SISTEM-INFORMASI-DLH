@@ -87,7 +87,7 @@ const FuelSpjReportList = () => {
     try {
       await fuelSpjService.deleteReport(id);
       setReports(prev => prev.filter(r => r.id !== id));
-      showSuccess("Laporan dihapus");
+      showSuccess("Laporan SPJ dihapus");
     } catch (error) {
       showError("Gagal menghapus");
     }
@@ -257,7 +257,7 @@ const FuelSpjReportList = () => {
         ) : filteredReports.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredReports.map((report) => (
-              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-600 cursor-pointer group" onClick={() => navigate(isPimpinan ? `/fuel-reports/spj/daily-rekap?date=${report.date}` : `/fuel-reports/spj/edit/${report.id}`)}>
+              <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-600 cursor-pointer group" onClick={() => navigate(`/fuel-reports/spj/${report.id}`)}>
                 <CardHeader className="p-4 pb-2">
                   <div className="flex justify-between items-start">
                     <div className="space-y-1">
@@ -285,6 +285,10 @@ const FuelSpjReportList = () => {
                       </div>
                     ))}
                     {report.entries.length > 2 && <div className="text-[10px] text-center text-slate-400">+{report.entries.length - 2} item lainnya</div>}
+                  </div>
+                  <div className="pt-2 border-t flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400 italic">Klik untuk detail</span>
+                    <div className="flex items-center text-blue-600 font-bold">Lihat <Eye className="ml-1 h-3 w-3" /></div>
                   </div>
                 </CardContent>
               </Card>

@@ -121,7 +121,7 @@ const FuelSpjTab = () => {
       ) : filteredReports.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredReports.map((report) => (
-            <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-700 cursor-pointer group" onClick={() => navigate(isPimpinan ? `/fuel-reports/spj/daily-rekap?date=${report.date}` : `/fuel-reports/spj/edit/${report.id}`)}>
+            <Card key={report.id} className="hover:shadow-md transition-all border-l-4 border-l-blue-700 cursor-pointer group" onClick={() => navigate(`/fuel-reports/spj/${report.id}`)}>
               <CardHeader className="p-4 pb-2">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
@@ -139,9 +139,9 @@ const FuelSpjTab = () => {
               </CardHeader>
               <CardContent className="p-4 pt-0">
                 <div className="pt-2 border-t flex justify-between items-center text-[10px]">
-                  <span className="text-slate-400 italic">{isPimpinan ? "Klik untuk lihat rekap" : "Klik untuk edit data"}</span>
+                  <span className="text-slate-400 italic">Klik untuk lihat detail</span>
                   <div className="flex items-center text-blue-700 font-bold">
-                    {isPimpinan ? <><Eye className="mr-1 h-3 w-3" /> Lihat Rekap</> : <><Edit className="mr-1 h-3 w-3" /> Edit SPJ</>}
+                    <Eye className="mr-1 h-3 w-3" /> Lihat Detail
                     <ArrowRight className="ml-1 h-3 w-3" />
                   </div>
                 </div>

@@ -39,6 +39,7 @@ import FuelYearlyRecap from "./pages/FuelYearlyRecap";
 import FuelSpjReportList from "./pages/FuelSpjReportList";
 import CreateFuelSpjReport from "./pages/CreateFuelSpjReport";
 import EditFuelSpjReport from "./pages/EditFuelSpjReport";
+import FuelSpjReportDetail from "./pages/FuelSpjReportDetail";
 import FuelSpjDailyRecap from "./pages/FuelSpjDailyRecap";
 import FuelSpjWeeklyRecap from "./pages/FuelSpjWeeklyRecap";
 import FuelSpjMonthlyRecap from "./pages/FuelSpjMonthlyRecap";
@@ -114,6 +115,7 @@ const App = () => (
             <Route path="/fuel-reports/spj" element={<AdminRoute><FuelSpjReportList /></AdminRoute>} />
             <Route path="/fuel-reports/spj/create" element={<AdminRoute><CreateFuelSpjReport /></AdminRoute>} />
             <Route path="/fuel-reports/spj/edit/:id" element={<AdminRoute><EditFuelSpjReport /></AdminRoute>} />
+            <Route path="/fuel-reports/spj/:id" element={<AdminRoute><FuelSpjReportDetail /></AdminRoute>} />
             <Route path="/fuel-reports/spj/daily-rekap" element={<AdminRoute><FuelSpjDailyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/spj/weekly-rekap" element={<AdminRoute><FuelSpjWeeklyRecap /></AdminRoute>} />
             <Route path="/fuel-reports/spj/monthly-rekap" element={<AdminRoute><FuelSpjMonthlyRecap /></AdminRoute>} />
