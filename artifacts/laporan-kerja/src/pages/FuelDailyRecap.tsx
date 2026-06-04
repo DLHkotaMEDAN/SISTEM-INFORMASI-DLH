@@ -72,8 +72,7 @@ const FuelDailyRecap = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fuelService.getAllReports();
-      const filtered = data.filter(r => r.date === selectedDate);
+      const filtered = await fuelService.getReportsByDateRange(selectedDate, selectedDate);
       filtered.sort((a, b) => a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {

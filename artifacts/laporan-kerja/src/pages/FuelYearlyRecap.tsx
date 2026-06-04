@@ -68,11 +68,9 @@ const FuelYearlyRecap = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fuelService.getAllReports();
-      const filtered = data.filter(r => {
-        const rDate = parseISO(r.date);
-        return rDate.getFullYear().toString() === selectedYear;
-      });
+      const startDate = `${selectedYear}-01-01`;
+      const endDate = `${selectedYear}-12-31`;
+      const filtered = await fuelService.getReportsByDateRange(startDate, endDate);
       filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {

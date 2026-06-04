@@ -70,11 +70,9 @@ const FuelWeeklyRecap = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fuelService.getAllReports();
-      const filtered = data.filter(r => {
-        const rDate = parseISO(r.date);
-        return isWithinInterval(rDate, { start: weekStart, end: weekEnd });
-      });
+      const startDateStr = format(weekStart, 'yyyy-MM-dd');
+      const endDateStr = format(weekEnd, 'yyyy-MM-dd');
+      const filtered = await fuelService.getReportsByDateRange(startDateStr, endDateStr);
       filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region) || a.team.localeCompare(b.team));
       setReports(filtered);
     } catch (error) {

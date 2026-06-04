@@ -69,11 +69,12 @@ const FuelMonthlyRecap = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const data = await fuelService.getAllReports();
-      const filtered = data.filter(r => {
-        const rDate = parseISO(r.date);
-        return (rDate.getMonth() + 1).toString() === selectedMonth && rDate.getFullYear().toString() === selectedYear;
-      });
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth);
+      const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month, 0).getDate();
+      const endDate = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      const filtered = await fuelService.getReportsByDateRange(startDate, endDate);
       filtered.sort((a, b) => a.date.localeCompare(b.date) || a.region.localeCompare(b.region));
       setReports(filtered);
     } catch (error) {

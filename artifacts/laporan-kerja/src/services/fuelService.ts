@@ -19,6 +19,19 @@ export const fuelService = {
     return data as FuelReport[];
   },
 
+  async getReportsByDateRange(startDate: string, endDate: string) {
+    const { data, error } = await supabase
+      .from('fuel_reports')
+      .select('*')
+      .is('deleted_at', null)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .limit(5000);
+    if (error) throw error;
+    return data as FuelReport[];
+  },
+
   async getReportById(id: string) {
     const { data, error } = await supabase
       .from('fuel_reports')
