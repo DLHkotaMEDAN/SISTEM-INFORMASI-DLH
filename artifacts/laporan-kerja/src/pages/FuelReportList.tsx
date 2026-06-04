@@ -67,13 +67,29 @@ const FuelReportList = () => {
       navigate('/');
       return;
     }
-    loadReports();
-  }, [profile, isAllowed]);
+    if (isAllowed || !profile) loadReports();
+  }, [profile, isAllowed, selectedMonth, selectedYear]);
 
   const loadReports = async () => {
     try {
       setLoading(true);
-      const data = await fuelService.getAllReports();
+      let data: FuelReport[];
+
+      if (selectedMonth !== "semua" && selectedYear !== "semua") {
+        const year = parseInt(selectedYear);
+        const month = parseInt(selectedMonth);
+        const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+        data = await fuelService.getReportsByDateRange(startDate, endDate);
+      } else if (selectedYear !== "semua") {
+        const startDate = `${selectedYear}-01-01`;
+        const endDate = `${selectedYear}-12-31`;
+        data = await fuelService.getReportsByDateRange(startDate, endDate);
+      } else {
+        data = await fuelService.getAllReports();
+      }
+
       setReports(data);
     } catch (error) {
       showError("Gagal memuat data");
@@ -116,23 +132,15 @@ const FuelReportList = () => {
 
   const filteredReports = reports.filter(r => {
     const search = searchQuery.toLowerCase();
-    const reportDate = new Date(r.date);
-    const m = (reportDate.getMonth() + 1).toString();
-    const y = reportDate.getFullYear().toString();
 
-    const matchSearch = r.team.toLowerCase().includes(search) ||
+    const matchSearch = !search ||
+      r.team.toLowerCase().includes(search) ||
       r.region.toLowerCase().includes(search) ||
       r.items?.some(item => item.location.street.toLowerCase().includes(search));
 
     const matchSpecificDate = !selectedDate || r.date === selectedDate;
-    const matchMonth = selectedMonth === "semua" || m === selectedMonth;
-    const matchYear = selectedYear === "semua" || y === selectedYear;
 
-    if (selectedDate) {
-      return matchSearch && matchSpecificDate;
-    }
-
-    return matchSearch && matchMonth && matchYear;
+    return matchSearch && matchSpecificDate;
   });
 
   if (!isAllowed) return null;
