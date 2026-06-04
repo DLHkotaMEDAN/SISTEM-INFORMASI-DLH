@@ -1,0 +1,2 @@
+- [Supabase 1000-row cap](supabase-row-limit.md) — Supabase returns max 1000 rows by default; `.limit(10000)` is capped server-side; use server-side date filters instead of fetching all records.
+- [FuelReportList filter pattern](fuel-report-list-filter.md) — Uses "Cari Data" button + applied/pending filter state to avoid race conditions; same pattern needed for FuelSpjReportList.
