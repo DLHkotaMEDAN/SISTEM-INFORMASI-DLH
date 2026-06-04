@@ -54,7 +54,7 @@ const months = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const years = Array.from({ length: 10 }, (_, i) => new Date().getFullYear() - i);
 
 const Index = () => {
   const navigate = useNavigate();
