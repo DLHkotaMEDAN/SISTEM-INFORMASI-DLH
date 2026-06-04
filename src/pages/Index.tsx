@@ -54,7 +54,7 @@ const months = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() + 2) - i);
 
 const Index = () => {
   const navigate = useNavigate();
@@ -171,9 +171,10 @@ const Index = () => {
   const filteredReports = useMemo(() => {
     return reports.filter(report => {
       const search = searchQuery.toLowerCase();
-      const reportDate = new Date(report.date);
-      const m = (reportDate.getMonth() + 1).toString();
-      const y = reportDate.getFullYear().toString();
+      
+      const [year, month] = report.date.split('-');
+      const m = parseInt(month).toString();
+      const y = year;
       
       const matchSearch = report.description.toLowerCase().includes(search) || report.location.street.toLowerCase().includes(search);
       const matchSpecificDate = !selectedDate || report.date === selectedDate;
@@ -190,13 +191,18 @@ const Index = () => {
   const filteredWorkPlans = useMemo(() => {
     return workPlans.filter(plan => {
       const search = searchQuery.toLowerCase().trim();
+      
+      const [year, month] = plan.date.split('-');
+      const m = parseInt(month).toString();
+      const y = year;
+
       const matchSearch = !search || (Array.isArray(plan.items) && plan.items.some(item => 
         (item.description?.toLowerCase() || "").includes(search) ||
         (item.location?.street?.toLowerCase() || "").includes(search)
       ));
       const matchSpecificDate = !selectedDate || plan.date === selectedDate;
-      const matchMonth = selectedMonth === "semua" || (new Date(plan.date).getMonth() + 1).toString() === selectedMonth;
-      const matchYear = selectedYear === "semua" || new Date(plan.date).getFullYear().toString() === selectedYear;
+      const matchMonth = selectedMonth === "semua" || m === selectedMonth;
+      const matchYear = selectedYear === "semua" || y === selectedYear;
       const matchCategory = selectedCategory === "semua" || plan.category === selectedCategory;
       const restrictionMatch = !isUserRestricted || plan.category === profile?.category;
       
@@ -535,11 +541,21 @@ const Index = () => {
             <>
               {isAdmin && (
                 <TabsContent value="fuel_reports" className="mt-0">
-                  <FuelReportTab />
+                  <FuelReportTab 
+                    globalMonth={selectedMonth} 
+                    globalYear={selectedYear} 
+                    globalDate={selectedDate}
+                    globalSearch={searchQuery}
+                  />
                 </TabsContent>
               )}
               <TabsContent value="fuel_spj" className="mt-0">
-                <FuelSpjTab />
+                <FuelSpjTab 
+                  globalMonth={selectedMonth} 
+                  globalYear={selectedYear} 
+                  globalDate={selectedDate}
+                  globalSearch={searchQuery}
+                />
               </TabsContent>
             </>
           )}

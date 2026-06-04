@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { 
   Calendar, FileText, Trash2, Edit, 
-  Search, RefreshCw, ArrowRight, FilterX, CalendarDays, Eye
+  Search, RefreshCw, ArrowRight, FilterX, CalendarDays, Eye, Database
 } from 'lucide-react';
 import { FuelSpjReport } from '@/types/fuelSpjReport';
 import { fuelSpjService } from '@/services/fuelSpjService';
@@ -16,13 +16,20 @@ import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
 import { useAuth } from '@/context/AuthContext';
 
-const FuelSpjTab = () => {
+interface FuelSpjTabProps {
+  globalMonth?: string;
+  globalYear?: string;
+  globalDate?: string;
+  globalSearch?: string;
+}
+
+const FuelSpjTab = ({ globalMonth, globalYear, globalDate, globalSearch }: FuelSpjTabProps) => {
   const navigate = useNavigate();
   const { profile, session } = useAuth();
   const [reports, setReports] = useState<FuelSpjReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState("");
+  const [internalSearch, setInternalSearch] = useState("");
+  const [internalDate, setInternalDate] = useState("");
 
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
 
@@ -56,11 +63,26 @@ const FuelSpjTab = () => {
   };
 
   const filteredReports = reports.filter(r => {
-    const matchSearch = r.region.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                       r.entries.some(e => e.spj_no.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                                         e.vehicle_operator.toLowerCase().includes(searchQuery.toLowerCase()));
-    const matchDate = !selectedDate || r.date === selectedDate;
-    return matchSearch && matchDate;
+    const search = (globalSearch || internalSearch).toLowerCase();
+    const dateFilter = globalDate || internalDate;
+
+    const [year, month] = r.date.split('-');
+    const m = parseInt(month).toString();
+    const y = year;
+
+    const matchSearch = r.region.toLowerCase().includes(search) ||
+                       r.entries.some(e => e.spj_no.toLowerCase().includes(search) || 
+                                         e.vehicle_operator.toLowerCase().includes(search));
+    
+    const matchSpecificDate = !dateFilter || r.date === dateFilter;
+    const matchMonth = !globalMonth || globalMonth === "semua" || m === globalMonth;
+    const matchYear = !globalYear || globalYear === "semua" || y === globalYear;
+
+    if (dateFilter) {
+      return matchSearch && matchSpecificDate;
+    }
+
+    return matchSearch && matchMonth && matchYear;
   });
 
   return (
@@ -68,26 +90,26 @@ const FuelSpjTab = () => {
       <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           <div className="lg:col-span-5 space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari No. SPJ / Wilayah / Kendaraan</label>
+            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari No. SPJ / Wilayah (Internal Tab)</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                 placeholder="Ketik kata kunci..." 
                 className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                value={internalSearch}
+                onChange={(e) => setInternalSearch(e.target.value)}
               />
             </div>
           </div>
           <div className="lg:col-span-3 space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Filter Tanggal</label>
+            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Filter Tanggal (Internal Tab)</label>
             <div className="relative">
               <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                 type="date"
                 className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
+                value={internalDate}
+                onChange={(e) => setInternalDate(e.target.value)}
               />
             </div>
           </div>
@@ -95,7 +117,7 @@ const FuelSpjTab = () => {
             <Button 
               variant="outline" 
               size="icon" 
-              onClick={() => { setSearchQuery(""); setSelectedDate(""); }}
+              onClick={() => { setInternalSearch(""); setInternalDate(""); }}
               className="h-10 w-10 shrink-0 border-slate-200 text-slate-400 hover:text-red-500"
             >
               <FilterX size={18} />
@@ -111,6 +133,13 @@ const FuelSpjTab = () => {
             )}
           </div>
         </div>
+        {(globalMonth !== "semua" || globalYear !== "semua" || globalDate || globalSearch) && (
+          <div className="flex items-center gap-2 px-1">
+            <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-bold">
+              <Database className="w-3 h-3 mr-1" /> FILTER DASHBOARD AKTIF
+            </Badge>
+          </div>
+        )}
       </div>
 
       {loading ? (
@@ -152,7 +181,7 @@ const FuelSpjTab = () => {
       ) : (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300 text-slate-500">
           <Search className="mx-auto h-8 w-8 text-slate-200 mb-2" />
-          <p className="text-sm">Tidak ada laporan SPJ ditemukan</p>
+          <p className="text-sm">Tidak ada laporan SPJ ditemukan untuk filter ini</p>
         </div>
       )}
     </div>

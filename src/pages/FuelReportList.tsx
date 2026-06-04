@@ -42,7 +42,8 @@ const months = [
   "Juli", "Agustus", "September", "Oktober", "November", "Desember"
 ];
 
-const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i);
+// Memperluas rentang tahun agar mencakup tahun depan (2026/2027)
+const years = Array.from({ length: 10 }, (_, i) => (new Date().getFullYear() + 2) - i);
 
 const FuelReportList = () => {
   const navigate = useNavigate();
@@ -116,9 +117,11 @@ const FuelReportList = () => {
 
   const filteredReports = reports.filter(r => {
     const search = searchQuery.toLowerCase();
-    const reportDate = new Date(r.date);
-    const m = (reportDate.getMonth() + 1).toString();
-    const y = reportDate.getFullYear().toString();
+    
+    // Menggunakan split string untuk menghindari masalah timezone pada parsing Date
+    const [year, month] = r.date.split('-');
+    const m = parseInt(month).toString();
+    const y = year;
 
     const matchSearch = r.team.toLowerCase().includes(search) ||
       r.region.toLowerCase().includes(search) ||
@@ -292,7 +295,7 @@ const FuelReportList = () => {
                     <div className="space-y-1">
                       <div className="flex items-center text-[10px] text-slate-500 font-medium"><Calendar className="h-3 w-3 mr-1" /> {report.date}</div>
                       <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-100 text-[10px]">{report.region}</Badge>
+                        <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-100 text-[10px]">{report.region}</Badge>
                         {report.pimpinan_note && <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-[8px]"><MessageSquare size={8} className="mr-1" /> Ada Catatan</Badge>}
                       </div>
                     </div>
