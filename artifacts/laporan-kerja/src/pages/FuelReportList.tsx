@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -61,16 +61,22 @@ const FuelReportList = () => {
   const isPimpinan = profile?.role === 'pimpinan' || (session?.user?.email === 'pimpinan@gmail.com');
   const isAllowed = isAdmin || isAdminBbm || isPimpinan;
 
+  const reqIdRef = useRef(0);
+
   useEffect(() => {
     if (!isAllowed && profile) {
       showError("Akses ditolak. Hanya Administrator yang dapat mengakses halaman ini.");
       navigate('/');
-      return;
     }
-    if (isAllowed || !profile) loadReports();
-  }, [profile, isAllowed, selectedMonth, selectedYear]);
+  }, [profile, isAllowed]);
+
+  useEffect(() => {
+    if (!isAllowed) return;
+    loadReports();
+  }, [isAllowed, selectedMonth, selectedYear]);
 
   const loadReports = async () => {
+    const id = ++reqIdRef.current;
     try {
       setLoading(true);
       let data: FuelReport[];
@@ -90,10 +96,13 @@ const FuelReportList = () => {
         data = await fuelService.getAllReports();
       }
 
+      if (id !== reqIdRef.current) return;
       setReports(data);
     } catch (error) {
+      if (id !== reqIdRef.current) return;
       showError("Gagal memuat data");
     } finally {
+      if (id !== reqIdRef.current) return;
       setLoading(false);
     }
   };
