@@ -15,19 +15,12 @@ import { fuelService } from '@/services/fuelService';
 import { showSuccess, showError } from '@/utils/toast';
 import { cn } from "@/lib/utils";
 
-interface FuelReportTabProps {
-  globalMonth?: string;
-  globalYear?: string;
-  globalDate?: string;
-  globalSearch?: string;
-}
-
-const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: FuelReportTabProps) => {
+const FuelReportTab = () => {
   const navigate = useNavigate();
   const [reports, setReports] = useState<FuelReport[]>([]);
   const [loading, setLoading] = useState(true);
-  const [internalSearch, setInternalSearch] = useState("");
-  const [internalDate, setInternalDate] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
 
   useEffect(() => {
     loadReports();
@@ -58,28 +51,10 @@ const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: Fu
   };
 
   const filteredReports = reports.filter(r => {
-    // Gunakan filter global jika ada, jika tidak gunakan internal
-    const search = (globalSearch || internalSearch).toLowerCase();
-    const dateFilter = globalDate || internalDate;
-    
-    const [year, month] = r.date.split('-');
-    const m = parseInt(month).toString();
-    const y = year;
-
-    const matchSearch = r.team.toLowerCase().includes(search) ||
-                       r.region.toLowerCase().includes(search);
-    
-    const matchSpecificDate = !dateFilter || r.date === dateFilter;
-    
-    // Filter bulan/tahun hanya berlaku jika tidak ada filter tanggal spesifik
-    const matchMonth = !globalMonth || globalMonth === "semua" || m === globalMonth;
-    const matchYear = !globalYear || globalYear === "semua" || y === globalYear;
-
-    if (dateFilter) {
-      return matchSearch && matchSpecificDate;
-    }
-
-    return matchSearch && matchMonth && matchYear;
+    const matchSearch = r.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       r.region.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchDate = !selectedDate || r.date === selectedDate;
+    return matchSearch && matchDate;
   });
 
   return (
@@ -87,26 +62,26 @@ const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: Fu
       <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           <div className="lg:col-span-5 space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah (Internal Tab)</label>
+            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                 placeholder="Ketik nama tim..." 
                 className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
-                value={internalSearch}
-                onChange={(e) => setInternalSearch(e.target.value)}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
           </div>
           <div className="lg:col-span-3 space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Filter Tanggal (Internal Tab)</label>
+            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Filter Tanggal</label>
             <div className="relative">
               <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
                 type="date"
                 className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
-                value={internalDate}
-                onChange={(e) => setInternalDate(e.target.value)}
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
               />
             </div>
           </div>
@@ -114,7 +89,7 @@ const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: Fu
             <Button 
               variant="outline" 
               size="icon" 
-              onClick={() => { setInternalSearch(""); setInternalDate(""); }}
+              onClick={() => { setSearchQuery(""); setSelectedDate(""); }}
               className="h-10 w-10 shrink-0 border-slate-200 text-slate-400 hover:text-red-500"
             >
               <FilterX size={18} />
@@ -128,13 +103,6 @@ const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: Fu
             </Button>
           </div>
         </div>
-        {(globalMonth !== "semua" || globalYear !== "semua" || globalDate || globalSearch) && (
-          <div className="flex items-center gap-2 px-1">
-            <Badge variant="secondary" className="bg-blue-50 text-blue-600 border-blue-100 text-[9px] font-bold">
-              <Database className="w-3 h-3 mr-1" /> FILTER DASHBOARD AKTIF
-            </Badge>
-          </div>
-        )}
       </div>
 
       {loading ? (
@@ -171,7 +139,7 @@ const FuelReportTab = ({ globalMonth, globalYear, globalDate, globalSearch }: Fu
       ) : (
         <div className="text-center py-20 bg-white rounded-xl border border-dashed border-slate-300 text-slate-500">
           <Search className="mx-auto h-8 w-8 text-slate-200 mb-2" />
-          <p className="text-sm">Tidak ada laporan BBM ditemukan untuk filter ini</p>
+          <p className="text-sm">Tidak ada laporan BBM ditemukan</p>
         </div>
       )}
     </div>
