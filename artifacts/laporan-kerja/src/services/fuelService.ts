@@ -21,6 +21,7 @@ export const fuelService = {
   },
 
   async getReportsByDateRange(startDate: string, endDate: string) {
+    console.log('[fuelService] getReportsByDateRange', startDate, endDate);
     const { data, error } = await supabase
       .from('fuel_reports')
       .select('*')
@@ -29,7 +30,8 @@ export const fuelService = {
       .lte('date', endDate)
       .order('date', { ascending: true })
       .limit(5000);
-    if (error) throw error;
+    if (error) { console.error('[fuelService] error:', error); throw error; }
+    console.log('[fuelService] getReportsByDateRange returned', data?.length, 'records');
     return data as FuelReport[];
   },
 

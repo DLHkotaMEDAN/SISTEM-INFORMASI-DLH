@@ -55,6 +55,8 @@ const FuelReportList = () => {
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("semua");
   const [selectedYear, setSelectedYear] = useState("semua");
+  const [appliedMonth, setAppliedMonth] = useState("semua");
+  const [appliedYear, setAppliedYear] = useState("semua");
 
   const isAdminBbm = profile?.role === 'admin_bbm';
   const isAdmin = profile?.role === 'admin';
@@ -72,25 +74,32 @@ const FuelReportList = () => {
 
   useEffect(() => {
     if (!isAllowed) return;
-    loadReports();
-  }, [isAllowed, selectedMonth, selectedYear]);
+    loadReports(appliedMonth, appliedYear);
+  }, [isAllowed, appliedMonth, appliedYear]);
 
-  const loadReports = async () => {
+  const loadReports = async (month: string, year: string) => {
     const id = ++reqIdRef.current;
     try {
       setLoading(true);
       let data: FuelReport[];
 
-      if (selectedMonth !== "semua" && selectedYear !== "semua") {
-        const year = parseInt(selectedYear);
-        const month = parseInt(selectedMonth);
-        const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
-        const lastDay = new Date(year, month, 0).getDate();
-        const endDate = `${year}-${month.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
+      if (month !== "semua" && year !== "semua") {
+        const y = parseInt(year);
+        const m = parseInt(month);
+        const startDate = `${y}-${m.toString().padStart(2, '0')}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const endDate = `${y}-${m.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
         data = await fuelService.getReportsByDateRange(startDate, endDate);
-      } else if (selectedYear !== "semua") {
-        const startDate = `${selectedYear}-01-01`;
-        const endDate = `${selectedYear}-12-31`;
+      } else if (year !== "semua") {
+        const startDate = `${year}-01-01`;
+        const endDate = `${year}-12-31`;
+        data = await fuelService.getReportsByDateRange(startDate, endDate);
+      } else if (month !== "semua") {
+        const y = new Date().getFullYear();
+        const m = parseInt(month);
+        const startDate = `${y}-${m.toString().padStart(2, '0')}-01`;
+        const lastDay = new Date(y, m, 0).getDate();
+        const endDate = `${y}-${m.toString().padStart(2, '0')}-${lastDay.toString().padStart(2, '0')}`;
         data = await fuelService.getReportsByDateRange(startDate, endDate);
       } else {
         data = await fuelService.getAllReports();
@@ -105,6 +114,11 @@ const FuelReportList = () => {
       if (id !== reqIdRef.current) return;
       setLoading(false);
     }
+  };
+
+  const applyFilter = () => {
+    setAppliedMonth(selectedMonth);
+    setAppliedYear(selectedYear);
   };
 
   const handleLogout = async () => {
@@ -137,6 +151,8 @@ const FuelReportList = () => {
     setSelectedDate("");
     setSelectedMonth("semua");
     setSelectedYear("semua");
+    setAppliedMonth("semua");
+    setAppliedYear("semua");
   };
 
   const filteredReports = reports.filter(r => {
@@ -233,8 +249,8 @@ const FuelReportList = () => {
         </div>
 
         <div className="bg-white p-4 rounded-xl shadow-sm border space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            <div className="md:col-span-4 space-y-1.5">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+            <div className="md:col-span-3 space-y-1.5">
               <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah / Lokasi</label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -260,7 +276,7 @@ const FuelReportList = () => {
               </div>
             </div>
 
-            <div className="md:col-span-3 space-y-1.5">
+            <div className="md:col-span-2 space-y-1.5">
               <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Bulan</label>
               <Select value={selectedMonth} onValueChange={setSelectedMonth} disabled={!!selectedDate}>
                 <SelectTrigger className={cn("bg-slate-50 border-slate-200 h-10 text-sm", selectedDate && "opacity-50")}>
@@ -286,13 +302,32 @@ const FuelReportList = () => {
               </Select>
             </div>
 
-            <div className="md:col-span-1 flex justify-end">
-              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-full md:w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0 border border-dashed md:border-none">
+            <div className="md:col-span-2 space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Terapkan</label>
+              <Button
+                onClick={applyFilter}
+                disabled={loading || !!selectedDate}
+                className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm"
+              >
+                <Search className="h-4 w-4 mr-2" /> Cari Data
+              </Button>
+            </div>
+
+            <div className="md:col-span-1 flex flex-col space-y-1.5">
+              <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Reset</label>
+              <Button variant="ghost" size="icon" onClick={resetFilters} className="h-10 w-full md:w-10 text-slate-400 hover:text-red-500 hover:bg-red-50 shrink-0 border border-dashed">
                 <FilterX className="h-5 w-5 md:mr-0 mr-2" />
                 <span className="md:hidden text-xs font-bold">Reset Filter</span>
               </Button>
             </div>
           </div>
+
+          {(appliedMonth !== "semua" || appliedYear !== "semua") && (
+            <div className="flex items-center gap-2 text-xs text-blue-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+              <Search className="h-3 w-3 shrink-0" />
+              <span>Menampilkan data: <strong>{appliedMonth !== "semua" ? months[parseInt(appliedMonth)-1] : "Semua Bulan"}</strong> / <strong>{appliedYear !== "semua" ? appliedYear : "Semua Tahun"}</strong></span>
+            </div>
+          )}
         </div>
 
         {loading ? (
@@ -314,7 +349,7 @@ const FuelReportList = () => {
                       </div>
                     </div>
                     {!isPimpinan && (
-                      <div className="flex gap-1 opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity">
+                      <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600" onClick={(e) => { e.stopPropagation(); navigate(`/fuel-reports/edit/${report.id}`); }}><Edit size={14} /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-500" onClick={(e) => handleDelete(e, report.id)}><Trash2 size={14} /></Button>
                       </div>
