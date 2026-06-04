@@ -6,13 +6,27 @@ export const fuelSpjService = {
     let query = supabase
       .from('fuel_spj_reports')
       .select('*')
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(10000);
     
     if (!includeDeleted) {
       query = query.is('deleted_at', null);
     }
     
     const { data, error } = await query;
+    if (error) throw error;
+    return data as FuelSpjReport[];
+  },
+
+  async getReportsByDateRange(startDate: string, endDate: string) {
+    const { data, error } = await supabase
+      .from('fuel_spj_reports')
+      .select('*')
+      .is('deleted_at', null)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .limit(5000);
     if (error) throw error;
     return data as FuelSpjReport[];
   },

@@ -6,7 +6,8 @@ export const reportService = {
     let query = supabase
       .from('reports')
       .select('*')
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(10000);
     
     if (categoryFilter && categoryFilter !== 'semua') {
       query = query.eq('category', categoryFilter);
@@ -20,6 +21,25 @@ export const reportService = {
     
     const { data, error } = await query;
     
+    if (error) throw error;
+    return data as Report[];
+  },
+
+  async getReportsByDateRange(startDate: string, endDate: string, categoryFilter?: string | null) {
+    let query = supabase
+      .from('reports')
+      .select('*')
+      .is('deleted_at', null)
+      .gte('date', startDate)
+      .lte('date', endDate)
+      .order('date', { ascending: true })
+      .limit(5000);
+
+    if (categoryFilter && categoryFilter !== 'semua') {
+      query = query.eq('category', categoryFilter);
+    }
+
+    const { data, error } = await query;
     if (error) throw error;
     return data as Report[];
   },
