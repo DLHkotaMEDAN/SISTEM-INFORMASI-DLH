@@ -51,13 +51,8 @@ const FuelReportTab = () => {
   };
 
   const filteredReports = reports.filter(r => {
-    const search = searchQuery.toLowerCase();
-    const matchSearch = r.team.toLowerCase().includes(search) ||
-                       r.region.toLowerCase().includes(search) ||
-                       r.items?.some(item => 
-                         item.vehicle_operator.toLowerCase().includes(search) || 
-                         item.location.street.toLowerCase().includes(search)
-                       );
+    const matchSearch = r.team.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                       r.region.toLowerCase().includes(searchQuery.toLowerCase());
     const matchDate = !selectedDate || r.date === selectedDate;
     return matchSearch && matchDate;
   });
@@ -67,11 +62,11 @@ const FuelReportTab = () => {
       <div className="bg-white p-4 rounded-xl border shadow-sm space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-end">
           <div className="lg:col-span-5 space-y-1.5">
-            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah / Kendaraan / Jalan</label>
+            <label className="text-[10px] font-bold uppercase text-slate-500 ml-1">Cari Tim / Wilayah</label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
               <Input 
-                placeholder="Ketik kata kunci..." 
+                placeholder="Ketik nama tim..." 
                 className="pl-10 bg-slate-50 border-slate-200 h-10 text-sm" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
