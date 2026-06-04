@@ -1,36 +1,46 @@
-# [Project name]
+# SISTEM LAPORAN - CLOUD DLH
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A work reporting and management system for Dinas Lingkungan Hidup (Environmental Agency). Staff can log daily work reports, manage work plans, and track fuel usage — with role-based access control backed by Supabase.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/laporan-kerja run dev` — run the frontend (workflow: `artifacts/laporan-kerja: web`)
 - `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: none (Supabase URL/key are hardcoded in `src/integrations/supabase/client.ts`)
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React + Vite (Tailwind v4, shadcn/ui, react-router-dom v6)
+- Auth + DB: Supabase (auth, real-time, storage)
+- Charts: Recharts
+- Export: ExcelJS, jsPDF, html2canvas
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/laporan-kerja/src/` — all frontend source
+- `artifacts/laporan-kerja/src/pages/` — 34 route pages
+- `artifacts/laporan-kerja/src/context/AuthContext.tsx` — Supabase auth context
+- `artifacts/laporan-kerja/src/integrations/supabase/client.ts` — Supabase client (URL + anon key)
+- `artifacts/laporan-kerja/src/index.css` — Tailwind v4 theme (CSS variables)
+- `artifacts/laporan-kerja/src/App.tsx` — router with all routes + auth guards
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Uses Supabase for auth and database — no Replit DB or Express API server needed.
+- Role-based routing: `admin_bbm` redirects to `/fuel-reports`, `admin_spj_bbm` to `/fuel-reports/spj`, others to `/`.
+- ProtectedRoute requires login; AdminRoute also checks role allowlist.
+- Tailwind v4 with `@tailwindcss/vite` — no postcss.config.js (conflicts with v4).
+- Blue theme: primary `221.2 83.2% 53.3%`, background `210 40% 98%`, radius `1rem`.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- **Laporan Harian** — staff submit and view daily work activity reports by team/category
+- **Rencana Kerja** — work plan management (create, edit, print)
+- **Laporan BBM** — fuel usage reports with daily/weekly/monthly/yearly recaps
+- **Laporan SPJ BBM** — SPJ fuel accountability reports
+- **Rekap & Cetak** — exportable recap reports (PDF/Excel)
+- **Maintenance** — admin-only user and settings management
 
 ## User preferences
 
@@ -38,7 +48,9 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Supabase URL and anon key are hardcoded in `src/integrations/supabase/client.ts` — not environment variables.
+- Do not add postcss.config.js — it conflicts with `@tailwindcss/vite` (Tailwind v4).
+- App uses react-router-dom (BrowserRouter), NOT wouter — do not mix them.
 
 ## Pointers
 
