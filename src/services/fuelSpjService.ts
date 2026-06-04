@@ -6,7 +6,8 @@ export const fuelSpjService = {
     let query = supabase
       .from('fuel_spj_reports')
       .select('*')
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(5000);
     
     if (!includeDeleted) {
       query = query.is('deleted_at', null);

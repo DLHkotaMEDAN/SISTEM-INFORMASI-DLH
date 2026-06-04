@@ -6,7 +6,8 @@ export const reportService = {
     let query = supabase
       .from('reports')
       .select('*')
-      .order('date', { ascending: false });
+      .order('date', { ascending: false })
+      .limit(5000);
     
     if (categoryFilter && categoryFilter !== 'semua') {
       query = query.eq('category', categoryFilter);

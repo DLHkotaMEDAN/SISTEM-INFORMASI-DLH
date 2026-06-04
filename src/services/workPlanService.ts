@@ -7,7 +7,8 @@ export const workPlanService = {
       .from('work_plans')
       .select('*')
       .order('date', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(5000);
     
     if (categoryFilter && categoryFilter !== 'semua') {
       query = query.eq('category', categoryFilter);
