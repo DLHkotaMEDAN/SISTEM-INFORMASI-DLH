@@ -5,10 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  Trash2, Edit, Search, RefreshCw, FilterX, CalendarDays,
-  ArrowLeft, ArrowRight, Eye
-} from 'lucide-react';
+import { Trash2, CreditCard as Edit, Search, RefreshCw, ListFilter as FilterX, CalendarDays, ArrowLeft, ArrowRight, Eye } from 'lucide-react';
 import {
   Select,
   SelectContent,
